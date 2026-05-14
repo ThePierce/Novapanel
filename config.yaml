@@ -1,0 +1,28 @@
+name: "Nova Panel"
+version: "0.3.1"
+slug: "novapanel"
+description: "Nova Panel - Smart Home Dashboard"
+url: "https://github.com/ThePierce/Novapanel"
+arch:
+  - aarch64
+  - amd64
+startup: services
+panel_icon: "mdi:alpha-n-box-outline"
+panel_title: "Nova Panel"
+panel_admin: false
+ingress: true
+ingress_port: 8099
+host_network: true
+map:
+  - config:rw
+  - ssl:ro
+options:
+  hass_url: ""
+  token: ""
+  panel_state_authority_url: ""
+schema:
+  hass_url: "str?"
+  token: "str?"
+  panel_state_authority_url: "str?"
+init: false
+hassio_api: true

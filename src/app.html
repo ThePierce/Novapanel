@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<style>
+			html.np-portrait .app-shell { grid-template-columns: 1fr !important; }
+			html.np-portrait .sidebar-shell { display: none !important; }
+		</style>
+		<script>
+			(function () {
+				try {
+					if (!/[?&]np_resync=1(?:&|$)/.test(location.search)) return;
+					var keys = [
+						'np_dashboard_v1',
+						'np_dashboard_v1_backup',
+						'np_configuration_v1',
+						'np_panel_state_v1',
+						'np_panel_state_api_preferred'
+					];
+					for (var i = 0; i < keys.length; i++) {
+						try {
+							localStorage.removeItem(keys[i]);
+						} catch (e) {}
+						try {
+							sessionStorage.removeItem(keys[i]);
+						} catch (e) {}
+					}
+					try {
+						var p = 'np_storage_v1:';
+						var wn = window.name;
+						if (wn && wn.indexOf(p) === 0) {
+							var o = JSON.parse(wn.slice(p.length));
+							if (o && typeof o === 'object') {
+								for (var j = 0; j < keys.length; j++) delete o[keys[j]];
+								window.name = p + JSON.stringify(o);
+							}
+						}
+					} catch (e) {}
+					try {
+						var u = new URL(location.href);
+						u.searchParams.delete('np_resync');
+						history.replaceState({}, '', u.pathname + u.search + u.hash);
+					} catch (e) {}
+				} catch (e) {}
+			})();
+		</script>
+		<script>
+			(function() {
+				if (window.parent === window) return;
+				function getAllShadowRoots(root) {
+					var roots = [];
+					var nodes = root.querySelectorAll('*');
+					for (var i = 0; i < nodes.length; i++) {
+						var shadow = nodes[i].shadowRoot;
+						if (!shadow) continue;
+						roots.push(shadow);
+						var nested = getAllShadowRoots(shadow);
+						for (var j = 0; j < nested.length; j++) {
+							roots.push(nested[j]);
+						}
+					}
+					return roots;
+				}
+				function hideNovaPanelHeaders(parentDocument) {
+					var roots = [parentDocument];
+					var allShadow = getAllShadowRoots(parentDocument);
+					for (var i = 0; i < allShadow.length; i++) {
+						roots.push(allShadow[i]);
+					}
+					for (var r = 0; r < roots.length; r++) {
+						var headers = roots[r].querySelectorAll('.header');
+						for (var h = 0; h < headers.length; h++) {
+							var headerEl = headers[h];
+							var mainTitle = headerEl.querySelector('.main-title');
+							var text = (mainTitle && mainTitle.textContent ? mainTitle.textContent : '').trim().toLowerCase();
+							if (text === 'nova panel') {
+								headerEl.style.setProperty('display', 'none', 'important');
+								headerEl.style.setProperty('height', '0', 'important');
+								headerEl.style.setProperty('min-height', '0', 'important');
+								headerEl.style.setProperty('padding', '0', 'important');
+								headerEl.style.setProperty('margin', '0', 'important');
+							}
+						}
+					}
+				}
+				function hideToolbar() {
+					try {
+						var pd = window.parent.document;
+						if (!pd.getElementById('np-fs')) {
+							var s = pd.createElement('style');
+							s.id = 'np-fs';
+							s.textContent = [
+								/* Reset html/body so no scrollbars or trailing space remain */
+								'html,body{margin:0!important;padding:0!important;height:100%!important;overflow:hidden!important;background:#0f1115!important}',
+								/* ha-panel-iframe variant (non-ingress) */
+								'ha-panel-iframe{--header-height:0px!important;top:0!important;bottom:0!important;left:0!important;right:0!important;height:100vh!important;height:100dvh!important;min-height:100vh!important;min-height:100dvh!important;padding:0!important;margin:0!important;border:0!important}',
+								'ha-panel-iframe iframe{display:block!important;height:100vh!important;height:100dvh!important;width:100%!important;margin:0!important;padding:0!important;border:0!important}',
+								'ha-panel-iframe>*{padding:0!important;margin:0!important}',
+								/* INGRESS variant — Nova Panel runs as a HA add-on with ingress. The iframe lives inside
+								   hassio-ingress / hassio-main / hass-subpage, all of which can reserve header+footer space. */
+								'hassio-ingress,hassio-main,ha-panel-my,ha-panel-config{display:block!important;height:100vh!important;height:100dvh!important;padding:0!important;margin:0!important;background:#0f1115!important}',
+								'hassio-ingress iframe,hassio-main iframe{display:block!important;height:100vh!important;height:100dvh!important;width:100%!important;border:0!important;margin:0!important;padding:0!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important}',
+								/* hass-subpage wraps the ingress content and has a 56px header + body padding */
+								'hass-subpage,hass-tabs-subpage,hass-error-screen{--header-height:0px!important;padding:0!important;margin:0!important;height:100vh!important;height:100dvh!important;min-height:100vh!important;min-height:100dvh!important}',
+								'hui-root,partial-panel-resolver{padding-bottom:0!important;--mdc-top-app-bar-fixed-box-shadow:none!important;background:#0f1115!important}',
+								/* Anything that looks like a bottom tab bar or footer in HA */
+								'mwc-tab-bar,paper-tabs,ha-bottom-navigation,ha-bottom-app-bar,mwc-bottom-app-bar,.bottom-bar,.tabs-bottom,footer.mdc-top-app-bar__row{display:none!important;height:0!important;min-height:0!important}'
+							].join('');
+							pd.head.appendChild(s);
+						}
+						/* Also remove any trailing padding/margin on parent body and root containers */
+						try {
+							pd.documentElement.style.setProperty('padding-bottom', '0', 'important');
+							pd.documentElement.style.setProperty('margin-bottom', '0', 'important');
+							pd.documentElement.style.setProperty('background', '#0f1115', 'important');
+							pd.body.style.setProperty('padding-bottom', '0', 'important');
+							pd.body.style.setProperty('margin-bottom', '0', 'important');
+							pd.body.style.setProperty('overflow', 'hidden', 'important');
+							pd.body.style.setProperty('background', '#0f1115', 'important');
+						} catch (e) {}
+						var ha = pd.querySelector('home-assistant');
+						if (!ha || !ha.shadowRoot) return;
+						var main = ha.shadowRoot.querySelector('home-assistant-main');
+						if (!main || !main.shadowRoot) return;
+						var appLayout = main.shadowRoot.querySelector('ha-app-layout');
+						if (appLayout && appLayout.shadowRoot) {
+							var header = appLayout.shadowRoot.querySelector('app-header');
+							if (header) {
+								header.style.cssText += ';display:none!important;height:0!important;min-height:0!important';
+							}
+						}
+						var topBar = main.shadowRoot.querySelector('ha-top-app-bar-fixed,ha-top-app-bar');
+						if (topBar) {
+							topBar.style.cssText += ';display:none!important;height:0!important';
+						}
+						var directHeader = main.shadowRoot.querySelector('app-header');
+						if (directHeader) {
+							directHeader.style.cssText += ';display:none!important;height:0!important';
+						}
+						/* Hide any bottom navigation / tab bar that HA renders for mobile users */
+						var bottomBars = main.shadowRoot.querySelectorAll(
+							'ha-bottom-navigation,ha-tabs,ha-bottom-app-bar,mwc-bottom-app-bar,paper-tabs[bottom],.bottom-bar,.tabs,footer'
+						);
+						for (var b = 0; b < bottomBars.length; b++) {
+							bottomBars[b].style.cssText += ';display:none!important;height:0!important;min-height:0!important;padding:0!important;margin:0!important';
+						}
+						var resolver = main.shadowRoot.querySelector('partial-panel-resolver');
+						var panelHost = resolver ? resolver : main.shadowRoot;
+						if (resolver) {
+							resolver.style.setProperty('padding', '0', 'important');
+							resolver.style.setProperty('margin', '0', 'important');
+							resolver.style.setProperty('height', '100vh', 'important');
+						}
+						var panel = panelHost.querySelector('ha-panel-iframe');
+						if (!panel && resolver && resolver.shadowRoot) {
+							panel = resolver.shadowRoot.querySelector('ha-panel-iframe');
+						}
+						if (panel) {
+							panel.style.setProperty('--header-height', '0px', 'important');
+							panel.style.setProperty('margin', '0', 'important');
+							panel.style.setProperty('padding', '0', 'important');
+							panel.style.setProperty('top', '0', 'important');
+							panel.style.setProperty('bottom', '0', 'important');
+							panel.style.setProperty('height', '100vh', 'important');
+							panel.style.setProperty('min-height', '100vh', 'important');
+							/* Walk into the panel's shadow root (if any) and kill its inner wrapper padding */
+							if (panel.shadowRoot) {
+								var innerWrappers = panel.shadowRoot.querySelectorAll('div,#root,.wrapper,.iframe-wrapper');
+								for (var w = 0; w < innerWrappers.length; w++) {
+									innerWrappers[w].style.cssText += ';padding:0!important;margin:0!important;height:100vh!important;height:100dvh!important;bottom:0!important;border:0!important';
+								}
+							}
+							var iframe = panel.querySelector('iframe');
+							if (!iframe && panel.shadowRoot) {
+								iframe = panel.shadowRoot.querySelector('iframe');
+							}
+							if (iframe) {
+								iframe.style.setProperty('height', '100vh', 'important');
+								iframe.style.setProperty('width', '100%', 'important');
+								iframe.style.setProperty('margin', '0', 'important');
+								iframe.style.setProperty('padding', '0', 'important');
+								iframe.style.setProperty('border', '0', 'important');
+								iframe.style.setProperty('display', 'block', 'important');
+							}
+						}
+						/* === INGRESS handling === Nova Panel is loaded via hassio-ingress, not ha-panel-iframe.
+						   Walk every shadow root in the parent and forcibly resize any iframe whose src points
+						   at an /api/hassio_ingress/... URL, plus its hass-subpage / hassio-* ancestors. */
+						try {
+							var allRoots = [pd];
+							var allShadow = getAllShadowRoots(pd);
+							for (var ar = 0; ar < allShadow.length; ar++) allRoots.push(allShadow[ar]);
+							for (var rr = 0; rr < allRoots.length; rr++) {
+								var root = allRoots[rr];
+								/* Force any ingress iframe to fill the viewport */
+								var iframes = root.querySelectorAll('iframe');
+								for (var fi = 0; fi < iframes.length; fi++) {
+									var fr = iframes[fi];
+									var src = fr.getAttribute('src') || '';
+									if (src.indexOf('hassio_ingress') !== -1 || src.indexOf('/ingress/') !== -1 || src.indexOf('novapanel') !== -1) {
+										fr.style.setProperty('position', 'fixed', 'important');
+										fr.style.setProperty('top', '0', 'important');
+										fr.style.setProperty('left', '0', 'important');
+										fr.style.setProperty('right', '0', 'important');
+										fr.style.setProperty('bottom', '0', 'important');
+										fr.style.setProperty('width', '100vw', 'important');
+										fr.style.setProperty('height', '100vh', 'important');
+										fr.style.setProperty('margin', '0', 'important');
+										fr.style.setProperty('padding', '0', 'important');
+										fr.style.setProperty('border', '0', 'important');
+										fr.style.setProperty('z-index', '99', 'important');
+										fr.style.setProperty('background', '#0f1115', 'important');
+										/* Walk up the ancestor chain inside this root and neutralize their sizing */
+										var parent = fr.parentElement;
+										var depth = 0;
+										while (parent && depth < 15) {
+											parent.style.setProperty('padding', '0', 'important');
+											parent.style.setProperty('margin', '0', 'important');
+											parent.style.setProperty('height', '100vh', 'important');
+											parent.style.setProperty('min-height', '100vh', 'important');
+											parent.style.setProperty('max-height', 'none', 'important');
+											parent.style.setProperty('overflow', 'hidden', 'important');
+											parent.style.setProperty('background', '#0f1115', 'important');
+											parent = parent.parentElement;
+											depth++;
+										}
+									}
+								}
+								/* Hide hassio-ingress's own header / mwc-top-app-bar */
+								var ingressHeaders = root.querySelectorAll(
+									'hassio-ingress mwc-top-app-bar-fixed,hassio-ingress .mdc-top-app-bar,hassio-ingress ha-top-app-bar-fixed,hass-subpage .mdc-top-app-bar,hass-subpage ha-top-app-bar-fixed'
+								);
+								for (var ih = 0; ih < ingressHeaders.length; ih++) {
+									ingressHeaders[ih].style.cssText += ';display:none!important;height:0!important;min-height:0!important';
+								}
+								/* Force hassio-ingress + hass-subpage themselves to fill viewport */
+								var fillEls = root.querySelectorAll('hassio-ingress,hassio-main,hass-subpage,hass-tabs-subpage');
+								for (var fe = 0; fe < fillEls.length; fe++) {
+									fillEls[fe].style.setProperty('--header-height', '0px', 'important');
+									fillEls[fe].style.setProperty('padding', '0', 'important');
+									fillEls[fe].style.setProperty('margin', '0', 'important');
+									fillEls[fe].style.setProperty('height', '100vh', 'important');
+									fillEls[fe].style.setProperty('min-height', '100vh', 'important');
+									fillEls[fe].style.setProperty('background', '#0f1115', 'important');
+								}
+							}
+						} catch (e) {}
+						hideNovaPanelHeaders(pd);
+					} catch (e) {}
+				}
+				[0, 300, 700, 1500, 3000, 6000, 10000].forEach(function(ms) {
+					setTimeout(hideToolbar, ms);
+				});
+				/* Re-apply on viewport changes (orientation, virtual keyboard, dvh updates) */
+				try {
+					window.addEventListener('resize', hideToolbar, { passive: true });
+					window.addEventListener('orientationchange', hideToolbar, { passive: true });
+				} catch (e) {}
+				try {
+					var obs = new MutationObserver(function() {
+						hideToolbar();
+					});
+					obs.observe(window.parent.document.documentElement, { childList: true, subtree: true });
+					setTimeout(function() {
+						obs.disconnect();
+					}, 15000);
+				} catch (e) {}
+			})();
+		</script>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

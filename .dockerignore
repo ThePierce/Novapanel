@@ -1,0 +1,14 @@
+node_modules
+.svelte-kit
+build
+dist
+coverage
+.data
+.env
+.env.local
+pnpm-lock.yaml
+*.log
+.DS_Store
+*.bak
+*_backup
+src/**/*.svelte_backup

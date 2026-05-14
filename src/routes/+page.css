@@ -1,0 +1,1482 @@
+.np-bootstrap-loading {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(15, 17, 21, 0.93);
+	pointer-events: auto;
+}
+.np-bootstrap-loading-text {
+	font-size: 0.95rem;
+	opacity: 0.88;
+	letter-spacing: 0.03em;
+}
+
+:global(*) {
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
+}
+
+:global(*::-webkit-scrollbar) {
+	width: 0 !important;
+	height: 0 !important;
+	display: none !important;
+}
+
+.app-shell {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	grid-template-columns: 260px 1fr;
+	grid-template-rows: 1fr;
+	background: #0f1115;
+	color: #f5f5f5;
+	padding-top: var(--drawer-offset, 0px);
+	transition: padding-top 220ms ease;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+:global(html),
+:global(body) {
+	margin: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+.main-zone {
+	position: relative;
+	margin-top: 0;
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+	align-self: stretch;
+	/* Sidebar is position:absolute (out of grid flow), so explicitly place
+	   main-zone in the second column. */
+	grid-column: 2;
+	grid-row: 1;
+}
+
+:global(.sidebar-shell) {
+	margin-top: 0;
+}
+
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.36);
+	border: 0;
+	padding: 0;
+	margin: 0;
+	z-index: 40;
+	cursor: default;
+}
+
+.app-popup {
+	width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
+	height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
+	max-height: calc(100vh - 1.5rem);
+	display: grid;
+	grid-template-rows: auto auto 1fr;
+	overflow: hidden;
+}
+
+.home-content {
+	padding: 1rem;
+	display: grid;
+	align-content: start;
+	gap: 1rem;
+	height: 100%;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	box-sizing: border-box;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
+}
+
+.main-cards-grid {
+	display: grid;
+}
+
+.sections-grid {
+	display: grid;
+	column-gap: 1.6rem;
+	row-gap: 0;
+	grid-auto-rows: 8px;
+	grid-auto-flow: row dense;
+	align-items: start;
+	position: relative;
+	min-width: 0;
+}
+
+.sections-drop-layer {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	column-gap: 1.6rem;
+	pointer-events: none;
+	z-index: 1;
+}
+
+.sections-column-drop {
+	min-height: 100%;
+	border-radius: 10px;
+	pointer-events: auto;
+}
+
+.view-section {
+	position: relative;
+	z-index: 2;
+	align-self: start;
+}
+
+.view-section.week-calendar-expanded-section {
+	z-index: 3;
+}
+
+.view-section {
+	display: grid;
+	gap: 0.6rem;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 12px;
+	padding: 0.7rem;
+	min-height: 8.5rem;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	margin-bottom: 1.6rem;
+}
+
+.view-section-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	width: 100%;
+	max-width: 100%;
+	cursor: pointer;
+}
+
+.view-section-head h3 {
+	margin: 0;
+	font-size: 0.95rem;
+	font-weight: 760;
+	color: rgba(255,255,255,0.88);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.view-section-head:hover h3 {
+	color: #fff;
+}
+
+.view-section-metrics {
+	margin-left: auto;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+.view-section-metric {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	min-height: 1.55rem;
+	padding: 0 0.48rem;
+	border-radius: 999px;
+	color: rgba(255,255,255,0.86);
+	font-size: 0.74rem;
+	font-weight: 740;
+	line-height: 1;
+	background: rgba(255,255,255,0.075);
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+	backdrop-filter: blur(10px);
+}
+
+.view-section-metric :global(i) {
+	color: rgba(255,255,255,0.62);
+}
+
+.view-section.drop-before::before,
+.view-section.drop-after::after {
+	content: '';
+	position: absolute;
+	left: 0.65rem;
+	right: 0.65rem;
+	height: 2px;
+	background: currentColor;
+	border-radius: 999px;
+	opacity: 0.7;
+	pointer-events: none;
+}
+
+.view-section.drop-before::before {
+	top: 0.25rem;
+}
+
+.view-section.drop-after::after {
+	bottom: 0.25rem;
+}
+
+.panel {
+	background: #171d29;
+	border: 1px solid #283044;
+	border-radius: 12px;
+	padding: 1rem;
+}
+
+.panel h2 {
+	margin: 0;
+	font-size: 1rem;
+}
+
+.editable-title-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.6rem;
+	width: 100%;
+}
+
+.editable-title-row h2,
+.editable-title-row h3 {
+	flex: 1;
+	min-width: 0;
+}
+
+.editable-title {
+	outline: none;
+}
+
+.title-delete-btn {
+	height: 2rem;
+	width: 2rem;
+	margin-left: auto;
+	flex: 0 0 auto;
+	border-radius: 0.4rem;
+	border: 0;
+	background: rgba(255, 255, 255, 0.08);
+	color: #f5f5f5;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.panel p {
+	margin: 0.5rem 0 0;
+	opacity: 0.8;
+}
+
+.column-controls {
+	margin-top: 1rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+}
+
+.column-controls button {
+	height: auto;
+	padding: 0.65rem 1rem 0.4rem 0.82rem;
+	border-radius: 0.4rem;
+	border: 0;
+	background: rgba(255, 255, 255, 0.08);
+	color: #f5f5f5;
+	cursor: pointer;
+}
+
+.column-controls button.active {
+	background: rgba(79, 113, 168, 0.35);
+}
+
+.settings-modal {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	background: #121722;
+	border: 1px solid #2e384d;
+	border-radius: 0.6rem;
+	padding: 1rem;
+	z-index: 60;
+	transform: translate(-50%, -50%);
+	transform-origin: center;
+	animation: modalIn 220ms ease;
+}
+
+.settings-modal.app-popup.np-detail {
+	padding: 0 !important;
+	border: 0.5px solid rgba(255,255,255,0.08) !important;
+	border-radius: 18px !important;
+	background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%) !important;
+	grid-template-rows: auto minmax(0, 1fr) !important;
+	overflow: hidden !important;
+}
+
+.settings-modal.app-popup.settings-config-modal.np-detail {
+	grid-template-rows: auto auto minmax(0, 1fr) !important;
+}
+
+.settings-modal.app-popup.np-detail::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 50%;
+	width: 60%;
+	height: 1px;
+	background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+	transform: translateX(-50%);
+	pointer-events: none;
+	z-index: 5;
+}
+
+.card-library-overlay {
+	z-index: 30;
+}
+
+.card-library-modal {
+	z-index: 50;
+}
+
+.card-editor-content {
+	display: grid;
+	gap: 0.6rem;
+	align-content: start;
+}
+
+.card-editor-content input,
+.card-editor-content select {
+	height: 2.2rem;
+	border-radius: 0.4rem;
+	border: 0;
+	background: rgba(255, 255, 255, 0.08);
+	color: #f5f5f5;
+	padding: 0 0.7rem;
+}
+
+.card-editor-actions {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 0.8rem;
+}
+
+.delete-btn,
+.save-btn {
+	height: 2.2rem;
+	padding: 0 0.9rem;
+	border-radius: 0.4rem;
+	border: 0;
+	color: #ffffff;
+	cursor: pointer;
+}
+
+.delete-btn {
+	background: #b73232;
+}
+
+.save-btn {
+	background: #c89d1b;
+}
+
+.card-library-controls {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 0.6rem;
+	align-items: center;
+}
+
+.card-library-controls select {
+	height: 2.2rem;
+	border-radius: 0.4rem;
+	border: 0;
+	background: rgba(255, 255, 255, 0.08);
+	color: #f5f5f5;
+	padding: 0 0.7rem;
+}
+
+.settings-modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.settings-modal-head h3 {
+	margin: 0;
+	font-size: 1rem;
+}
+
+.tab-row {
+	margin-top: 0.8rem;
+	display: flex;
+	gap: 0.6rem;
+}
+
+.tab-row button {
+	height: auto;
+	padding: 0.65rem 1rem 0.4rem 0.82rem;
+	border-radius: 0.4rem;
+	border: 0;
+	background: rgba(255, 255, 255, 0.08);
+	color: #f5f5f5;
+	cursor: pointer;
+}
+
+.tab-row button.active {
+	background: rgba(79, 113, 168, 0.35);
+}
+
+.tab-content {
+	margin-top: 0.75rem;
+	overflow: auto;
+	overflow-x: hidden;
+	padding-right: 0;
+}
+
+.settings-modal .tab-content {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.settings-modal .tab-content::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+.layout-card-controls {
+	margin-top: 1rem;
+	display: grid;
+	gap: 0.6rem;
+}
+
+.card-control-row {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 0.55rem;
+}
+
+.cards-actions {
+	margin-top: 0.8rem;
+	display: flex;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+}
+
+.card-edit-row {
+	width: 100%;
+	display: grid;
+	grid-template-columns: 1fr auto auto;
+	gap: 0.55rem;
+	align-items: center;
+}
+
+.store-preview {
+	width: 92px;
+	display: grid;
+	justify-items: center;
+}
+
+.clock-editor-preview {
+	margin-top: 0.35rem;
+	display: grid;
+	justify-items: center;
+}
+
+.card-control-row input,
+.card-control-row button,
+.card-edit-row select,
+.card-edit-row input,
+.card-edit-row button,
+.add-card,
+.history-btn,
+.cancel-edit {
+	height: 2.2rem;
+	border-radius: 0.4rem;
+	border: 0;
+	background: rgba(255, 255, 255, 0.08);
+	color: #f5f5f5;
+	padding: 0 0.7rem;
+}
+
+.add-card {
+	justify-self: start;
+	cursor: pointer;
+}
+
+.history-btn,
+.cancel-edit {
+	cursor: pointer;
+}
+
+.history-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.tab-content h4 {
+	margin: 0 0 0.8rem;
+	font-size: 0.95rem;
+}
+
+.cards-grid {
+	margin-top: 1rem;
+	display: grid;
+	gap: 0.26rem;
+	min-height: 4.2rem;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.cards-grid.one {
+	grid-template-columns: 1fr;
+}
+
+.cards-grid.two {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cards-grid.three {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.card-item {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	min-height: 6.2rem;
+	border-radius: 12px;
+	border: 0;
+	background: #20293a;
+	display: grid;
+	justify-items: center;
+	align-content: start;
+	gap: 0.15rem;
+	padding: 0.45rem 0.55rem;
+	color: inherit;
+	font: inherit;
+	font-weight: 600;
+	text-align: inherit;
+	box-sizing: border-box;
+	overflow: visible;
+	container-type: inline-size;
+	appearance: none;
+}
+
+.card-item.camera-strip-card-item {
+	background: transparent;
+	padding: 0;
+	min-height: 0;
+	justify-items: stretch;
+}
+
+.card-item.week-calendar-card-item {
+	background:
+		radial-gradient(circle at 18% 12%, rgba(56,189,248,0.12), transparent 34%),
+		linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+		rgba(18,23,34,0.86);
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+	padding: 0;
+	min-height: 30rem;
+	justify-items: stretch;
+	align-content: stretch;
+	overflow: hidden;
+	cursor: zoom-in;
+	transition:
+		box-shadow 180ms ease,
+		transform 180ms ease,
+		background 180ms ease;
+}
+
+.card-item.week-calendar-card-item.week-calendar-expanded {
+	cursor: zoom-out;
+	box-shadow:
+		inset 0 0 0 1px rgba(56,189,248,0.16),
+		0 16px 40px rgba(0,0,0,0.18);
+}
+
+.card-item.week-calendar-card-item:focus-visible {
+	outline: 2px solid rgba(56,189,248,0.72);
+	outline-offset: 3px;
+}
+
+.card-item.light-button-card-item {
+	background: transparent;
+	padding: 0;
+	min-height: 4.1rem;
+	justify-items: stretch;
+	align-content: stretch;
+}
+
+.card-item > * {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.card-item.has-title {
+	gap: 0.32rem;
+	padding: 0.55rem 0.6rem;
+}
+
+.card-item h3 {
+	margin: 0;
+	font-size: 1rem;
+	width: 100%;
+	text-align: center;
+	line-height: 1.2;
+	overflow-wrap: anywhere;
+}
+
+.drag-indicator {
+	position: fixed;
+	z-index: 200;
+	width: 1.45rem;
+	height: 1.45rem;
+	border-radius: 999px;
+	display: grid;
+	place-items: center;
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: #ffffff;
+	pointer-events: none;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.drag-indicator.valid {
+	background: #1e9e4a;
+}
+
+.drag-indicator.invalid {
+	background: #c23a3a;
+}
+
+:global(*) {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+:global(*::-webkit-scrollbar) {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+@media (max-width: 1024px) {
+	.app-shell {
+		grid-template-columns: 220px 1fr;
+	}
+}
+
+@media (max-width: 900px) {
+	.app-shell {
+		grid-template-columns: 1fr;
+	}
+
+	.home-content {
+		padding: clamp(0.55rem, 2.4vw, 1rem);
+	}
+
+	.sections-grid {
+		gap: 0.9rem;
+	}
+
+	.cards-grid.three {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.settings-modal {
+		padding: 0.85rem;
+	}
+}
+
+@media (max-width: 680px) {
+	.cards-grid.two,
+	.cards-grid.three {
+		grid-template-columns: 1fr;
+	}
+
+	.card-edit-row {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 700px) and (orientation: portrait) {
+	.app-shell {
+		grid-template-columns: 1fr !important;
+	}
+
+	:global(.sidebar-shell) {
+		display: none !important;
+	}
+}
+
+/* JS-driven class set via screen.orientation API (works correctly inside HA iframe) */
+:global(html.np-phone.np-portrait) .app-shell {
+	grid-template-columns: 1fr !important;
+}
+
+:global(html.np-phone.np-portrait .sidebar-shell) {
+	display: none !important;
+}
+
+@keyframes curtainDown {
+	from {
+		opacity: 0;
+		transform: translateY(-14px) scaleY(0.2);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scaleY(1);
+	}
+}
+
+@keyframes modalIn {
+	from {
+		opacity: 0;
+		transform: translate(-50%, -52%) scale(0.96);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
+}
+
+/* ============================================
+ * Premium detail-modal body (gedeeld door alle popup-modals)
+ * Match het edit-modal-ontwerp: 0.5px borders, 13px radius, subtiele gradients
+ * ============================================ */
+
+/* Body wrapper - consistent padding voor alle detail-modals */
+.np-detail-body {
+	padding: 14px 22px 22px;
+	overflow: auto;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-height: 0;
+	flex: 1;
+}
+.np-detail-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+/* Premium tegel — basis voor entity-rijen, kpi-blokken, etc */
+.np-detail-tile {
+	background: rgba(255,255,255,0.025);
+	border: 0.5px solid rgba(255,255,255,0.07);
+	border-radius: 13px;
+	padding: 12px 14px;
+	transition: border-color 0.2s, background 0.2s, transform 0.2s;
+	position: relative;
+	overflow: hidden;
+}
+.np-detail-tile.interactive { cursor: pointer; }
+.np-detail-tile.interactive:hover {
+	border-color: rgba(255,255,255,0.13);
+	background: rgba(255,255,255,0.04);
+	transform: translateY(-1px);
+}
+.np-detail-tile.active {
+	background: linear-gradient(135deg, rgba(96,165,250,0.05), transparent 60%), rgba(255,255,255,0.035);
+	border-color: rgba(96,165,250,0.20);
+}
+.np-detail-tile.warn {
+	background: linear-gradient(135deg, rgba(250,204,21,0.05), transparent 60%), rgba(255,255,255,0.025);
+	border-color: rgba(250,204,21,0.18);
+}
+.np-detail-tile.danger {
+	background: linear-gradient(135deg, rgba(248,113,113,0.05), transparent 60%), rgba(255,255,255,0.025);
+	border-color: rgba(248,113,113,0.20);
+}
+
+/* Sectie-titel (bv "Batterijen", "Vandaag", "Komende 24 uur") */
+.np-detail-section-title {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: rgba(255,255,255,0.45);
+	padding: 4px 0 2px;
+	margin: 0;
+}
+
+/* Compacte tab-row (voor StatusDetailsModal availability tabs) */
+.np-detail-tabs {
+	display: flex;
+	gap: 6px;
+	padding: 4px;
+	background: rgba(255,255,255,0.03);
+	border: 0.5px solid rgba(255,255,255,0.06);
+	border-radius: 11px;
+	width: fit-content;
+}
+.np-detail-tabs button {
+	height: 30px;
+	padding: 0 14px;
+	border-radius: 8px;
+	border: 0;
+	background: transparent;
+	color: rgba(255,255,255,0.55);
+	cursor: pointer;
+	font-size: 12.5px;
+	font-weight: 500;
+	display: flex;
+	align-items: center;
+	transition: background 0.15s, color 0.15s;
+	font-family: inherit;
+}
+.np-detail-tabs button:hover { color: rgba(255,255,255,0.85); }
+.np-detail-tabs button.active {
+	background: rgba(96,165,250,0.13);
+	color: #93c5fd;
+}
+
+/* Empty state in een lege body */
+.np-detail-empty {
+	padding: 32px 20px;
+	text-align: center;
+	color: rgba(255,255,255,0.45);
+	font-size: 13px;
+}
+
+/* Area-header voor groepering */
+.np-detail-area-header {
+	font-size: 10.5px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(255,255,255,0.35);
+	padding: 8px 4px 2px;
+}
+
+/* Error row in een detail-modal */
+.np-detail-error {
+	background: rgba(248,113,113,0.08);
+	border: 0.5px solid rgba(248,113,113,0.20);
+	border-radius: 10px;
+	padding: 10px 12px;
+	color: #fca5a5;
+	font-size: 12.5px;
+}
+
+/* ============================================
+ * Responsive touch modals
+ * Keep popup content usable on tablets, phones, and kiosk webviews.
+ * ============================================ */
+:root {
+	--np-popup-default-width: 850px;
+	--np-popup-default-height: 1140px;
+	--np-popup-margin: clamp(0.5rem, 2.4vmin, 1.5rem);
+	--np-popup-body-pad-x: clamp(0.8rem, 2.6vmin, 1.375rem);
+	--np-popup-body-pad-y: clamp(0.7rem, 2vmin, 1rem);
+	--np-popup-head-pad-x: clamp(0.85rem, 2.7vmin, 1.375rem);
+	--np-popup-head-pad-y: clamp(0.7rem, 2vmin, 1.125rem);
+	--np-popup-max-width: calc(100vw - var(--np-popup-margin) - var(--np-popup-margin));
+	--np-popup-max-height: calc(100dvh - var(--np-popup-margin) - var(--np-popup-margin));
+	--np-detail-popup-width: min(var(--np-popup-default-width), var(--np-popup-max-width));
+	--np-detail-popup-height: min(var(--np-popup-default-height), var(--np-popup-max-height));
+	--np-popup-safe-min-width: min(26.25rem, var(--np-popup-max-width));
+	--np-popup-safe-min-height: min(27.5rem, var(--np-popup-max-height));
+}
+
+.settings-modal.app-popup.np-detail:not(.card-library-modal),
+.alarm-modal.np-detail,
+.energy-modal.np-detail,
+.devices-modal.np-detail {
+	--popup-width: var(--np-detail-popup-width) !important;
+	--popup-height: var(--np-detail-popup-height) !important;
+}
+
+.camera-detail-modal.np-detail {
+	--popup-width: min(1120px, calc(100vw - 1.5rem)) !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail,
+.settings-modal.app-popup.weather-detail-modal.np-detail,
+.settings-modal.app-popup.weather-forecast-detail-modal.np-detail,
+.alarm-modal.np-detail,
+.energy-modal.np-detail,
+.devices-modal.np-detail {
+	--popup-width: var(--np-detail-popup-width) !important;
+	--popup-height: var(--np-detail-popup-height) !important;
+}
+
+.app-popup,
+.settings-modal.app-popup,
+.np-detail.settings-modal,
+.alarm-modal,
+.energy-modal,
+.devices-modal,
+.camera-detail-modal {
+	box-sizing: border-box !important;
+	width: clamp(var(--np-popup-safe-min-width), var(--popup-width, 850px), var(--np-popup-max-width)) !important;
+	height: clamp(var(--np-popup-safe-min-height), var(--popup-height, 1140px), var(--np-popup-max-height)) !important;
+	max-width: var(--np-popup-max-width) !important;
+	max-height: var(--np-popup-max-height) !important;
+	min-width: var(--np-popup-safe-min-width) !important;
+	min-height: min(20rem, var(--np-popup-max-height)) !important;
+}
+
+.camera-detail-modal {
+	height: auto !important;
+	min-height: 0 !important;
+}
+
+.camera-detail-modal .camera-body {
+	max-height: calc(var(--np-popup-max-height) - 4.75rem) !important;
+	overflow-y: auto !important;
+	overflow-x: hidden !important;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
+}
+
+.camera-detail-modal .camera-body::-webkit-scrollbar {
+	width: 0 !important;
+	height: 0 !important;
+	display: none !important;
+}
+
+@supports not (height: 100dvh) {
+	:root {
+		--np-popup-max-height: calc(100vh - var(--np-popup-margin) - var(--np-popup-margin));
+		--np-popup-safe-min-height: min(27.5rem, var(--np-popup-max-height));
+	}
+
+	.app-popup,
+	.settings-modal.app-popup,
+	.np-detail.settings-modal,
+	.alarm-modal,
+	.energy-modal,
+	.devices-modal {
+		height: clamp(var(--np-popup-safe-min-height), var(--popup-height, 1140px), var(--np-popup-max-height)) !important;
+		max-height: var(--np-popup-max-height) !important;
+	}
+}
+
+.np-detail-head,
+.camera-detail-modal .np-detail-head,
+.energy-modal .np-detail-head,
+.alarm-modal .np-detail-head,
+.devices-modal .np-detail-head {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	position: relative !important;
+	overflow: hidden !important;
+	border-bottom: 0.5px solid rgba(255,255,255,0.06) !important;
+	padding: 18px 22px 14px !important;
+	min-height: 0 !important;
+	flex-shrink: 0 !important;
+}
+
+.np-detail-head-glow {
+	position: absolute !important;
+	top: -100px !important;
+	left: -40px !important;
+	width: 220px !important;
+	height: 220px !important;
+	background: radial-gradient(circle, var(--np-tint, rgba(96,165,250,0.18)), transparent 70%) !important;
+	pointer-events: none !important;
+	filter: blur(20px) !important;
+}
+
+.np-detail-head-icon {
+	display: grid !important;
+	place-items: center !important;
+	width: 38px !important;
+	height: 38px !important;
+	border-radius: 10px !important;
+	background: var(--np-tint, rgba(96,165,250,0.18)) !important;
+	border: 0.5px solid rgba(255,255,255,0.10) !important;
+	color: var(--np-color, #60a5fa) !important;
+	flex-shrink: 0 !important;
+	position: relative !important;
+	z-index: 1 !important;
+}
+
+.np-detail-head-text {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	position: relative !important;
+	z-index: 1 !important;
+}
+
+.np-detail-head-title,
+.np-detail-head-text h3,
+.np-detail-head-title h3 {
+	color: #f5f5f5 !important;
+	font-weight: 500 !important;
+	letter-spacing: -0.01em !important;
+	line-height: 1.2 !important;
+	font-size: 15px !important;
+	min-width: 0 !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+.np-detail-head-sub {
+	font-size: 11.5px !important;
+	margin-top: 3px !important;
+	color: rgba(255,255,255,0.5) !important;
+	min-width: 0 !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+.np-detail-body,
+.settings-modal .tab-content,
+.library-grid,
+.library-body,
+.modal-body,
+.devices-body,
+.camera-body,
+.weather-body,
+.forecast-body,
+.day-list,
+.light-detail-body,
+.entity-detail-body,
+.section-cards-body,
+.picker-body,
+.alarm-modal .alarm-body,
+.status-detail-body,
+.status-detail-body > .entity-list,
+.status-detail-body > .media-players-grid,
+.status-detail-body > .ma-layout,
+.picker-list,
+.tin-results {
+	min-height: 0 !important;
+	overflow-y: auto !important;
+	overflow-x: hidden !important;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior: contain;
+	touch-action: pan-y;
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
+}
+
+.np-detail-body::-webkit-scrollbar,
+.settings-modal .tab-content::-webkit-scrollbar,
+.library-grid::-webkit-scrollbar,
+.library-body::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar,
+.devices-body::-webkit-scrollbar,
+.camera-body::-webkit-scrollbar,
+.weather-body::-webkit-scrollbar,
+.forecast-body::-webkit-scrollbar,
+.day-list::-webkit-scrollbar,
+.light-detail-body::-webkit-scrollbar,
+.entity-detail-body::-webkit-scrollbar,
+.section-cards-body::-webkit-scrollbar,
+.picker-body::-webkit-scrollbar,
+.alarm-modal .alarm-body::-webkit-scrollbar,
+.status-detail-body::-webkit-scrollbar,
+.status-detail-body > .entity-list::-webkit-scrollbar,
+.status-detail-body > .media-players-grid::-webkit-scrollbar,
+.status-detail-body > .ma-layout::-webkit-scrollbar,
+.picker-list::-webkit-scrollbar,
+.tin-results::-webkit-scrollbar {
+	width: 0 !important;
+	height: 0 !important;
+	display: none !important;
+}
+
+.np-detail-body,
+.modal-body,
+.devices-body {
+	padding: var(--np-popup-body-pad-y) var(--np-popup-body-pad-x) calc(var(--np-popup-body-pad-y) + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* Compact side-panel detail content: keep the proven popup frame, reduce oversized internals. */
+.settings-modal.app-popup.status-detail-modal.np-detail .status-detail-body,
+.settings-modal.app-popup.weather-detail-modal.np-detail .weather-body,
+.settings-modal.app-popup.weather-forecast-detail-modal.np-detail .forecast-body,
+.alarm-modal.np-detail .alarm-body,
+.energy-modal.np-detail .modal-body,
+.devices-modal.np-detail .devices-body {
+	padding: 10px 16px 14px !important;
+	gap: 8px !important;
+}
+
+.alarm-modal.np-detail .alarm-body > .hero-circle-wrap,
+.alarm-modal.np-detail .alarm-body > .hero-status-text,
+.alarm-modal.np-detail .alarm-body > .pin-section,
+.alarm-modal.np-detail .alarm-body > .numpad,
+.alarm-modal.np-detail .alarm-body > .alarm-actions {
+	width: min(280px, 100%) !important;
+}
+
+.alarm-modal.np-detail .hero-circle-wrap {
+	width: 140px !important;
+	height: 140px !important;
+	margin-top: 0 !important;
+}
+
+.alarm-modal.np-detail .hero-icon-bg {
+	width: 86px !important;
+	height: 86px !important;
+}
+
+.alarm-modal.np-detail .hero-icon-bg :where(i, svg),
+.alarm-modal.np-detail .hero-icon-bg .mdi-mask {
+	width: 44px !important;
+	height: 44px !important;
+	font-size: 44px !important;
+}
+
+.alarm-modal.np-detail .hero-status-text {
+	gap: 2px !important;
+}
+
+.alarm-modal.np-detail .hero-state-label {
+	font-size: 18px !important;
+	line-height: 1.05 !important;
+}
+
+.alarm-modal.np-detail .hero-device-name {
+	font-size: 10.5px !important;
+	letter-spacing: 0.08em !important;
+}
+
+.alarm-modal.np-detail .pin-section,
+.alarm-modal.np-detail .pin-tiles,
+.alarm-modal.np-detail .numpad,
+.alarm-modal.np-detail .alarm-actions {
+	gap: 6px !important;
+}
+
+.alarm-modal.np-detail .pin-tile {
+	border-radius: 8px !important;
+}
+
+.alarm-modal.np-detail .numpad-btn {
+	max-height: 48px !important;
+	font-size: 18px !important;
+}
+
+.alarm-modal.np-detail .mode-tile {
+	padding: 8px 6px !important;
+	border-radius: 10px !important;
+	gap: 4px !important;
+}
+
+.alarm-modal.np-detail .mode-icon-wrap {
+	width: 30px !important;
+	height: 30px !important;
+}
+
+.alarm-modal.np-detail .action-btn {
+	height: 42px !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .status-hero {
+	min-height: 0 !important;
+	padding: 10px 12px !important;
+	border-radius: 12px !important;
+	gap: 10px !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .status-hero-icon {
+	width: 42px !important;
+	height: 42px !important;
+	border-radius: 12px !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .status-hero-num {
+	font-size: 1.9rem !important;
+	line-height: 0.92 !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .status-hero-num-label,
+.settings-modal.app-popup.status-detail-modal.np-detail .status-hero-sub,
+.settings-modal.app-popup.status-detail-modal.np-detail .status-hero-extra-label {
+	font-size: 0.68rem !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .status-hero-extra-value {
+	font-size: 1.1rem !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .entity-list.availability-grid {
+	grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr)) !important;
+	gap: 8px !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .availability-card {
+	min-height: 3.35rem !important;
+	padding: 8px 10px !important;
+	gap: 9px !important;
+	border-radius: 10px !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .availability-cover {
+	width: 2.45rem !important;
+	height: 2.45rem !important;
+	border-radius: 9px !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .availability-main > span,
+.settings-modal.app-popup.status-detail-modal.np-detail .entity-main > span {
+	font-size: 12.5px !important;
+	line-height: 1.12 !important;
+	white-space: normal !important;
+	display: -webkit-box !important;
+	-webkit-line-clamp: 2 !important;
+	-webkit-box-orient: vertical !important;
+}
+
+.settings-modal.app-popup.status-detail-modal.np-detail .availability-sub,
+.settings-modal.app-popup.status-detail-modal.np-detail .entity-state {
+	font-size: 10.5px !important;
+}
+
+.energy-modal.np-detail .stat,
+.energy-modal.np-detail .summary-card,
+.devices-modal.np-detail .summary-card {
+	padding: 9px 10px !important;
+	border-radius: 10px !important;
+}
+
+.energy-modal.np-detail .stat-row,
+.energy-modal.np-detail .stat-row.bottom {
+	gap: 8px !important;
+}
+
+.energy-modal.np-detail .stat-value .num,
+.energy-modal.np-detail .summary-value .num,
+.devices-modal.np-detail .summary-value .num {
+	font-size: 1.2rem !important;
+}
+
+.energy-modal.np-detail .hero-frame {
+	width: min(100%, 720px) !important;
+	max-height: none !important;
+	margin-inline: auto !important;
+	border-radius: 10px !important;
+}
+
+.energy-modal.np-detail .hero-status {
+	padding: 10px !important;
+}
+
+.energy-modal.np-detail .hero-value {
+	font-size: 1.45rem !important;
+}
+
+.energy-modal.np-detail .chart-wrap,
+.devices-modal.np-detail .chart-wrap {
+	padding: 10px !important;
+	border-radius: 10px !important;
+}
+
+.energy-modal.np-detail .chart-svg,
+.devices-modal.np-detail .chart-svg {
+	height: 170px !important;
+}
+
+.weather-detail-modal.np-detail .weather-hero {
+	padding: 10px 12px !important;
+	border-radius: 12px !important;
+	gap: 10px !important;
+}
+
+.weather-detail-modal.np-detail .hero-cond {
+	width: 58px !important;
+	height: 58px !important;
+}
+
+.weather-detail-modal.np-detail .hero-temp {
+	font-size: 32px !important;
+}
+
+.weather-detail-modal.np-detail .chip,
+.weather-detail-modal.np-detail .hour-card {
+	padding: 7px 8px !important;
+	border-radius: 10px !important;
+	gap: 4px !important;
+}
+
+.weather-detail-modal.np-detail .chart-tile {
+	padding: 10px !important;
+	border-radius: 12px !important;
+}
+
+.weather-detail-modal.np-detail .temp-chart {
+	height: 72px !important;
+}
+
+.weather-forecast-detail-modal.np-detail .day-list {
+	gap: 6px !important;
+}
+
+.weather-forecast-detail-modal.np-detail .day-card {
+	grid-template-columns: 92px 42px minmax(0, 1fr) auto !important;
+	padding: 8px 10px !important;
+	gap: 2px 10px !important;
+	border-radius: 11px !important;
+}
+
+.weather-forecast-detail-modal.np-detail .day-icon {
+	width: 42px !important;
+	height: 42px !important;
+}
+
+.weather-forecast-detail-modal.np-detail .day-name,
+.weather-forecast-detail-modal.np-detail .day-temp-row {
+	font-size: 12px !important;
+}
+
+.light-detail-modal.np-detail .light-detail-body {
+	gap: 0.7rem !important;
+	padding: 12px 18px 16px !important;
+}
+
+.light-detail-modal.np-detail .homekit-brightness {
+	width: clamp(6.8rem, 20vw, 8.5rem) !important;
+	height: clamp(14rem, 34vh, 18rem) !important;
+	border-radius: clamp(2rem, 5vw, 3rem) !important;
+}
+
+.light-detail-modal.np-detail .homekit-brightness-icon {
+	bottom: clamp(1.5rem, 4vh, 2.35rem) !important;
+}
+
+.light-detail-modal.np-detail .color-dot {
+	width: clamp(2.35rem, 8vw, 3.1rem) !important;
+	height: clamp(2.35rem, 8vw, 3.1rem) !important;
+}
+
+.np-detail-tabs {
+	max-width: calc(100% - var(--np-popup-body-pad-x) - var(--np-popup-body-pad-x)) !important;
+	overflow-x: auto !important;
+	overflow-y: hidden !important;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-x: contain;
+	scrollbar-width: none;
+}
+
+.np-detail-tabs::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+.np-detail-tabs button {
+	min-width: 0;
+	white-space: nowrap;
+}
+
+.library-body {
+	min-height: 0 !important;
+}
+
+.library-grid {
+	align-content: start;
+	grid-template-columns: repeat(auto-fill, minmax(min(13.25rem, 100%), 1fr)) !important;
+	padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
+}
+
+.library-tile {
+	min-width: 0;
+	touch-action: manipulation;
+}
+
+.library-tile-preview {
+	aspect-ratio: 16 / 7.5 !important;
+}
+
+.library-toolbar,
+.card-library-controls,
+.integration-actions {
+	min-width: 0;
+}
+
+@media (max-width: 720px), (max-height: 620px) {
+	.app-popup,
+	.settings-modal.app-popup,
+	.np-detail.settings-modal,
+	.alarm-modal,
+	.energy-modal,
+	.devices-modal,
+	.camera-detail-modal {
+		border-radius: 14px !important;
+	}
+
+	.np-detail-tabs {
+		margin-left: var(--np-popup-body-pad-x) !important;
+		margin-right: var(--np-popup-body-pad-x) !important;
+		width: auto !important;
+	}
+
+	.np-detail-tabs button {
+		flex: 0 0 auto !important;
+		padding-inline: 0.65rem !important;
+		height: 1.9rem !important;
+		font-size: 0.75rem !important;
+	}
+
+	.library-body {
+		padding: var(--np-popup-body-pad-y) var(--np-popup-body-pad-x) !important;
+		gap: 0.6rem !important;
+	}
+
+	.library-toolbar,
+	.card-library-controls {
+		display: grid !important;
+		grid-template-columns: 1fr !important;
+		align-items: stretch !important;
+		width: 100% !important;
+		margin-left: 0 !important;
+	}
+
+	.library-select,
+	.library-add-section {
+		width: 100% !important;
+		min-width: 0 !important;
+	}
+
+	.library-grid {
+		grid-template-columns: repeat(auto-fill, minmax(min(10.25rem, 100%), 1fr)) !important;
+		gap: 0.5rem !important;
+		padding-inline: 0.1rem !important;
+	}
+
+	.library-tile-meta {
+		padding: 0.45rem 0.55rem !important;
+		gap: 0.45rem !important;
+	}
+
+	.library-tile-meta h3 {
+		font-size: 0.78rem !important;
+	}
+
+	.stat-row,
+	.stat-row.bottom,
+	.ma-content,
+	.settings-section,
+	.column-controls {
+		grid-template-columns: 1fr !important;
+	}
+
+	.camera-body {
+		padding: 0.5rem !important;
+	}
+}
+
+@media (max-width: 430px) {
+	.library-grid {
+		grid-template-columns: 1fr !important;
+	}
+}
