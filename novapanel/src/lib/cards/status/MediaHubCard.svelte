@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TranslationKey } from '$lib/i18n';
-	import type { HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
+	import { browserSafeHomeAssistantUrl, type HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
 	import { readStoredValue, writeStoredValue } from '$lib/persistence/storage';
 
@@ -171,6 +171,9 @@
 	// MA stelt voor radio-streams vaak geen entity_picture in, dus we gebruiken het logo
 	// uit de favoriet als fallback in de Now Playing-balk.
 	let radioImageByBase = $state<Record<string, { image: string; name: string }>>({});
+	let verifiedDisplayImages = $state<Record<string, true>>({});
+	let invalidDisplayImages = $state<Record<string, true>>({});
+	const pendingDisplayImageChecks = new Set<string>();
 
 	function setTuneInPlaybackTarget(value: string) {
 		tuneInPlaybackTarget = value;
@@ -206,6 +209,55 @@
 		return ingress ? `${ingress}${p}` : p;
 	}
 
+	function normalizeDisplayImageUrl(raw: string): string {
+		const trimmed = raw.trim();
+		return trimmed ? browserSafeHomeAssistantUrl(trimmed) : '';
+	}
+
+	function isHomeAssistantGeneratedImage(url: string): boolean {
+		return /\/?api\/image\/serve\/[^/?#]+\/\d+x\d+/i.test(url);
+	}
+
+	function markDisplayImageFailed(raw: string) {
+		const url = normalizeDisplayImageUrl(raw);
+		if (!url || invalidDisplayImages[url]) return;
+		invalidDisplayImages = { ...invalidDisplayImages, [url]: true };
+	}
+
+	async function verifyDisplayImageUrl(raw: string) {
+		if (typeof window === 'undefined') return;
+		const url = normalizeDisplayImageUrl(raw);
+		if (!url || verifiedDisplayImages[url] || invalidDisplayImages[url] || pendingDisplayImageChecks.has(url)) return;
+		pendingDisplayImageChecks.add(url);
+		try {
+			const response = await fetch(url, {
+				credentials: 'same-origin',
+				cache: 'force-cache',
+				headers: { accept: 'image/*,*/*;q=0.8' }
+			});
+			if (response.ok) {
+				verifiedDisplayImages = { ...verifiedDisplayImages, [url]: true };
+			} else {
+				invalidDisplayImages = { ...invalidDisplayImages, [url]: true };
+			}
+		} catch {
+			invalidDisplayImages = { ...invalidDisplayImages, [url]: true };
+		} finally {
+			pendingDisplayImageChecks.delete(url);
+		}
+	}
+
+	function displayImageUrl(raw: string): string {
+		const url = normalizeDisplayImageUrl(raw);
+		if (!url || invalidDisplayImages[url]) return '';
+		if (typeof window === 'undefined') return url;
+		if (isHomeAssistantGeneratedImage(url) && !verifiedDisplayImages[url]) {
+			void verifyDisplayImageUrl(url);
+			return '';
+		}
+		return url;
+	}
+
 	function readSources(entity: HomeAssistantEntity): string[] {
 		const raw = (entity as unknown as { attributes?: Record<string, unknown> }).attributes?.source_list;
 		if (Array.isArray(raw)) return raw.filter((x): x is string => typeof x === 'string');
@@ -235,7 +287,7 @@
 	function readMediaImage(entity: HomeAssistantEntity): string {
 		const a = (entity as unknown as { attributes?: Record<string, unknown> }).attributes;
 		const direct = (a?.entity_picture_local as string | undefined) ?? (a?.entity_picture as string | undefined);
-		return typeof direct === 'string' ? direct : '';
+		return typeof direct === 'string' ? browserSafeHomeAssistantUrl(direct) : '';
 	}
 
 	/**
@@ -1627,7 +1679,8 @@
 			)}
 			{@const maShuffle = useMaHub ? Boolean(maAttrs.shuffle) : false}
 			{@const maRepeatMode = useMaHub ? String(maAttrs.repeat ?? 'off') : 'off'}
-			{@const cover = useBridge ? (spotifyPlayerState.track?.image ?? '') : (readMediaImage(mediaEntity) || (maIsRadio ? (radioImageByBase[activeEntity.entityId]?.image ?? '') : ''))}
+			{@const rawCover = useBridge ? (spotifyPlayerState.track?.image ?? '') : (readMediaImage(mediaEntity) || (maIsRadio ? (radioImageByBase[activeEntity.entityId]?.image ?? '') : ''))}
+			{@const cover = displayImageUrl(rawCover)}
 			{@const title = useBridge ? (spotifyPlayerState.track?.name ?? '') : (readMediaTitle(mediaEntity) || (maIsRadio ? (radioImageByBase[activeEntity.entityId]?.name ?? '') : ''))}
 			{@const artist = useBridge ? (spotifyPlayerState.track?.artists ?? '') : readMediaArtist(mediaEntity)}
 			{@const sources = readSources(activeEntity)}
@@ -1657,7 +1710,7 @@
 				<!-- Cover with subtle rotate when playing -->
 				<div class={`now-cover ${playing ? 'spinning' : ''}`}>
 					{#if cover}
-						<img src={cover} alt="" />
+						<img src={cover} alt="" onerror={() => markDisplayImageFailed(cover)} />
 					{:else}
 						<div class="now-cover-empty"><StatusIcon icon="mdi:music-note" size={56} /></div>
 					{/if}
@@ -2132,7 +2185,8 @@
 						&& /onkyo|tx[-_ ]?nr/i.test(spotifyPlayerState.device?.name ?? '')}
 					{@const mediaEntity = usesSpotifyState ? entity : richestEntityFor(entity)}
 					{@const playing = usesSpotifyState ? Boolean(spotifyPlayerState.isPlaying) : isPlaying(entity)}
-					{@const baseCover = usesSpotifyState ? (spotifyPlayerState.track?.image ?? '') : readMediaImage(mediaEntity)}
+					{@const rawBaseCover = usesSpotifyState ? (spotifyPlayerState.track?.image ?? '') : readMediaImage(mediaEntity)}
+					{@const baseCover = displayImageUrl(rawBaseCover)}
 					{@const appLogo = baseCover ? '' : (on ? readAppLogo(entity) : '')}
 					{@const cover = baseCover || appLogo}
 					{@const isLogoCover = !baseCover && Boolean(appLogo)}
@@ -2164,7 +2218,7 @@
 						<button type="button" class="player-tile-pick" onclick={() => setActivePlayer(entity.entityId)}>
 							<div class="player-tile-cover">
 								{#if cover}
-									<img src={cover} alt="" class={isLogoCover ? 'is-logo' : ''} />
+									<img src={cover} alt="" class={isLogoCover ? 'is-logo' : ''} onerror={() => markDisplayImageFailed(cover)} />
 								{:else}
 									<div class="player-tile-cover-empty">
 										<StatusIcon icon="mdi:music-note" size={32} />

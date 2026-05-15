@@ -1,9 +1,8 @@
 <script lang="ts">
 	import WeatherIcon from '$lib/cards/WeatherIcon.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import { getHassWithRetry, type HassLike } from '$lib/ha/entities-service-helpers';
 	import { entityStore } from '$lib/ha/entities-store';
-	import { extractWeatherForecast, subscribeWeatherForecastDirect } from '$lib/ha/weather-forecast-service';
+	import { subscribeWeatherForecastDirect } from '$lib/ha/weather-forecast-service';
 	import { translate, translations, type LanguageCode, type TranslationKey } from '$lib/i18n';
 
 	type Props = {
@@ -15,62 +14,17 @@
 
 	let { t, entityId, locale = 'nl', onClose }: Props = $props();
 
-	let hass = $state<HassLike | null>(null);
-	let embeddedState = $state<Record<string, unknown> | null>(null);
 	let hourlyForecast = $state<Array<Record<string, unknown>>>([]);
-	let unsub: (() => void) | null = null;
 	let unsubHourly: (() => void) | null = null;
 	let hourlyIconFailed = $state<Record<number, boolean>>({});
-
-	function pickState(next: HassLike | null, id?: string) {
-		if (!next?.states || !id) return null;
-		return (next.states[id] as Record<string, unknown> | undefined) ?? null;
-	}
-
-	$effect(() => {
-		let disposed = false;
-		(async () => {
-			const next = await getHassWithRetry();
-			if (disposed) return;
-			hass = next;
-			embeddedState = pickState(next, entityId);
-		})();
-		return () => { disposed = true; };
-	});
-
-	$effect(() => {
-		unsub?.();
-		unsub = null;
-		const id = entityId;
-		const connection = hass?.connection;
-		if (!id || !connection?.subscribeMessage) return;
-		(async () => {
-			unsub = await connection.subscribeMessage((message) => {
-				const payload = message as {
-					event?: { data?: { entity_id?: string; new_state?: Record<string, unknown> | null } };
-				};
-				if (payload.event?.data?.entity_id !== id) return;
-				embeddedState = payload.event?.data?.new_state ?? null;
-			}, { type: 'subscribe_events', event_type: 'state_changed' });
-		})();
-		return () => { unsub?.(); unsub = null; };
-	});
 
 	$effect(() => {
 		unsubHourly?.();
 		unsubHourly = null;
 		hourlyForecast = [];
 		const id = entityId;
-		const connection = hass?.connection;
 		if (!id) return;
 		(async () => {
-			if (connection?.subscribeMessage) {
-				unsubHourly = await connection.subscribeMessage((message) => {
-					const forecast = extractWeatherForecast(message);
-					if (forecast) hourlyForecast = forecast;
-				}, { type: 'weather/subscribe_forecast', entity_id: id, forecast_type: 'hourly' });
-				return;
-			}
 			unsubHourly = await subscribeWeatherForecastDirect({
 				entityId: id,
 				forecastType: 'hourly',
@@ -89,23 +43,21 @@
 		$entityStore.entities.find((entity) => entity.entityId === 'sun.sun')
 	);
 	const state = $derived(
-		embeddedState ??
-			(storeEntity
-				? {
-						state: storeEntity.state,
-						attributes: storeEntity.attributes
-					}
-				: null)
+		storeEntity
+			? {
+					state: storeEntity.state,
+					attributes: storeEntity.attributes
+				}
+			: null
 	);
 	const attrs = $derived((state?.attributes as Record<string, unknown> | undefined) ?? {});
 	const condition = $derived(typeof state?.state === 'string' ? state.state : '');
 	const belowHorizon = $derived(
-		(typeof hass?.states?.['sun.sun']?.state === 'string' && hass.states['sun.sun'].state === 'below_horizon') ||
-			(!hass?.states?.['sun.sun'] && storeSun?.state === 'below_horizon')
+		storeSun?.state === 'below_horizon'
 	);
 	const tempUnit = $derived(typeof attrs.temperature_unit === 'string' ? attrs.temperature_unit : '°C');
 	const sunAttrs = $derived(
-		(hass?.states?.['sun.sun']?.attributes as Record<string, unknown> | undefined) ?? storeSun?.attributes ?? {}
+		storeSun?.attributes ?? {}
 	);
 
 	const ingressBase = typeof window !== 'undefined'

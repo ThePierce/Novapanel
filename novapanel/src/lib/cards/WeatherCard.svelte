@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { getHassWithRetry, type HassLike } from '$lib/ha/entities-service-helpers';
 	import { entityStore } from '$lib/ha/entities-store';
 	import WeatherIcon from '$lib/cards/WeatherIcon.svelte';
 	import { translations, type LanguageCode } from '$lib/i18n';
@@ -11,50 +10,7 @@
 
 	let { entityId, locale = 'nl' }: Props = $props();
 
-	let hass = $state<HassLike | null>(null);
-	let embeddedState = $state<Record<string, unknown> | null>(null);
-	let unsub: (() => void) | null = null;
 	let iconFailed = $state(false);
-
-	function pickState(next: HassLike | null, id?: string) {
-		if (!next?.states || !id) return null;
-		return (next.states[id] as Record<string, unknown> | undefined) ?? null;
-	}
-
-	$effect(() => {
-		let disposed = false;
-		(async () => {
-			const next = await getHassWithRetry();
-			if (disposed) return;
-			hass = next;
-			embeddedState = pickState(next, entityId);
-		})();
-		return () => {
-			disposed = true;
-		};
-	});
-
-	$effect(() => {
-		unsub?.();
-		unsub = null;
-		const id = entityId;
-		const connection = hass?.connection;
-		if (!id || !connection?.subscribeMessage) return;
-		(async () => {
-			unsub = await connection.subscribeMessage((message) => {
-				const payload = message as {
-					event?: { data?: { entity_id?: string; new_state?: Record<string, unknown> | null } };
-				};
-				const entityChanged = payload.event?.data?.entity_id;
-				if (entityChanged !== id) return;
-				embeddedState = payload.event?.data?.new_state ?? null;
-			}, { type: 'subscribe_events', event_type: 'state_changed' });
-		})();
-		return () => {
-			unsub?.();
-			unsub = null;
-		};
-	});
 
 	const storeEntity = $derived(
 		entityId ? $entityStore.entities.find((entity) => entity.entityId === entityId) : undefined
@@ -63,20 +19,16 @@
 		$entityStore.entities.find((entity) => entity.entityId === 'sun.sun')
 	);
 	const state = $derived(
-		embeddedState ??
-			(storeEntity
-				? {
-						state: storeEntity.state,
-						attributes: storeEntity.attributes
-					}
-				: null)
+		storeEntity
+			? {
+					state: storeEntity.state,
+					attributes: storeEntity.attributes
+				}
+			: null
 	);
 	const attrs = $derived((state?.attributes as Record<string, unknown> | undefined) ?? {});
 	const condition = $derived(typeof state?.state === 'string' ? state.state : '');
-	const belowHorizon = $derived(
-		(typeof hass?.states?.['sun.sun']?.state === 'string' && hass.states['sun.sun'].state === 'below_horizon') ||
-			(!hass?.states?.['sun.sun'] && storeSun?.state === 'below_horizon')
-	);
+	const belowHorizon = $derived(storeSun?.state === 'below_horizon');
 	function translateCondition(value: string, language: LanguageCode) {
 		if (!value) return '';
 		const key = `weather_${value.replace(/-/g, '_')}` as keyof typeof translations.nl;

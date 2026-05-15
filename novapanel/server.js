@@ -660,7 +660,7 @@ app.post(
 );
 
 async function callHaWebSocketOnce(socketUrl, token, payload, timeoutMs = 15000) {
-	const resolvesWithFirstEvent = payload.type === 'calendar/event/subscribe';
+	const resolvesWithFirstEvent = payload.type === 'calendar/event/subscribe' || payload.type === 'weather/subscribe_forecast';
 
 	return await new Promise((resolve, reject) => {
 		const id = Math.floor(Date.now() + Math.random() * 100000);

@@ -68,9 +68,12 @@
 	let error = $state('');
 	let personModal = $state<PersonModalState | null>(null);
 	let calendarScrollEl = $state<HTMLDivElement | null>(null);
+	let verifiedAvatarUrls = $state<Record<string, true>>({});
+	let invalidAvatarUrls = $state<Record<string, true>>({});
 	let loadToken = 0;
 	let sourceKey = $state('');
 	let lastScrollAnchor = '';
+	const pendingAvatarChecks = new Set<string>();
 
 	const timelineHours = 24;
 	const visibleHours = $derived(expanded ? 18 : 8);
@@ -192,9 +195,58 @@
 		);
 	}
 
+	function isHomeAssistantGeneratedImage(url: string): boolean {
+		return /\/?api\/image\/serve\/[^/?#]+\/\d+x\d+/i.test(url);
+	}
+
+	function normalizeAvatarUrl(raw: string): string {
+		const trimmed = raw.trim();
+		return trimmed ? browserSafeHomeAssistantUrl(trimmed) : '';
+	}
+
+	function markAvatarFailed(raw: string) {
+		const url = normalizeAvatarUrl(raw);
+		if (!url || invalidAvatarUrls[url]) return;
+		invalidAvatarUrls = { ...invalidAvatarUrls, [url]: true };
+	}
+
+	async function verifyAvatarUrl(raw: string) {
+		if (typeof window === 'undefined') return;
+		const url = normalizeAvatarUrl(raw);
+		if (!url || verifiedAvatarUrls[url] || invalidAvatarUrls[url] || pendingAvatarChecks.has(url)) return;
+		pendingAvatarChecks.add(url);
+		try {
+			const response = await fetch(url, {
+				credentials: 'same-origin',
+				cache: 'force-cache',
+				headers: { accept: 'image/*,*/*;q=0.8' }
+			});
+			if (response.ok) {
+				verifiedAvatarUrls = { ...verifiedAvatarUrls, [url]: true };
+			} else {
+				invalidAvatarUrls = { ...invalidAvatarUrls, [url]: true };
+			}
+		} catch {
+			invalidAvatarUrls = { ...invalidAvatarUrls, [url]: true };
+		} finally {
+			pendingAvatarChecks.delete(url);
+		}
+	}
+
+	function safeAvatarUrl(raw: string) {
+		const url = normalizeAvatarUrl(raw);
+		if (!url || invalidAvatarUrls[url]) return '';
+		if (typeof window === 'undefined') return url;
+		if (isHomeAssistantGeneratedImage(url) && !verifiedAvatarUrls[url]) {
+			void verifyAvatarUrl(url);
+			return '';
+		}
+		return url;
+	}
+
 	function avatarUrlFor(entity: HomeAssistantEntity | null) {
 		const raw = typeof entity?.attributes?.entity_picture === 'string' ? entity.attributes.entity_picture : '';
-		return raw ? browserSafeHomeAssistantUrl(raw) : '';
+		return raw ? safeAvatarUrl(raw) : '';
 	}
 
 	function initialFor(sourceOrPerson: CalendarSource | HomeAssistantEntity) {
@@ -596,7 +648,7 @@
 						onclick={(event) => openPersonModal(source, index, event)}
 					>
 						{#if avatar}
-							<img class="wc-person-avatar" src={avatar} alt="" loading="lazy" />
+							<img class="wc-person-avatar" src={avatar} alt="" loading="lazy" onerror={() => markAvatarFailed(avatar)} />
 						{:else}
 							<span class="wc-person-avatar fallback">{linkedPerson ? initialFor(linkedPerson) : initialFor(source)}</span>
 						{/if}
@@ -662,7 +714,7 @@
 								<strong>{event.summary || translate('Afspraak', $selectedLanguageStore)}</strong>
 								<span>{formatEventTime(event)}</span>
 								{#if eventAvatar && eventHasAvatarRoom(event, day)}
-									<img class="wc-event-avatar" src={eventAvatar} alt="" loading="lazy" />
+									<img class="wc-event-avatar" src={eventAvatar} alt="" loading="lazy" onerror={() => markAvatarFailed(eventAvatar)} />
 								{/if}
 							</div>
 						{/each}
@@ -700,7 +752,7 @@
 				<div class="wc-person-modal-title">
 					<div class="wc-person-modal-icon">
 						{#if personModal.people[0]?.picture}
-							<img src={personModal.people[0].picture} alt="" loading="lazy" />
+							<img src={personModal.people[0].picture} alt="" loading="lazy" onerror={() => markAvatarFailed(personModal.people[0]?.picture ?? '')} />
 						{:else}
 							<span>{personModal.people[0] ? initialFor(personModal.people[0].entity) : initialFor(personModal.source)}</span>
 						{/if}
@@ -740,7 +792,7 @@
 				{#each personModal.people as person (person.entity.entityId)}
 					<div class="wc-map-marker person" style={mapPointStyle(person.lat, person.lon, personModal.people, mapView)}>
 						{#if person.picture}
-							<img src={person.picture} alt="" loading="lazy" />
+							<img src={person.picture} alt="" loading="lazy" onerror={() => markAvatarFailed(person.picture)} />
 						{:else}
 							<span>{initialFor(person.entity)}</span>
 						{/if}

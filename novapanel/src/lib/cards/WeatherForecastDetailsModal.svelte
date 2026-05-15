@@ -1,9 +1,8 @@
 <script lang="ts">
 	import WeatherIcon from '$lib/cards/WeatherIcon.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import { getHassWithRetry, type HassLike } from '$lib/ha/entities-service-helpers';
 	import { entityStore } from '$lib/ha/entities-store';
-	import { extractWeatherForecast, subscribeWeatherForecastDirect } from '$lib/ha/weather-forecast-service';
+	import { subscribeWeatherForecastDirect } from '$lib/ha/weather-forecast-service';
 	import { translate, translations, type LanguageCode, type TranslationKey } from '$lib/i18n';
 
 	type Props = {
@@ -17,34 +16,15 @@
 
 	let { t, entityId, locale = 'nl', forecastType = 'daily', daysToShow = 7, onClose }: Props = $props();
 
-	let hass = $state<HassLike | null>(null);
 	let forecast = $state<Array<Record<string, unknown>>>([]);
 	let unsub: (() => void) | null = null;
 	let iconFailed = $state<Record<number, boolean>>({});
 
-	$effect(() => {
-		let disposed = false;
-		(async () => {
-			const next = await getHassWithRetry();
-			if (disposed) return;
-			hass = next;
-		})();
-		return () => { disposed = true; };
-	});
-
-	async function subscribeForecast(next: HassLike | null, id?: string, type?: 'daily' | 'hourly' | 'twice_daily') {
+	async function subscribeForecast(id?: string, type?: 'daily' | 'hourly' | 'twice_daily') {
 		unsub?.();
 		unsub = null;
 		forecast = [];
-		const connection = next?.connection;
 		if (!id) return;
-		if (connection?.subscribeMessage) {
-			unsub = await connection.subscribeMessage((message) => {
-				const nextForecast = extractWeatherForecast(message);
-				if (nextForecast) forecast = nextForecast;
-			}, { type: 'weather/subscribe_forecast', entity_id: id, forecast_type: type ?? 'daily' });
-			return;
-		}
 		unsub = await subscribeWeatherForecastDirect({
 			entityId: id,
 			forecastType: type ?? 'daily',
@@ -55,10 +35,9 @@
 	}
 
 	$effect(() => {
-		const nextHass = hass;
 		const id = entityId;
 		const type = forecastType;
-		void subscribeForecast(nextHass, id, type);
+		void subscribeForecast(id, type);
 		return () => { unsub?.(); unsub = null; };
 	});
 
@@ -67,11 +46,10 @@
 		$entityStore.entities.find((entity) => entity.entityId === 'sun.sun')
 	);
 	const belowHorizon = $derived(
-		(typeof hass?.states?.['sun.sun']?.state === 'string' && hass.states['sun.sun'].state === 'below_horizon') ||
-			(!hass?.states?.['sun.sun'] && storeSun?.state === 'below_horizon')
+		storeSun?.state === 'below_horizon'
 	);
 	const sunAttrs = $derived(
-		(hass?.states?.['sun.sun']?.attributes as Record<string, unknown> | undefined) ?? storeSun?.attributes ?? {}
+		storeSun?.attributes ?? {}
 	);
 
 	const ingressBase = typeof window !== 'undefined'

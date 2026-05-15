@@ -4,7 +4,6 @@ import {
 	normalizeStates,
 	type HomeAssistantEntity
 } from './entities-service-helpers';
-import { createDirectWebsocketConnector, createEmbeddedHassConnector } from './entities-service-runtime';
 
 export type EntityStatus = 'connecting' | 'ready' | 'error';
 export type { HomeAssistantEntity } from './entities-service-helpers';
@@ -33,47 +32,14 @@ function log(message: string, details?: unknown) {
 
 export function createHomeAssistantEntitiesService(options: EntityServiceOptions) {
 	let isRunning = false;
-	let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-	let unsubscribe: (() => void) | null = null;
-	let ws: WebSocket | null = null;
-	let wsStates: Record<string, Record<string, unknown>> = {};
-	let retryDelay = 1000;
 	let pollTimer: ReturnType<typeof setTimeout> | null = null;
 	let pollInFlight = false;
 	let pollErrorCount = 0;
-
-	const clearReconnect = () => {
-		if (!reconnectTimer) return;
-		clearTimeout(reconnectTimer);
-		reconnectTimer = null;
-	};
 
 	const clearPoll = () => {
 		if (!pollTimer) return;
 		clearTimeout(pollTimer);
 		pollTimer = null;
-	};
-
-	const teardownSubscription = () => {
-		if (!unsubscribe) return;
-		unsubscribe();
-		unsubscribe = null;
-	};
-
-	const closeDirectSocket = () => {
-		if (!ws) return;
-		try {
-			ws.close();
-		} catch {}
-		ws = null;
-	};
-
-	const scheduleReconnect = () => {
-		if (!isRunning) return;
-		clearReconnect();
-		log('schedule reconnect', { retryDelay });
-		reconnectTimer = setTimeout(connect, retryDelay);
-		retryDelay = Math.min(retryDelay * 2, 15000);
 	};
 
 	const publishSnapshot = (states: Record<string, Record<string, unknown>>) => {
@@ -178,7 +144,6 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 		try {
 			const nextStates = await fetchPolledStates();
 			pollErrorCount = 0;
-			wsStates = nextStates;
 			publishSnapshot(nextStates);
 		} catch (error) {
 			pollErrorCount += 1;
@@ -189,80 +154,15 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 		}
 	};
 
-	const onStatusError = (code: string) => {
-		options.onStatus('error');
-		options.onError(code);
-	};
-
-	const connectWithEmbeddedHass = createEmbeddedHassConnector({
-		isRunning: () => isRunning,
-		onStatusError,
-		publishSnapshot,
-		log,
-		teardownSubscription,
-		setUnsubscribe: (next) => {
-			unsubscribe = next;
-		},
-		setEmbeddedStates: (next) => {
-			// Keep the service-level snapshot in sync regardless of data source.
-			wsStates = next;
-		}
-	});
-
-	const connectWithDirectWebsocket = createDirectWebsocketConnector({
-		isRunning: () => isRunning,
-		onStatusError,
-		publishSnapshot,
-		scheduleReconnect,
-		log,
-		resetRetryDelay: () => {
-			retryDelay = 1000;
-		},
-		setWsRef: (next) => {
-			ws = next;
-		},
-		getWsRef: () => ws,
-		resetWsStates: () => {
-			wsStates = {};
-		},
-		getWsStates: () => wsStates,
-		setWsStates: (next) => {
-			wsStates = next;
-		},
-		closeDirectSocket
-	});
-
-	const connect = async () => {
+	const publishEmbeddedSnapshot = async () => {
 		if (!isRunning) return;
-		log('connect cycle start');
+		log('embedded snapshot check start');
 		options.onStatus('connecting');
 		options.onError('');
-		closeDirectSocket();
 		const hass = await getHassWithRetry(3, 150);
-		if (hass) {
-			try {
-				const connected = await connectWithEmbeddedHass(hass);
-				if (connected) {
-					log('connected via embedded hass path');
-					return;
-				}
-			} catch (error) {
-				log('embedded hass path failed', error);
-			}
+		if (hass?.states && Object.keys(hass.states).length > 0) {
+			publishSnapshot(hass.states);
 		}
-		try {
-			const connected = await connectWithDirectWebsocket();
-			if (connected) {
-				log('connected via direct websocket path');
-				return;
-			}
-		} catch (error) {
-			log('direct websocket path failed', error);
-		}
-		log('all realtime paths failed');
-		options.onStatus('error');
-		options.onError('realtime_connection_unavailable');
-		scheduleReconnect();
 	};
 
 	return {
@@ -272,16 +172,13 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 			log('entity service start');
 			pollErrorCount = 0;
 			schedulePoll(250);
-			void connect();
+			void publishEmbeddedSnapshot();
 		},
 		stop() {
 			isRunning = false;
 			log('entity service stop');
-			clearReconnect();
 			clearPoll();
 			pollInFlight = false;
-			teardownSubscription();
-			closeDirectSocket();
 		}
 	};
 }
