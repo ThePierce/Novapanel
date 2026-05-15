@@ -39,6 +39,8 @@ const HA_SIDEBAR_REVEAL_SELECTOR = [
 	'app-drawer ha-sidebar'
 ].join(',');
 
+const HA_DRAWER_REVEAL_SELECTOR = ['ha-drawer', 'app-drawer'].join(',');
+
 const HA_SIDEBAR_INNER_SELECTOR = [
 	'.mdc-drawer',
 	'.mdc-drawer--modal',
@@ -148,6 +150,12 @@ function getClickableElement(element: HTMLElement): HTMLElement {
 	return element;
 }
 
+function queryShadow(root: Element | ShadowRoot | null | undefined, selector: string): HTMLElement | null {
+	if (!root) return null;
+	const shadow = root instanceof ShadowRoot ? root : (root as HTMLElement).shadowRoot;
+	return asHTMLElement(shadow?.querySelector(selector));
+}
+
 function getAccessibleDocument(target: Window): Document | null {
 	try {
 		return target.document;
@@ -156,13 +164,29 @@ function getAccessibleDocument(target: Window): Document | null {
 	}
 }
 
-function findHASidebarToggleButton(target: Window): HTMLElement | null {
-	// In standalone/current-document mode this app only has its own hamburger button.
-	// The real Home Assistant chrome lives in the parent/top frame when running as ingress.
-	if (target === window) return null;
+function findKnownHASidebarToggleButton(document: Document): HTMLElement | null {
+	const ha = asHTMLElement(document.querySelector('home-assistant'));
+	const main = queryShadow(ha, 'home-assistant-main');
+	const drawer = queryShadow(main, 'ha-drawer, app-drawer');
+	const sidebar =
+		asHTMLElement(drawer?.querySelector('ha-sidebar')) ?? queryShadow(drawer, 'ha-sidebar');
+	const sidebarMenu = queryShadow(sidebar, 'ha-menu-button');
+	if (sidebarMenu) return getClickableElement(sidebarMenu);
 
+	const topBar = queryShadow(main, 'ha-top-app-bar-fixed, ha-top-app-bar, app-header');
+	const topBarMenu =
+		asHTMLElement(topBar?.querySelector('ha-menu-button')) ?? queryShadow(topBar, 'ha-menu-button');
+	if (topBarMenu) return getClickableElement(topBarMenu);
+
+	return null;
+}
+
+function findHASidebarToggleButton(target: Window): HTMLElement | null {
 	const document = getAccessibleDocument(target);
 	if (!document) return null;
+
+	const knownButton = findKnownHASidebarToggleButton(document);
+	if (knownButton) return knownButton;
 
 	for (const selector of HA_TOGGLE_SELECTORS) {
 		const found = deepQuerySelector(document, selector);
@@ -189,6 +213,29 @@ function setImportant(snapshots: StyleSnapshot[], element: HTMLElement, property
 		priority: element.style.getPropertyPriority(property)
 	});
 	element.style.setProperty(property, value, 'important');
+}
+
+function isCurrentFrame(frame: HTMLElement): boolean {
+	const iframe = frame as HTMLIFrameElement;
+	try {
+		if (iframe.contentWindow === window) return true;
+	} catch {}
+	const src = iframe.getAttribute('src') ?? '';
+	return (
+		src.includes('hassio_ingress') ||
+		src.includes('novapanel') ||
+		src.includes('e806fdae_novapanel')
+	);
+}
+
+function lowerNovaPanelFrames(targetWindow: Window, snapshots: StyleSnapshot[]) {
+	if (targetWindow === window) return;
+	const document = getAccessibleDocument(targetWindow);
+	if (!document) return;
+	for (const frame of deepQuerySelectorAllElements(document, 'iframe')) {
+		if (!isCurrentFrame(frame)) continue;
+		setImportant(snapshots, frame, 'z-index', '1');
+	}
 }
 
 function restoreStyles(snapshots: StyleSnapshot[]) {
@@ -229,9 +276,27 @@ function revealHASidebar(): boolean {
 	let revealed = false;
 
 	for (const targetWindow of getCandidateWindows()) {
-		if (targetWindow === window) continue;
 		const document = getAccessibleDocument(targetWindow);
 		if (!document) continue;
+
+		lowerNovaPanelFrames(targetWindow, snapshots);
+
+		for (const drawer of deepQuerySelectorAllElements(document, HA_DRAWER_REVEAL_SELECTOR)) {
+			setImportant(snapshots, drawer, 'display', 'block');
+			setImportant(snapshots, drawer, 'visibility', 'visible');
+			setImportant(snapshots, drawer, 'opacity', '1');
+			setImportant(snapshots, drawer, 'position', 'fixed');
+			setImportant(snapshots, drawer, 'z-index', SIDEBAR_Z_INDEX);
+			setImportant(snapshots, drawer, 'top', '0');
+			setImportant(snapshots, drawer, 'left', '0');
+			setImportant(snapshots, drawer, 'right', '0');
+			setImportant(snapshots, drawer, 'bottom', '0');
+			setImportant(snapshots, drawer, 'width', '100vw');
+			setImportant(snapshots, drawer, 'height', '100vh');
+			setImportant(snapshots, drawer, 'overflow', 'visible');
+			setImportant(snapshots, drawer, 'pointer-events', 'none');
+			setImportant(snapshots, drawer, 'transform', 'translateX(0)');
+		}
 
 		const sidebars = deepQuerySelectorAllElements(document, HA_SIDEBAR_REVEAL_SELECTOR);
 		for (const sidebar of sidebars) {
