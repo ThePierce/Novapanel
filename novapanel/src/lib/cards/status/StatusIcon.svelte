@@ -44,7 +44,8 @@
 			if (normalized === 'shield-off' || normalized === 'shield-off-outline') return 'shield_off';
 			if (normalized === 'shield-alert' || normalized === 'shield-half-full') return 'shield_alert';
 			if (normalized === 'thermostat' || normalized === 'home-thermometer-outline') return 'thermostat';
-			if (normalized === 'curtains' || normalized === 'curtains-closed' || normalized === 'blinds-horizontal' || normalized === 'window-shutter') return 'curtains';
+			if (normalized === 'curtains-closed') return 'curtains_closed';
+			if (normalized === 'curtains' || normalized === 'blinds-horizontal' || normalized === 'window-shutter') return 'curtains';
 			if (normalized === 'robot-vacuum' || normalized === 'robot-vacuum-variant') return 'robot_vacuum';
 			if (normalized === 'speaker' || normalized === 'speaker-wireless' || normalized === 'audio-video') return 'speaker';
 			if (normalized === 'sofa' || normalized === 'sofa-outline' || normalized === 'seat-outline') return 'sofa';
@@ -100,10 +101,16 @@
 		<path d="M24 8a6 6 0 0 0-6 6v15.4a10 10 0 1 0 12 0V14a6 6 0 0 0-6-6Z" fill="none" stroke="currentColor" stroke-width="2.8" />
 		<path d="M24 18v15" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" />
 		<circle cx="24" cy="34" r="4.2" fill="currentColor" />
-	{:else if kind === 'curtains'}
+	{:else if kind === 'curtains' || kind === 'curtains_closed'}
 		<path d="M9 10h30" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
-		<path d="M13 14v25M35 14v25" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" />
-		<path d="M13 15c5.5 3.5 10.5 3.5 22 0M13 26c5.5 3.5 10.5 3.5 22 0M13 37c5.5 2.8 10.5 2.8 22 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.7" />
+		{#if kind === 'curtains_closed'}
+			<path d="M13 14v25M35 14v25" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" />
+			<path d="M13 15c5.5 3.5 10.5 3.5 22 0M13 26c5.5 3.5 10.5 3.5 22 0M13 37c5.5 2.8 10.5 2.8 22 0" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity="0.7" />
+		{:else}
+			<path d="M12 14c2.5 4 4.8 8 4.8 25M36 14c-2.5 4-4.8 8-4.8 25" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" />
+			<path d="M12 15c2.2 2.5 4.2 2.8 7 1M36 15c-2.2 2.5-4.2 2.8-7 1M16.5 27c1.6 1.1 3 1.2 4.7 0M31.5 27c-1.6 1.1-3 1.2-4.7 0M17 38c1.4 0.9 2.8 0.9 4.2 0M31 38c-1.4 0.9-2.8 0.9-4.2 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" opacity="0.72" />
+			<path d="M23 14v25M25 14v25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.38" />
+		{/if}
 	{:else if kind === 'robot_vacuum'}
 		<circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="2.8" />
 		<circle cx="24" cy="24" r="4.2" fill="currentColor" />

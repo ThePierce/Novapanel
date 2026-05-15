@@ -48,7 +48,8 @@
 			? title.trim()
 			: entity?.friendlyName ?? entityId ?? fallbackName(kind)
 	);
-	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : fallbackIcon(kind));
+	const coverPosition = $derived(numericAttribute(entity, 'current_position'));
+	const cardIcon = $derived(iconForEntity(kind, icon, coverPosition, state));
 	const accent = $derived(accentForKind(kind, isActive));
 	const accentSoft = $derived(softAccentForKind(kind, isActive));
 	const stateLabel = $derived(labelForEntity(kind, entity, isUnavailable));
@@ -67,6 +68,22 @@
 		if (value === 'cover') return 'mdi:curtains';
 		if (value === 'vacuum') return 'mdi:robot-vacuum';
 		return 'mdi:speaker';
+	}
+
+	function coverIconForState(position: number | null, coverState: string) {
+		if (position !== null) {
+			return Math.round(Math.max(0, Math.min(100, position))) <= 0
+				? 'mdi:curtains-closed'
+				: 'mdi:curtains';
+		}
+		return coverState === 'closed' || coverState === 'closing'
+			? 'mdi:curtains-closed'
+			: 'mdi:curtains';
+	}
+
+	function iconForEntity(value: EntityButtonKind, configuredIcon: string | undefined, position: number | null, currentState: string) {
+		if (value === 'cover') return coverIconForState(position, currentState);
+		return (configuredIcon && configuredIcon.trim().length > 0) ? configuredIcon.trim() : fallbackIcon(value);
 	}
 
 	function accentForKind(value: EntityButtonKind, active: boolean) {
