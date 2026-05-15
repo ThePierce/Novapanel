@@ -1006,18 +1006,21 @@ app.use(
 		'/api/image_proxy',
 		'/api/media_source',
 		'/api/stream',
+		'/api/calendars',
 		'/local_novapanel/api/camera_proxy',
 		'/local_novapanel/api/camera_proxy_stream',
 		'/local_novapanel/api/hls',
 		'/local_novapanel/api/image_proxy',
 		'/local_novapanel/api/media_source',
 		'/local_novapanel/api/stream',
+		'/local_novapanel/api/calendars',
 		'/api/hassio_ingress/:ingressToken/api/camera_proxy',
 		'/api/hassio_ingress/:ingressToken/api/camera_proxy_stream',
 		'/api/hassio_ingress/:ingressToken/api/hls',
 		'/api/hassio_ingress/:ingressToken/api/image_proxy',
 		'/api/hassio_ingress/:ingressToken/api/media_source',
-		'/api/hassio_ingress/:ingressToken/api/stream'
+		'/api/hassio_ingress/:ingressToken/api/stream',
+		'/api/hassio_ingress/:ingressToken/api/calendars'
 	],
 	proxyHaRequest
 );

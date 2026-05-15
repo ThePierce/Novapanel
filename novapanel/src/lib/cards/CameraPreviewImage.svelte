@@ -3,9 +3,11 @@
 		src: string;
 		alt?: string;
 		onAspectRatio?: (ratio: number) => void;
+		onLoaded?: (src: string) => void;
+		onError?: (src: string) => void;
 	};
 
-	let { src, alt = '', onAspectRatio }: Props = $props();
+	let { src, alt = '', onAspectRatio, onLoaded, onError }: Props = $props();
 
 	let displaySrc = $state('');
 	let loadToken = 0;
@@ -25,7 +27,12 @@
 		image.onload = () => {
 			if (token !== loadToken) return;
 			publishRatio(image.naturalWidth, image.naturalHeight);
+			onLoaded?.(nextSrc);
 			displaySrc = nextSrc;
+		};
+		image.onerror = () => {
+			if (token !== loadToken) return;
+			onError?.(nextSrc);
 		};
 		image.src = nextSrc;
 		return () => {

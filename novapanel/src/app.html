@@ -16,7 +16,7 @@
 					try {
 						if (!value) return '';
 						if (typeof value === 'string') return value;
-						if (value.message) return String(value.message);
+						if (value.message || value.stack) return String(value.message || '') + ' ' + String(value.stack || '');
 						return String(value);
 					} catch (e) {
 						return '';

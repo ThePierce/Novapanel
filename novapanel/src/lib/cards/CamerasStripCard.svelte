@@ -26,6 +26,7 @@
 	};
 
 	const PREVIEW_REFRESH_SECONDS = 12;
+	const PREVIEW_FAILURE_BACKOFF_MS = 60000;
 
 	function snapshotUrlFor(entityPicture: string): string {
 		return browserSafeHomeAssistantUrl(entityPicture);
@@ -89,6 +90,7 @@
 
 	let cameraRefreshTicks = $state<Record<string, number>>({});
 	let cameraRefreshElapsed = $state<Record<string, number>>({});
+	let cameraPreviewFailedUntil = $state<Record<string, number>>({});
 	$effect(() => {
 		if (typeof window === 'undefined') return;
 		const interval = window.setInterval(() => {
@@ -99,7 +101,9 @@
 
 			const nextElapsed = { ...cameraRefreshElapsed };
 			const nextTicks = { ...cameraRefreshTicks };
+			const now = Date.now();
 			for (const entityId of visibleIds) {
+				if ((cameraPreviewFailedUntil[entityId] ?? 0) > now) continue;
 				const elapsed = (nextElapsed[entityId] ?? 0) + 1;
 				if (elapsed >= PREVIEW_REFRESH_SECONDS) {
 					nextElapsed[entityId] = 0;
@@ -178,6 +182,20 @@
 		cameraAspectRatios = { ...cameraAspectRatios, [entityId]: ratio };
 	}
 
+	function handlePreviewLoaded(entityId: string) {
+		if (!cameraPreviewFailedUntil[entityId]) return;
+		const next = { ...cameraPreviewFailedUntil };
+		delete next[entityId];
+		cameraPreviewFailedUntil = next;
+	}
+
+	function handlePreviewError(entityId: string) {
+		cameraPreviewFailedUntil = {
+			...cameraPreviewFailedUntil,
+			[entityId]: Date.now() + PREVIEW_FAILURE_BACKOFF_MS
+		};
+	}
+
 	function refreshElapsedFor(entityId: string): number {
 		return cameraRefreshElapsed[entityId] ?? 0;
 	}
@@ -208,6 +226,8 @@
 									src={cam.thumbnail}
 									alt={cam.name}
 									onAspectRatio={(ratio) => handleAspectRatio(cam.config.entityId, ratio)}
+									onLoaded={() => handlePreviewLoaded(cam.config.entityId)}
+									onError={() => handlePreviewError(cam.config.entityId)}
 								/>
 							{:else}
 								<div class="camera-placeholder">
@@ -235,6 +255,8 @@
 											src={cam.thumbnail}
 											alt={cam.name}
 											onAspectRatio={(ratio) => handleAspectRatio(cam.config.entityId, ratio)}
+											onLoaded={() => handlePreviewLoaded(cam.config.entityId)}
+											onError={() => handlePreviewError(cam.config.entityId)}
 										/>
 									{:else}
 										<div class="camera-placeholder">

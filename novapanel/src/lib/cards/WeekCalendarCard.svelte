@@ -68,12 +68,10 @@
 	let error = $state('');
 	let personModal = $state<PersonModalState | null>(null);
 	let calendarScrollEl = $state<HTMLDivElement | null>(null);
-	let verifiedAvatarUrls = $state<Record<string, true>>({});
 	let invalidAvatarUrls = $state<Record<string, true>>({});
 	let loadToken = 0;
 	let sourceKey = $state('');
 	let lastScrollAnchor = '';
-	const pendingAvatarChecks = new Set<string>();
 
 	const timelineHours = 24;
 	const visibleHours = $derived(expanded ? 18 : 8);
@@ -210,37 +208,10 @@
 		invalidAvatarUrls = { ...invalidAvatarUrls, [url]: true };
 	}
 
-	async function verifyAvatarUrl(raw: string) {
-		if (typeof window === 'undefined') return;
-		const url = normalizeAvatarUrl(raw);
-		if (!url || verifiedAvatarUrls[url] || invalidAvatarUrls[url] || pendingAvatarChecks.has(url)) return;
-		pendingAvatarChecks.add(url);
-		try {
-			const response = await fetch(url, {
-				credentials: 'same-origin',
-				cache: 'force-cache',
-				headers: { accept: 'image/*,*/*;q=0.8' }
-			});
-			if (response.ok) {
-				verifiedAvatarUrls = { ...verifiedAvatarUrls, [url]: true };
-			} else {
-				invalidAvatarUrls = { ...invalidAvatarUrls, [url]: true };
-			}
-		} catch {
-			invalidAvatarUrls = { ...invalidAvatarUrls, [url]: true };
-		} finally {
-			pendingAvatarChecks.delete(url);
-		}
-	}
-
 	function safeAvatarUrl(raw: string) {
 		const url = normalizeAvatarUrl(raw);
 		if (!url || invalidAvatarUrls[url]) return '';
-		if (typeof window === 'undefined') return url;
-		if (isHomeAssistantGeneratedImage(url) && !verifiedAvatarUrls[url]) {
-			void verifyAvatarUrl(url);
-			return '';
-		}
+		if (isHomeAssistantGeneratedImage(url)) return '';
 		return url;
 	}
 

@@ -171,9 +171,7 @@
 	// MA stelt voor radio-streams vaak geen entity_picture in, dus we gebruiken het logo
 	// uit de favoriet als fallback in de Now Playing-balk.
 	let radioImageByBase = $state<Record<string, { image: string; name: string }>>({});
-	let verifiedDisplayImages = $state<Record<string, true>>({});
 	let invalidDisplayImages = $state<Record<string, true>>({});
-	const pendingDisplayImageChecks = new Set<string>();
 
 	function setTuneInPlaybackTarget(value: string) {
 		tuneInPlaybackTarget = value;
@@ -224,37 +222,10 @@
 		invalidDisplayImages = { ...invalidDisplayImages, [url]: true };
 	}
 
-	async function verifyDisplayImageUrl(raw: string) {
-		if (typeof window === 'undefined') return;
-		const url = normalizeDisplayImageUrl(raw);
-		if (!url || verifiedDisplayImages[url] || invalidDisplayImages[url] || pendingDisplayImageChecks.has(url)) return;
-		pendingDisplayImageChecks.add(url);
-		try {
-			const response = await fetch(url, {
-				credentials: 'same-origin',
-				cache: 'force-cache',
-				headers: { accept: 'image/*,*/*;q=0.8' }
-			});
-			if (response.ok) {
-				verifiedDisplayImages = { ...verifiedDisplayImages, [url]: true };
-			} else {
-				invalidDisplayImages = { ...invalidDisplayImages, [url]: true };
-			}
-		} catch {
-			invalidDisplayImages = { ...invalidDisplayImages, [url]: true };
-		} finally {
-			pendingDisplayImageChecks.delete(url);
-		}
-	}
-
 	function displayImageUrl(raw: string): string {
 		const url = normalizeDisplayImageUrl(raw);
 		if (!url || invalidDisplayImages[url]) return '';
-		if (typeof window === 'undefined') return url;
-		if (isHomeAssistantGeneratedImage(url) && !verifiedDisplayImages[url]) {
-			void verifyDisplayImageUrl(url);
-			return '';
-		}
+		if (isHomeAssistantGeneratedImage(url)) return '';
 		return url;
 	}
 

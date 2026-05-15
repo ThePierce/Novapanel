@@ -16,8 +16,8 @@ type EntityServiceOptions = {
 
 const HA_ENTITY_LOG_PREFIX = '[NovaPanel Entities]';
 const HA_ENTITY_DEBUG = false;
-const ENTITY_POLL_INTERVAL_MS = 5000;
-const ENTITY_POLL_HIDDEN_INTERVAL_MS = 15000;
+const ENTITY_POLL_INTERVAL_MS = 1500;
+const ENTITY_POLL_HIDDEN_INTERVAL_MS = 10000;
 const ENTITY_POLL_MAX_ERROR_INTERVAL_MS = 30000;
 
 function log(message: string, details?: unknown) {
