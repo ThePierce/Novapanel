@@ -67,6 +67,7 @@
 			: `${origin}/api/spotify/auth/callback`;
 	});
 	const exampleRedirectUri = 'https://jouw-home-assistant.example/local_novapanel/api/spotify/auth/callback';
+	const shownRedirectUri = $derived.by(() => detectedRedirectUri || exampleRedirectUri);
 	let copiedRedirect = $state(false);
 
 	async function copyDetectedRedirect() {
@@ -353,7 +354,7 @@
 						<div class="integration-help-text">
 							{translate('Maak een gratis app aan op', selectedLanguage)}
 							<a class="integration-help-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>.
-							{translate('Klik op Create app, vul een naam in, kies Web API en kopieer daarna de Client ID uit het overzicht hierheen.', selectedLanguage)}
+							{translate('Klik op Create app, vul een naam en omschrijving in, voeg de callback-URL hieronder toe bij Redirect URI, vink Web API aan en accepteer de voorwaarden. Kopieer daarna de Client ID uit het app-overzicht hierheen.', selectedLanguage)}
 						</div>
 
 						<label for="np-spotify-client-secret">Client Secret</label>
@@ -366,7 +367,7 @@
 							spellcheck="false"
 						/>
 						<div class="integration-help-text">
-							{translate('Klik op je app in het dashboard, daarna op Settings, en plak de Client Secret hier.', selectedLanguage)}
+							{translate('Open je app in het dashboard, klik op Settings en daarna op View client secret. Kopieer de Client Secret hierheen.', selectedLanguage)}
 						</div>
 
 						<label for="np-spotify-redirect">Redirect URI</label>
@@ -381,12 +382,12 @@
 						/>
 						<div class="integration-help-text">
 							{translate('Open je app op', selectedLanguage)} <a class="integration-help-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>,
-							{translate('klik op Settings en plak deze URI bij Redirect URIs:', selectedLanguage)}
-							<code>{exampleRedirectUri}</code>
-							{translate('Vervang het domein door je eigen Home Assistant-adres. Gebruik geen', selectedLanguage)}
+							{translate('open Settings en plak exact deze callback-URL bij Redirect URIs:', selectedLanguage)}
+							<code>{shownRedirectUri}</code>
+							{translate('Spotify vereist een exacte match en meestal HTTPS. Gebruik geen', selectedLanguage)}
 							<code>/api/hassio_ingress/&lt;token&gt;</code>
-							{translate('een 401 geven. Je kunt hieronder je actuele callback-URL kopiëren en rechtstreeks plakken in het dashboard.', selectedLanguage)}
-							{translate('Klik daarna op Add en Save. Laat dit veld leeg om de automatisch herkende URL te gebruiken.', selectedLanguage)}
+							{translate('want die tijdelijke ingress-URL kan na de Spotify-redirect een 401 geven. De /local_novapanel-route hierboven blijft stabiel.', selectedLanguage)}
+							{translate('Klik daarna op Add en Save. Laat dit veld leeg om de automatisch herkende callback-URL te gebruiken.', selectedLanguage)}
 						</div>
 						<div class="integration-actions">
 							<button type="button" class="np-btn" onclick={() => void copyDetectedRedirect()} disabled={!detectedRedirectUri}>

@@ -227,24 +227,24 @@ const phraseTranslations: Record<string, Partial<Record<LanguageCode, string>>> 
 		fr: 'Créez une app gratuite sur',
 		es: 'Crea una app gratuita en'
 	},
-	'Klik op Create app, vul een naam in, kies Web API en kopieer daarna de Client ID uit het overzicht hierheen.': {
-		en: 'Click Create app, enter a name, choose Web API, then copy the Client ID from the overview into this field.'
+	'Klik op Create app, vul een naam en omschrijving in, voeg de callback-URL hieronder toe bij Redirect URI, vink Web API aan en accepteer de voorwaarden. Kopieer daarna de Client ID uit het app-overzicht hierheen.': {
+		en: 'Click Create app, enter a name and description, add the callback URL below under Redirect URI, select Web API, and accept the terms. Then copy the Client ID from the app overview into this field.'
 	},
-	'Klik op je app in het dashboard, daarna op Settings, en plak de Client Secret hier.': {
-		en: 'Open your app in the dashboard, go to Settings, and paste the Client Secret here.'
+	'Open je app in het dashboard, klik op Settings en daarna op View client secret. Kopieer de Client Secret hierheen.': {
+		en: 'Open your app in the dashboard, click Settings, then View client secret. Copy the Client Secret into this field.'
 	},
 	'Open je app op': { en: 'Open your app at', de: 'Öffne deine App unter', fr: 'Ouvrez votre app sur', es: 'Abre tu app en' },
-	'klik op Settings en plak deze URI bij Redirect URIs:': {
-		en: 'click Settings and paste this URI under Redirect URIs:'
+	'open Settings en plak exact deze callback-URL bij Redirect URIs:': {
+		en: 'open Settings and paste this exact callback URL under Redirect URIs:'
 	},
-	'Vervang het domein door je eigen Home Assistant-adres. Gebruik geen': {
-		en: 'Replace the domain with your own Home Assistant address. Do not use'
+	'Spotify vereist een exacte match en meestal HTTPS. Gebruik geen': {
+		en: 'Spotify requires an exact match and usually HTTPS. Do not use'
 	},
-	'een 401 geven. Je kunt hieronder je actuele callback-URL kopiëren en rechtstreeks plakken in het dashboard.': {
-		en: 'as that token URL can return a 401 after the Spotify redirect. You can copy your current callback URL below and paste it directly into the dashboard.'
+	'want die tijdelijke ingress-URL kan na de Spotify-redirect een 401 geven. De /local_novapanel-route hierboven blijft stabiel.': {
+		en: 'because that temporary ingress URL can return a 401 after the Spotify redirect. The /local_novapanel route above stays stable.'
 	},
-	'Klik daarna op Add en Save. Laat dit veld leeg om de automatisch herkende URL te gebruiken.': {
-		en: 'Then click Add and Save. Leave this field empty to use the automatically detected URL.'
+	'Klik daarna op Add en Save. Laat dit veld leeg om de automatisch herkende callback-URL te gebruiken.': {
+		en: 'Then click Add and Save. Leave this field empty to use the automatically detected callback URL.'
 	},
 	'Gekopieerd': { en: 'Copied', de: 'Kopiert', fr: 'Copié', es: 'Copiado' },
 	'Kopieer mijn callback-URL': { en: 'Copy my callback URL', de: 'Callback-URL kopieren', fr: 'Copier mon URL de callback', es: 'Copiar mi URL de callback' },
