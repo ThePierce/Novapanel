@@ -218,8 +218,8 @@ const phraseTranslations: Record<string, Partial<Record<LanguageCode, string>>> 
 		fr: 'Popup bloquée par le navigateur. Autorisez les popups pour ce site et réessayez.',
 		es: 'El navegador bloqueó la ventana emergente. Permite popups para este sitio e inténtalo de nuevo.'
 	},
-	'Deze redirect gebruikt nog een Home Assistant ingress-token. Novapanel vervangt dit bij verbinden automatisch door de stabiele callback-URL hieronder, maar plak die nieuwe URL ook in het Spotify Dashboard.': {
-		en: 'This redirect still uses a Home Assistant ingress token. Novapanel replaces it with the stable callback URL below when connecting, but also paste that new URL into the Spotify Dashboard.'
+	'Deze redirect gebruikt nog de oude /local_novapanel-route. Novapanel vervangt dit bij verbinden automatisch door de callback-URL hieronder, maar plak die nieuwe URL ook in het Spotify Dashboard.': {
+		en: 'This redirect still uses the old /local_novapanel route. Novapanel replaces it with the callback URL below when connecting, but also paste that new URL into the Spotify Dashboard.'
 	},
 	'Maak een gratis app aan op': {
 		en: 'Create a free app at',
@@ -237,11 +237,11 @@ const phraseTranslations: Record<string, Partial<Record<LanguageCode, string>>> 
 	'open Settings en plak exact deze callback-URL bij Redirect URIs:': {
 		en: 'open Settings and paste this exact callback URL under Redirect URIs:'
 	},
-	'Spotify vereist een exacte match en meestal HTTPS. Gebruik geen': {
-		en: 'Spotify requires an exact match and usually HTTPS. Do not use'
+	'Spotify vereist een exacte match en meestal HTTPS. Gebruik precies de URL hierboven; bij Home Assistant ingress hoort daar meestal': {
+		en: 'Spotify requires an exact match and usually HTTPS. Use exactly the URL above; with Home Assistant ingress it usually should include'
 	},
-	'want die tijdelijke ingress-URL kan na de Spotify-redirect een 401 geven. De /local_novapanel-route hierboven blijft stabiel.': {
-		en: 'because that temporary ingress URL can return a 401 after the Spotify redirect. The /local_novapanel route above stays stable.'
+	'in te staan. Als Home Assistant later een andere ingress-token toont, kopieer dan de nieuwe callback-URL opnieuw naar Spotify.': {
+		en: 'in it. If Home Assistant later shows a different ingress token, copy the new callback URL to Spotify again.'
 	},
 	'Klik daarna op Add en Save. Laat dit veld leeg om de automatisch herkende callback-URL te gebruiken.': {
 		en: 'Then click Add and Save. Leave this field empty to use the automatically detected callback URL.'

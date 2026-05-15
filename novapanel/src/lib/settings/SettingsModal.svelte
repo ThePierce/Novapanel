@@ -57,16 +57,21 @@
 		if (typeof window === 'undefined') return '';
 		const origin = window.location.origin;
 		const path = window.location.pathname || '';
+		const ingressPath =
+			((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '').replace(/\/+$/, '');
+		if (ingressPath) {
+			return `${origin}${ingressPath}/api/spotify/auth/callback`;
+		}
+		const pathIngressMatch = path.match(/^(\/api\/hassio_ingress\/[^/]+)/);
+		if (pathIngressMatch?.[1]) {
+			return `${origin}${pathIngressMatch[1]}/api/spotify/auth/callback`;
+		}
 		if (path.startsWith('/local_novapanel')) {
 			return `${origin}/local_novapanel/api/spotify/auth/callback`;
 		}
-		const ingressPath =
-			((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '');
-		return ingressPath
-			? `${origin}/local_novapanel/api/spotify/auth/callback`
-			: `${origin}/api/spotify/auth/callback`;
+		return `${origin}/api/spotify/auth/callback`;
 	});
-	const exampleRedirectUri = 'https://jouw-home-assistant.example/local_novapanel/api/spotify/auth/callback';
+	const exampleRedirectUri = 'https://jouw-home-assistant.example/api/hassio_ingress/<token>/api/spotify/auth/callback';
 	const shownRedirectUri = $derived.by(() => detectedRedirectUri || exampleRedirectUri);
 	let copiedRedirect = $state(false);
 
@@ -102,6 +107,18 @@
 
 	function isIngressSpotifyRedirectUri(value: string) {
 		return /\/api\/hassio_ingress\/[^/]+\/api\/spotify\/auth\/callback\/?$/i.test(value.trim());
+	}
+
+	function isLocalNovapanelSpotifyRedirectUri(value: string) {
+		return /\/local_novapanel\/api\/spotify\/auth\/callback\/?$/i.test(value.trim());
+	}
+
+	function shouldUseDetectedSpotifyRedirectUri(value: string) {
+		const trimmed = value.trim();
+		if (!trimmed) return Boolean(detectedRedirectUri);
+		if (!detectedRedirectUri) return false;
+		if (trimmed === detectedRedirectUri) return false;
+		return isIngressSpotifyRedirectUri(trimmed) || isLocalNovapanelSpotifyRedirectUri(trimmed);
 	}
 
 	async function checkSpotifyAuth() {
@@ -154,7 +171,7 @@
 		// Eerst credentials opslaan, daarna een nieuw tabblad openen met de auth-URL.
 		spotifyAuthError = '';
 		try {
-			if (spotifyRedirectUri && isIngressSpotifyRedirectUri(spotifyRedirectUri) && detectedRedirectUri) {
+			if (shouldUseDetectedSpotifyRedirectUri(spotifyRedirectUri)) {
 				onSetSpotifyRedirectUri(detectedRedirectUri);
 			}
 			await Promise.resolve(onSave());
@@ -346,9 +363,9 @@
 							autocomplete="off"
 							spellcheck="false"
 						/>
-						{#if spotifyRedirectUri && isIngressSpotifyRedirectUri(spotifyRedirectUri)}
+						{#if spotifyRedirectUri && isLocalNovapanelSpotifyRedirectUri(spotifyRedirectUri) && detectedRedirectUri && spotifyRedirectUri.trim() !== detectedRedirectUri}
 							<div class="integration-help-text warning">
-								{translate('Deze redirect gebruikt nog een Home Assistant ingress-token. Novapanel vervangt dit bij verbinden automatisch door de stabiele callback-URL hieronder, maar plak die nieuwe URL ook in het Spotify Dashboard.', selectedLanguage)}
+								{translate('Deze redirect gebruikt nog de oude /local_novapanel-route. Novapanel vervangt dit bij verbinden automatisch door de callback-URL hieronder, maar plak die nieuwe URL ook in het Spotify Dashboard.', selectedLanguage)}
 							</div>
 						{/if}
 						<div class="integration-help-text">
@@ -384,9 +401,9 @@
 							{translate('Open je app op', selectedLanguage)} <a class="integration-help-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>,
 							{translate('open Settings en plak exact deze callback-URL bij Redirect URIs:', selectedLanguage)}
 							<code>{shownRedirectUri}</code>
-							{translate('Spotify vereist een exacte match en meestal HTTPS. Gebruik geen', selectedLanguage)}
+							{translate('Spotify vereist een exacte match en meestal HTTPS. Gebruik precies de URL hierboven; bij Home Assistant ingress hoort daar meestal', selectedLanguage)}
 							<code>/api/hassio_ingress/&lt;token&gt;</code>
-							{translate('want die tijdelijke ingress-URL kan na de Spotify-redirect een 401 geven. De /local_novapanel-route hierboven blijft stabiel.', selectedLanguage)}
+							{translate('in te staan. Als Home Assistant later een andere ingress-token toont, kopieer dan de nieuwe callback-URL opnieuw naar Spotify.', selectedLanguage)}
 							{translate('Klik daarna op Add en Save. Laat dit veld leeg om de automatisch herkende callback-URL te gebruiken.', selectedLanguage)}
 						</div>
 						<div class="integration-actions">

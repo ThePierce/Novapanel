@@ -345,8 +345,7 @@ function normalizeSpotifyRedirectUri(raw) {
     if (!value) return '';
     try {
         const url = new URL(value);
-        if (/^\/api\/hassio_ingress\/[^/]+\/api\/spotify\/auth\/callback\/?$/i.test(url.pathname)) {
-            url.pathname = '/local_novapanel/api/spotify/auth/callback';
+        if (/\/api\/spotify\/auth\/callback\/?$/i.test(url.pathname)) {
             url.search = '';
             url.hash = '';
             return url.toString();
@@ -355,6 +354,15 @@ function normalizeSpotifyRedirectUri(raw) {
         return value;
     }
     return value;
+}
+
+function getRequestIngressBasePath(req) {
+    const ingressPath = asTrimmedString(req.headers['x-ingress-path']).replace(/\/+$/, '');
+    if (ingressPath) return ingressPath;
+    const requestUrl = req.originalUrl || req.url || '';
+    const hassIngressMatch = requestUrl.match(/^(\/api\/hassio_ingress\/[^/]+)(?=\/api(?:\/|$))/);
+    if (hassIngressMatch?.[1]) return hassIngressMatch[1];
+    return '';
 }
 
 function getRequestBaseUrl(req) {
@@ -406,15 +414,16 @@ function selectHaProxyToken(hassUrl, options) {
 }
 
 function getSpotifyRedirectUriForRequest(req, config) {
-    if (config.redirectUri) return normalizeSpotifyRedirectUri(config.redirectUri);
-    const ingressPath = asTrimmedString(req.headers['x-ingress-path']).replace(/\/+$/, '');
+    const configuredRedirectUri = normalizeSpotifyRedirectUri(config.redirectUri);
+    const ingressPath = getRequestIngressBasePath(req);
     const baseUrl = getRequestBaseUrl(req);
+    if (baseUrl && ingressPath) return `${baseUrl}${ingressPath}/api/spotify/auth/callback`;
+    if (configuredRedirectUri) return configuredRedirectUri;
     if (baseUrl && req.originalUrl?.includes('/local_novapanel/')) {
         return `${baseUrl}/local_novapanel/api/spotify/auth/callback`;
     }
-    if (baseUrl && ingressPath) return `${baseUrl}/local_novapanel/api/spotify/auth/callback`;
     if (baseUrl) return `${baseUrl}/api/spotify/auth/callback`;
-    return normalizeSpotifyRedirectUri(config.redirectUri);
+    return configuredRedirectUri;
 }
 
 async function exchangeSpotifyCodeForToken(config, code) {
