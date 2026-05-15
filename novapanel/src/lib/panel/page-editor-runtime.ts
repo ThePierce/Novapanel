@@ -41,6 +41,7 @@ export function addCardFromCatalogRuntime(input: {
 	}
 	const isEntityButton =
 		input.selected.type === 'light_button' ||
+		input.selected.type === 'device_button' ||
 		input.selected.type === 'climate_button' ||
 		input.selected.type === 'cover_button' ||
 		input.selected.type === 'vacuum_button' ||

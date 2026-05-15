@@ -154,6 +154,7 @@
 
 	function cardIcon(cardType: string): string {
 		if (cardType === 'light_button' || cardType === 'lights_status') return 'bulb';
+		if (cardType === 'device_button') return 'plug';
 		if (cardType === 'climate_button') return 'temperature';
 		if (cardType === 'cover_button') return 'curtains';
 		if (cardType === 'vacuum_button') return 'robot';

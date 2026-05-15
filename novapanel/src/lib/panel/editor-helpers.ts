@@ -19,6 +19,7 @@ function asClockStyle(value: unknown): ClockStyle | undefined {
 
 function defaultEntityButtonIcon(cardType: string): string | undefined {
 	if (cardType === 'light_button') return 'mdi:lightbulb-outline';
+	if (cardType === 'device_button') return 'mdi:power-plug-outline';
 	if (cardType === 'climate_button') return 'mdi:thermostat';
 	if (cardType === 'cover_button') return 'mdi:curtains';
 	if (cardType === 'vacuum_button') return 'mdi:robot-vacuum';
@@ -29,6 +30,7 @@ function defaultEntityButtonIcon(cardType: string): string | undefined {
 function isEntityButtonType(cardType: string): boolean {
 	return (
 		cardType === 'light_button' ||
+		cardType === 'device_button' ||
 		cardType === 'climate_button' ||
 		cardType === 'cover_button' ||
 		cardType === 'vacuum_button' ||

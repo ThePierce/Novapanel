@@ -32,14 +32,17 @@
 	const state = $derived((entity?.state ?? '').toLowerCase());
 	const isUnavailable = $derived(!entity || state === 'unavailable' || state === 'unknown');
 	const isActive = $derived(
-		kind === 'climate'
-			? state !== 'off' && !isUnavailable
-			: kind === 'cover'
-				? state === 'open' || state === 'opening'
-				: kind === 'vacuum'
-					? ['cleaning', 'returning', 'docked'].includes(state)
-					: ['playing', 'buffering', 'on'].includes(state)
+		kind === 'device'
+			? state === 'on'
+			: kind === 'climate'
+				? state !== 'off' && !isUnavailable
+				: kind === 'cover'
+					? state === 'open' || state === 'opening'
+					: kind === 'vacuum'
+						? ['cleaning', 'returning', 'docked'].includes(state)
+						: ['playing', 'buffering', 'on'].includes(state)
 	);
+	const serviceDomain = $derived((entity?.domain || entityId?.split('.')[0] || '').toLowerCase());
 	const displayName = $derived(
 		title && title.trim().length > 0
 			? title.trim()
@@ -51,6 +54,7 @@
 	const stateLabel = $derived(labelForEntity(kind, entity, isUnavailable));
 
 	function fallbackName(value: EntityButtonKind) {
+		if (value === 'device') return translate('Apparaat', $selectedLanguageStore);
 		if (value === 'climate') return 'Climate';
 		if (value === 'cover') return translate('Gordijn', $selectedLanguageStore);
 		if (value === 'vacuum') return translate('Stofzuiger', $selectedLanguageStore);
@@ -58,6 +62,7 @@
 	}
 
 	function fallbackIcon(value: EntityButtonKind) {
+		if (value === 'device') return 'mdi:power-plug-outline';
 		if (value === 'climate') return 'mdi:thermostat';
 		if (value === 'cover') return 'mdi:curtains';
 		if (value === 'vacuum') return 'mdi:robot-vacuum';
@@ -66,6 +71,7 @@
 
 	function accentForKind(value: EntityButtonKind, active: boolean) {
 		if (!active) return '#8d98aa';
+		if (value === 'device') return '#34d399';
 		if (value === 'climate') return '#fb923c';
 		if (value === 'cover') return '#60a5fa';
 		if (value === 'vacuum') return '#34d399';
@@ -74,6 +80,7 @@
 
 	function softAccentForKind(value: EntityButtonKind, active: boolean) {
 		if (!active) return 'rgba(141,152,170,0.16)';
+		if (value === 'device') return 'rgba(52,211,153,0.22)';
 		if (value === 'climate') return 'rgba(251,146,60,0.22)';
 		if (value === 'cover') return 'rgba(96,165,250,0.22)';
 		if (value === 'vacuum') return 'rgba(52,211,153,0.22)';
@@ -91,6 +98,7 @@
 
 	function labelForEntity(value: EntityButtonKind, entry: HomeAssistantEntity | undefined, unavailable: boolean) {
 		if (unavailable) return translate('Niet beschikbaar', $selectedLanguageStore);
+		if (value === 'device') return formatState(state);
 		if (value === 'climate') {
 			const current = numericAttribute(entry, 'current_temperature');
 			const target = numericAttribute(entry, 'temperature');
@@ -134,6 +142,8 @@
 		try {
 			if (kind === 'climate') {
 				await callHaService('climate', state === 'off' ? 'turn_on' : 'turn_off', { entity_id: entityId });
+			} else if (kind === 'device') {
+				await callHaService(serviceDomain || 'switch', state === 'on' ? 'turn_off' : 'turn_on', { entity_id: entityId });
 			} else if (kind === 'cover') {
 				await callHaService('cover', state === 'open' || state === 'opening' ? 'close_cover' : 'open_cover', { entity_id: entityId });
 			} else if (kind === 'vacuum') {

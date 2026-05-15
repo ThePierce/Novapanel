@@ -372,15 +372,17 @@ let availabilityIgnoredOpen = $state(false);
 			cardEditorType === 'media_players_status'
 	);
 	const entityButtonKind = $derived<EntityButtonKind | null>(
-		cardEditorType === 'climate_button'
-			? 'climate'
-			: cardEditorType === 'cover_button'
-				? 'cover'
-				: cardEditorType === 'vacuum_button'
-					? 'vacuum'
-					: cardEditorType === 'media_player_button'
-						? 'media_player'
-						: null
+		cardEditorType === 'device_button'
+			? 'device'
+			: cardEditorType === 'climate_button'
+				? 'climate'
+				: cardEditorType === 'cover_button'
+					? 'cover'
+					: cardEditorType === 'vacuum_button'
+						? 'vacuum'
+						: cardEditorType === 'media_player_button'
+							? 'media_player'
+							: null
 	);
 
 	const cardTypeMeta = $derived((() => {
@@ -389,6 +391,7 @@ let availabilityIgnoredOpen = $state(false);
 		if (type === 'cameras_strip') return { icon: 'device-cctv', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t("Camera's selecteren en in Apple Home stijl tonen") };
 		if (type === 'week_calendar') return { icon: 'calendar-week', tone: 'cyan', tint: 'rgba(56,189,248,0.18)', color: '#38bdf8', subtitle: t('Weekkalender met CalDAV personen en kleuren') };
 		if (type === 'light_button') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: t('Lampknop met helderheid en kleur') };
+		if (type === 'device_button') return { icon: 'plug', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Apparaatknop met aan/uit bediening') };
 		if (type === 'climate_button') return { icon: 'temperature', tone: 'orange', tint: 'rgba(251,146,60,0.18)', color: '#fb923c', subtitle: t('Thermostaatknop met temperatuur en modus') };
 		if (type === 'cover_button') return { icon: 'curtains', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Gordijnknop met positiebediening') };
 		if (type === 'vacuum_button') return { icon: 'robot', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Robotstofzuiger met start, pauze en dock') };
@@ -532,6 +535,7 @@ let availabilityIgnoredOpen = $state(false);
 
 	const iconValidationNeeded = $derived(
 		cardEditorType === 'light_button' ||
+		cardEditorType === 'device_button' ||
 		cardEditorType === 'climate_button' ||
 		cardEditorType === 'cover_button' ||
 		cardEditorType === 'vacuum_button' ||

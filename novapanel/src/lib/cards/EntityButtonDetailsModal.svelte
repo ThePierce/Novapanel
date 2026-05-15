@@ -33,6 +33,7 @@
 	);
 	const state = $derived((entity?.state ?? '').toLowerCase());
 	const isUnavailable = $derived(!entity || state === 'unavailable' || state === 'unknown');
+	const serviceDomain = $derived((entity?.domain || entityId?.split('.')[0] || '').toLowerCase());
 	const displayName = $derived(
 		title && title.trim().length > 0
 			? title.trim()
@@ -89,6 +90,7 @@
 	});
 
 	function fallbackName(value: EntityButtonKind) {
+		if (value === 'device') return translate('Apparaat', $selectedLanguageStore);
 		if (value === 'climate') return 'Climate';
 		if (value === 'cover') return translate('Gordijn', $selectedLanguageStore);
 		if (value === 'vacuum') return translate('Stofzuiger', $selectedLanguageStore);
@@ -96,6 +98,7 @@
 	}
 
 	function fallbackIcon(value: EntityButtonKind) {
+		if (value === 'device') return 'mdi:power-plug-outline';
 		if (value === 'climate') return 'mdi:thermostat';
 		if (value === 'cover') return 'mdi:curtains';
 		if (value === 'vacuum') return 'mdi:robot-vacuum';
@@ -103,6 +106,7 @@
 	}
 
 	function accentForKind(value: EntityButtonKind) {
+		if (value === 'device') return '#34d399';
 		if (value === 'climate') return '#fb923c';
 		if (value === 'cover') return '#60a5fa';
 		if (value === 'vacuum') return '#34d399';
@@ -110,6 +114,7 @@
 	}
 
 	function softAccentForKind(value: EntityButtonKind) {
+		if (value === 'device') return 'rgba(52,211,153,0.18)';
 		if (value === 'climate') return 'rgba(251,146,60,0.18)';
 		if (value === 'cover') return 'rgba(96,165,250,0.18)';
 		if (value === 'vacuum') return 'rgba(52,211,153,0.18)';
@@ -141,6 +146,7 @@
 
 	function summaryLabel() {
 		if (isUnavailable) return translate('Niet beschikbaar', $selectedLanguageStore);
+		if (kind === 'device') return readableState(state);
 		if (kind === 'climate') {
 			if (currentTemperature !== null) return `${readableState(state)} · ${currentTemperature}°`;
 			return readableState(state);
@@ -270,6 +276,21 @@
 			<div class="entity-empty">
 				<StatusIcon icon={cardIcon} size={46} />
 				<span>{translate('Geen entiteit gekoppeld', $selectedLanguageStore)}</span>
+			</div>
+		{:else if kind === 'device'}
+			<div class="vacuum-status">
+				<div>
+					<span>{translate('Status', $selectedLanguageStore)}</span>
+					<strong>{readableState(state)}</strong>
+				</div>
+				<div>
+					<span>{translate('Domein', $selectedLanguageStore)}</span>
+					<strong>{serviceDomain || '--'}</strong>
+				</div>
+			</div>
+			<div class="action-row">
+				<button type="button" class="np-btn ghost" onclick={() => void callService(serviceDomain || 'switch', 'turn_off')} disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button>
+				<button type="button" class="np-btn primary" onclick={() => void callService(serviceDomain || 'switch', 'turn_on')} disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button>
 			</div>
 		{:else if kind === 'climate'}
 			<div class="climate-temp-readout">

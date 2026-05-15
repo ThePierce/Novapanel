@@ -17,6 +17,7 @@ export function getLocalizedCardLabel(type: string, t: (key: string) => string) 
 	if (type === 'cameras_strip') return t("Camera's");
 	if (type === 'week_calendar') return t('Weekkalender');
 	if (type === 'light_button') return t('Lamp');
+	if (type === 'device_button') return t('Apparaat');
 	if (type === 'climate_button') return t('Climate');
 	if (type === 'cover_button') return t('Gordijn');
 	if (type === 'vacuum_button') return t('Stofzuiger');

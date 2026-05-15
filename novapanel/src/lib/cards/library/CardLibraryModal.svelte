@@ -82,6 +82,7 @@
 			case 'alarm_panel': return { icon: 'shield-lock', accent: '#f87171', accentSoft: 'rgba(248,113,113,0.18)' };
 			case 'lights_status': return { icon: 'bulb', accent: '#ffd338', accentSoft: 'rgba(255,211,56,0.18)' };
 			case 'light_button': return { icon: 'bulb', accent: '#ffd338', accentSoft: 'rgba(255,211,56,0.18)' };
+			case 'device_button': return { icon: 'plug', accent: '#34d399', accentSoft: 'rgba(52,211,153,0.18)' };
 			case 'climate_button': return { icon: 'temperature', accent: '#fb923c', accentSoft: 'rgba(251,146,60,0.18)' };
 			case 'cover_button': return { icon: 'curtains', accent: '#60a5fa', accentSoft: 'rgba(96,165,250,0.18)' };
 			case 'vacuum_button': return { icon: 'robot', accent: '#34d399', accentSoft: 'rgba(52,211,153,0.18)' };
@@ -325,6 +326,25 @@
 								<path d="M58 64 L52 58 M102 64 L108 58 M58 96 L52 102 M102 96 L108 102 M80 50 L80 44 M80 110 L80 116" stroke="#ffd338" stroke-width="1.6" stroke-linecap="round" opacity="0.55" />
 								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Lamp')}</text>
 								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">{t('Aan')} · 68%</text>
+							</svg>
+						{:else if entry.preview.kind === 'device_button'}
+							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<defs>
+									<linearGradient id={`np-device-plug-${entry.id}`} x1="0" y1="0" x2="1" y2="1">
+										<stop offset="0" stop-color="#34d399" />
+										<stop offset="1" stop-color="#059669" />
+									</linearGradient>
+								</defs>
+								<circle cx="80" cy="85" r="30" fill="rgba(52,211,153,0.09)" stroke="rgba(52,211,153,0.18)" stroke-width="1" />
+								<rect x="68" y="70" width="24" height="22" rx="7" fill={`url(#np-device-plug-${entry.id})`} opacity="0.94" />
+								<line x1="74" y1="63" x2="74" y2="72" stroke="#34d399" stroke-width="3" stroke-linecap="round" />
+								<line x1="86" y1="63" x2="86" y2="72" stroke="#34d399" stroke-width="3" stroke-linecap="round" />
+								<path d="M80 92 V108 Q80 116 70 116 H62" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" />
+								<circle cx="102" cy="64" r="10" fill="#34d399" />
+								<text x="102" y="68" text-anchor="middle" font-size="11" font-weight="700" fill="#06261c" font-family="Inter, system-ui, Arial">1</text>
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Apparaat')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">{t('Aan')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'climate_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">

@@ -20,6 +20,7 @@ export type CardPreview =
 	| { kind: 'cameras_strip' }
 	| { kind: 'week_calendar' }
 	| { kind: 'light_button' }
+	| { kind: 'device_button' }
 	| { kind: 'climate_button' }
 	| { kind: 'cover_button' }
 	| { kind: 'vacuum_button' }
@@ -142,6 +143,13 @@ export const cardCatalog: CardDefinition[] = [
 		label: 'Lampknop',
 		target: 'view',
 		preview: { kind: 'light_button' }
+	},
+	{
+		id: 'device_button',
+		type: 'device_button',
+		label: 'Apparaat',
+		target: 'view',
+		preview: { kind: 'device_button' }
 	},
 	{
 		id: 'climate_button',

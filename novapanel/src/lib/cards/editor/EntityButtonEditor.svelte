@@ -2,7 +2,7 @@
 	import { filteredEntities } from '$lib/ha/entities-store';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
+	import { isDeviceButtonEntityDomain, type EntityButtonKind } from '$lib/cards/entity-button-types';
 	import EntitySelectPicker from '$lib/cards/editor/EntitySelectPicker.svelte';
 	import { selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
@@ -30,10 +30,15 @@
 
 	const defaultIcon = $derived(fallbackIcon(kind));
 	const effectiveIcon = $derived((statusIcon && statusIcon.trim().length > 0) ? statusIcon.trim() : defaultIcon);
-	const candidates = $derived($filteredEntities.filter((entity) => entity.domain === kind));
+	const candidates = $derived(
+		$filteredEntities.filter((entity) =>
+			kind === 'device' ? isDeviceButtonEntityDomain(entity.domain) : entity.domain === kind
+		)
+	);
 	const selectedEntity = $derived(candidates.find((entity) => entity.entityId === entityId));
 
 	function fallbackIcon(value: EntityButtonKind) {
+		if (value === 'device') return 'mdi:power-plug-outline';
 		if (value === 'climate') return 'mdi:thermostat';
 		if (value === 'cover') return 'mdi:curtains';
 		if (value === 'vacuum') return 'mdi:robot-vacuum';
@@ -41,6 +46,7 @@
 	}
 
 	function domainLabel(value: EntityButtonKind) {
+		if (value === 'device') return translate('Apparaat entiteit', $selectedLanguageStore);
 		if (value === 'climate') return translate('Climate entiteit', $selectedLanguageStore);
 		if (value === 'cover') return translate('Cover entiteit', $selectedLanguageStore);
 		if (value === 'vacuum') return translate('Vacuum entiteit', $selectedLanguageStore);
@@ -82,6 +88,8 @@
 			/>
 			<datalist id="np-mdi-icon-suggestions">
 				<option value="mdi:sofa-outline"></option>
+				<option value="mdi:power-plug-outline"></option>
+				<option value="mdi:toggle-switch"></option>
 				<option value="mdi:thermostat"></option>
 				<option value="mdi:curtains"></option>
 				<option value="mdi:blinds-horizontal"></option>

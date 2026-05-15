@@ -2230,6 +2230,7 @@ if (browser) {
 	}
 
 	function entityButtonKindForCard(cardType: string): EntityButtonKind | null {
+		if (cardType === 'device_button') return 'device';
 		if (cardType === 'climate_button') return 'climate';
 		if (cardType === 'cover_button') return 'cover';
 		if (cardType === 'vacuum_button') return 'vacuum';

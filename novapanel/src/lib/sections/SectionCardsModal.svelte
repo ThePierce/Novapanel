@@ -33,13 +33,14 @@
 
 	function groupKey(cardType: string): GroupKey {
 		if (cardType === 'light_button' || cardType === 'lights_status') return 'lights';
-		if (cardType === 'climate_button' || cardType === 'cover_button' || cardType === 'vacuum_button' || cardType === 'devices_status' || cardType === 'openings_status' || cardType === 'availability_status') return 'devices';
+		if (cardType === 'device_button' || cardType === 'climate_button' || cardType === 'cover_button' || cardType === 'vacuum_button' || cardType === 'devices_status' || cardType === 'openings_status' || cardType === 'availability_status') return 'devices';
 		if (cardType === 'media_players_status' || cardType === 'media_player_button') return 'media';
 		return 'other';
 	}
 
 	function cardIcon(cardType: string): string {
 		if (cardType === 'light_button' || cardType === 'lights_status') return 'bulb';
+		if (cardType === 'device_button') return 'plug';
 		if (cardType === 'climate_button') return 'temperature';
 		if (cardType === 'cover_button') return 'curtains';
 		if (cardType === 'vacuum_button') return 'robot';
@@ -63,6 +64,7 @@
 	}
 
 	function entityButtonKindForCard(cardType: string): EntityButtonKind | null {
+		if (cardType === 'device_button') return 'device';
 		if (cardType === 'climate_button') return 'climate';
 		if (cardType === 'cover_button') return 'cover';
 		if (cardType === 'vacuum_button') return 'vacuum';

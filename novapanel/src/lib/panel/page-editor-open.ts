@@ -123,15 +123,17 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		card.statusIcon ??
 		(card.cardType === 'light_button'
 			? 'mdi:lightbulb-outline'
-			: card.cardType === 'climate_button'
-				? 'mdi:thermostat'
-				: card.cardType === 'cover_button'
-					? 'mdi:curtains'
-					: card.cardType === 'vacuum_button'
-						? 'mdi:robot-vacuum'
-						: card.cardType === 'media_player_button'
-							? 'mdi:speaker'
-							: undefined);
+			: card.cardType === 'device_button'
+				? 'mdi:power-plug-outline'
+				: card.cardType === 'climate_button'
+					? 'mdi:thermostat'
+					: card.cardType === 'cover_button'
+						? 'mdi:curtains'
+						: card.cardType === 'vacuum_button'
+							? 'mdi:robot-vacuum'
+							: card.cardType === 'media_player_button'
+								? 'mdi:speaker'
+								: undefined);
 	return {
 		title: card.title,
 		type: card.cardType,
