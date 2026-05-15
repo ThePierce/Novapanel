@@ -44,8 +44,8 @@
 			if (normalized === 'shield-off' || normalized === 'shield-off-outline') return 'shield_off';
 			if (normalized === 'shield-alert' || normalized === 'shield-half-full') return 'shield_alert';
 			if (normalized === 'thermostat' || normalized === 'home-thermometer-outline') return 'thermostat';
-			if (normalized === 'curtains-closed') return 'curtains_closed';
-			if (normalized === 'curtains' || normalized === 'blinds-horizontal' || normalized === 'window-shutter') return 'curtains';
+			if (normalized === 'curtains-closed' || normalized === 'blinds-horizontal-closed' || normalized === 'blinds' || normalized === 'window-shutter') return 'curtains_closed';
+			if (normalized === 'curtains' || normalized === 'blinds-horizontal' || normalized === 'blinds-open' || normalized === 'window-shutter-open') return 'curtains';
 			if (normalized === 'robot-vacuum' || normalized === 'robot-vacuum-variant') return 'robot_vacuum';
 			if (normalized === 'speaker' || normalized === 'speaker-wireless' || normalized === 'audio-video') return 'speaker';
 			if (normalized === 'sofa' || normalized === 'sofa-outline' || normalized === 'seat-outline') return 'sofa';

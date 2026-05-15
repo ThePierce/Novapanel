@@ -70,19 +70,26 @@
 		return 'mdi:speaker';
 	}
 
-	function coverIconForState(position: number | null, coverState: string) {
+	function isCoverClosed(position: number | null, coverState: string) {
 		if (position !== null) {
-			return Math.round(Math.max(0, Math.min(100, position))) <= 0
-				? 'mdi:curtains-closed'
-				: 'mdi:curtains';
+			return Math.round(Math.max(0, Math.min(100, position))) <= 0;
 		}
-		return coverState === 'closed' || coverState === 'closing'
-			? 'mdi:curtains-closed'
-			: 'mdi:curtains';
+		return coverState === 'closed' || coverState === 'closing';
+	}
+
+	function coverIconForState(position: number | null, coverState: string, configuredIcon: string | undefined) {
+		const configured = (configuredIcon ?? '').trim();
+		const normalized = configured.toLowerCase().replace(/^mdi:/, '');
+		const closed = isCoverClosed(position, coverState);
+		if (normalized.includes('blinds-horizontal')) return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
+		if (normalized.includes('blinds')) return closed ? 'mdi:blinds' : 'mdi:blinds-open';
+		if (normalized.includes('window-shutter')) return closed ? 'mdi:window-shutter' : 'mdi:window-shutter-open';
+		if (normalized && !normalized.includes('curtains')) return configured;
+		return closed ? 'mdi:curtains-closed' : 'mdi:curtains';
 	}
 
 	function iconForEntity(value: EntityButtonKind, configuredIcon: string | undefined, position: number | null, currentState: string) {
-		if (value === 'cover') return coverIconForState(position, currentState);
+		if (value === 'cover') return coverIconForState(position, currentState, configuredIcon);
 		return (configuredIcon && configuredIcon.trim().length > 0) ? configuredIcon.trim() : fallbackIcon(value);
 	}
 

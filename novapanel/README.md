@@ -7,6 +7,7 @@ Nova Panel is a Home Assistant kiosk dashboard built with Svelte 5 and SvelteKit
 - [Install As A Home Assistant Add-on](#install-as-a-home-assistant-add-on)
 - [Add-on Configuration](#add-on-configuration)
 - [Optional Integrations](#optional-integrations)
+- [1.0.3 Update Summary](#103-update-summary)
 - [Dashboard Model](#dashboard-model)
 - [Using Edit Mode](#using-edit-mode)
 - [Card Reference](#card-reference)
@@ -53,6 +54,13 @@ The token is required for entity data, service calls, cameras, calendars, media 
 - Advanced Camera Card if you enable the Advanced Camera Card option for camera tiles.
 - Spotify developer credentials if you want Spotify controls in the media hub.
 
+## 1.0.3 Update Summary
+
+- Added the main-area Device Button Card for switch, plug, and appliance-style controls.
+- Updated status card editing so display names and icon overrides live in edit mode, show the original Home Assistant name in parentheses, and only list entities included in that card.
+- Improved entity button cards with faster live state refresh, cleaner cover subtitles, and cover icons that follow open/closed status for curtains, blinds, and shutters.
+- Tightened camera previews, calendar loading, media image handling, Spotify callback handling, and Home Assistant proxy behavior to reduce console noise and stale browser assets.
+
 ## Dashboard Model
 
 - Sidebar cards are intended for status views such as weather, alarm, media, availability, and device summaries.
@@ -67,11 +75,15 @@ Entity pickers use Home Assistant friendly names when available. If an entity ha
 
 Most cards ask for one or more Home Assistant entities. Start by selecting the entity, then optionally set a custom display name, icon, color, ignored entities, or card-specific options. Save the card when the preview looks right.
 
+Status cards edit entity display names and icon overrides from edit mode instead of the normal detail popups. Nova Panel only shows rows for entities included in that specific card and keeps the original Home Assistant friendly name visible in parentheses.
+
 ## Card Reference
 
 The card guides below are collapsed by default. Expand the card you want to configure.
 
 ### Sidebar Cards
+
+Status cards share a scoped entity editor in edit mode. Use it to rename entities or override icons for the entities that are actually included in the selected status card.
 
 <details>
 <summary><strong>Clock Card</strong></summary>
@@ -354,6 +366,27 @@ How it works:
 </details>
 
 <details>
+<summary><strong>Device Button Card</strong></summary>
+
+The device button card controls a switch-like device from the main area.
+
+Use it for plugs, appliances, relays, fans exposed as switches, and other device entities that should behave like a simple on/off button.
+
+What to fill in:
+
+- Select a `switch.*`, `input_boolean.*`, or other supported device-like entity.
+- Optionally set a custom display name.
+- Optionally set an MDI icon, for example `mdi:power-plug-outline`, `mdi:fan`, or `mdi:washing-machine`.
+
+How it works:
+
+- Press the icon area to toggle the device on or off.
+- Press the rest of the card to open the detail popup.
+- The card uses the live Home Assistant state snapshot, so the button state updates without a full page refresh.
+
+</details>
+
+<details>
 <summary><strong>Climate Button Card</strong></summary>
 
 The climate button card controls a Home Assistant `climate.*` entity.
@@ -381,9 +414,9 @@ What to fill in:
 
 - Select the `cover.*` entity.
 - Optionally set a custom display name.
-- Optionally set an MDI icon, for example `mdi:curtains`, `mdi:blinds`, or `mdi:garage`.
+- Optionally set an MDI icon, for example `mdi:curtains`, `mdi:blinds-horizontal`, `mdi:window-shutter`, or `mdi:garage`.
 
-The popup uses a vertical position control where open and closed follow the Home Assistant cover position. Open, stop, and close buttons remain available below the slider.
+The card subtitle shows only the open percentage. Curtain, blind, and shutter icons automatically switch between open and closed variants based on the Home Assistant state or `current_position`; other custom icons stay fixed. The popup uses a vertical position control where open and closed follow the Home Assistant cover position. Open, stop, and close buttons remain available below the slider.
 
 </details>
 
