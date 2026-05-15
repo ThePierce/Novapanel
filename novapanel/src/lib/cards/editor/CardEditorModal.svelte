@@ -1003,10 +1003,20 @@ let availabilityIgnoredOpen = $state(false);
 <style>
 	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.36); border: 0; padding: 0; margin: 0; z-index: 40; cursor: default; }
 	.settings-modal { position: fixed; top: 50%; left: 50%; background: #121722; border: 1px solid #2e384d; border-radius: 0.6rem; padding: 1rem; z-index: 60; transform: translate(-50%, -50%); }
-	.app-popup { width: min(var(--popup-width, 850px), calc(100vw - 1.5rem)); height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem)); max-height: calc(100vh - 1.5rem); display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; }
-	.card-editor-modal { grid-template-rows: auto 1fr auto; }
+	.app-popup {
+		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
+		height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
+		height: min(var(--popup-height, 1140px), calc(100dvh - 1.5rem));
+		max-height: calc(100vh - 1.5rem);
+		max-height: calc(100dvh - 1.5rem);
+		display: grid;
+		grid-template-rows: auto auto minmax(0, 1fr);
+		overflow: hidden;
+		min-height: 0;
+	}
+	.card-editor-modal { grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
 	.card-editor-modal.camera-editor-wide { width: min(980px, calc(100vw - 1.5rem)); }
-	.tab-content { overflow: auto; padding-right: 0.2rem; scrollbar-width: none; -ms-overflow-style: none; }
+	.tab-content { min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 0.2rem; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
 	.tab-content::-webkit-scrollbar { width: 0; height: 0; display: none; }
 	.card-editor-content { display: grid; gap: 0.6rem; align-content: start; }
 	/* Picker popup */
@@ -1034,8 +1044,9 @@ let availabilityIgnoredOpen = $state(false);
 		border-radius: 18px;
 		border: 0.5px solid rgba(255,255,255,0.08);
 		padding: 0;
-		grid-template-rows: auto 1fr auto;
+		grid-template-rows: auto minmax(0, 1fr) auto;
 		overflow: hidden;
+		min-height: 0;
 	}
 	.np-editor::before {
 		content: '';
@@ -1121,7 +1132,7 @@ let availabilityIgnoredOpen = $state(false);
 		50% { opacity: 0.4; transform: scale(1.4); }
 	}
 	.np-editor-body {
-		padding: 14px 22px 28px;
+		padding: 14px 22px calc(28px + env(safe-area-inset-bottom, 0px));
 		display: flex;
 		flex-direction: column;
 		gap: 9px;
@@ -1135,7 +1146,7 @@ let availabilityIgnoredOpen = $state(false);
 		-ms-overflow-style: none;
 		-webkit-overflow-scrolling: touch;
 		overscroll-behavior: contain;
-		scroll-padding-bottom: 28px;
+		scroll-padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 	}
 	.np-editor-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
 	.np-name-block {

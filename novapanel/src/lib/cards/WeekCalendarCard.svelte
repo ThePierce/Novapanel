@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
 	import { entityStore } from '$lib/ha/entities-store';
-	import { getHaConnectionConfig, type HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
+	import { browserSafeHomeAssistantUrl, type HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
 	import { listCalendarEvents, type CalendarEvent } from '$lib/ha/calendar-service';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { localeFor, selectedLanguageStore, translate, translateState } from '$lib/i18n';
@@ -67,8 +67,6 @@
 	let loading = $state(false);
 	let error = $state('');
 	let personModal = $state<PersonModalState | null>(null);
-	let hassUrl = $state('');
-	let configLoadAttempted = $state(false);
 	let calendarScrollEl = $state<HTMLDivElement | null>(null);
 	let loadToken = 0;
 	let sourceKey = $state('');
@@ -94,18 +92,6 @@
 
 	$effect(() => {
 		sourceKey = JSON.stringify(visibleSources.map((source) => [source.entityId, source.alias, source.color, source.personEntityId]));
-	});
-
-	$effect(() => {
-		if (configLoadAttempted) return;
-		configLoadAttempted = true;
-		getHaConnectionConfig()
-			.then((cfg) => {
-				if (cfg?.hassUrl) hassUrl = cfg.hassUrl.replace(/\/+$/, '');
-			})
-			.catch(() => {
-				/* avatar fallback gebruikt de huidige origin */
-			});
 	});
 
 	$effect(() => {
@@ -208,24 +194,7 @@
 
 	function avatarUrlFor(entity: HomeAssistantEntity | null) {
 		const raw = typeof entity?.attributes?.entity_picture === 'string' ? entity.attributes.entity_picture : '';
-		if (!raw) return '';
-		const base = typeof window !== 'undefined' ? window.location.origin : hassUrl;
-		const toLocalApiPath = (pathname: string) => {
-			const coreApiMatch = pathname.match(/^\/core(\/api\/.*)$/);
-			if (coreApiMatch?.[1]) return coreApiMatch[1];
-			return pathname.startsWith('/api/') ? pathname : '';
-		};
-		if (/^https?:\/\//i.test(raw)) {
-			try {
-				const parsed = new URL(raw);
-				const apiPath = toLocalApiPath(parsed.pathname);
-				if (base && apiPath) return `${base}${apiPath}${parsed.search}${parsed.hash}`;
-			} catch {}
-			return raw;
-		}
-		const clean = raw.startsWith('/') ? raw : `/${raw}`;
-		const apiPath = toLocalApiPath(clean);
-		return `${base}${apiPath || clean}`;
+		return raw ? browserSafeHomeAssistantUrl(raw) : '';
 	}
 
 	function initialFor(sourceOrPerson: CalendarSource | HomeAssistantEntity) {

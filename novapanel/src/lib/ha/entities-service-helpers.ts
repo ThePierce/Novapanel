@@ -142,36 +142,95 @@ export function getNovaApiCandidates(apiPath: string): string[] {
 	const candidates = new Set<string>();
 	const pathname = window.location.pathname || '/';
 	const currentBase = getCurrentNovaAppBase(pathname);
+	let runningUnderNovaRoute = Boolean(currentBase);
 	if (currentBase) candidates.add(`${currentBase}${endpoint}`);
 	const ingressPath = (window as NovaWindow).__novapanel_ingress?.trim() ?? '';
-	if (ingressPath) candidates.add(`${ingressPath}${endpoint}`);
+	if (ingressPath) {
+		runningUnderNovaRoute = true;
+		candidates.add(`${ingressPath}${endpoint}`);
+	}
 	try {
 		const perfIngress = performance
 			.getEntriesByType('resource')
 			.map((entry) => entry.name)
 			.find((url) => url.includes('/api/hassio_ingress/'));
 		const perfIngressBase = perfIngress?.match(/\/api\/hassio_ingress\/[^/]+/)?.[0] ?? '';
-		if (perfIngressBase) candidates.add(`${perfIngressBase}${endpoint}`);
+		if (perfIngressBase) {
+			runningUnderNovaRoute = true;
+			candidates.add(`${perfIngressBase}${endpoint}`);
+		}
 	} catch {}
 	try {
 		const base = new URL(document.baseURI);
 		const basePath = base.pathname.replace(/\/+$/, '');
 		const documentBase = getCurrentNovaAppBase(basePath);
-		if (documentBase) candidates.add(`${documentBase}${endpoint}`);
+		if (documentBase) {
+			runningUnderNovaRoute = true;
+			candidates.add(`${documentBase}${endpoint}`);
+		}
 		if (basePath.includes('/api/hassio_ingress/')) {
 			const ingressBase = basePath.match(/^\/api\/hassio_ingress\/[^/]+/)?.[0] ?? '';
-			if (ingressBase) candidates.add(`${ingressBase}${endpoint}`);
+			if (ingressBase) {
+				runningUnderNovaRoute = true;
+				candidates.add(`${ingressBase}${endpoint}`);
+			}
 		}
 		if (basePath.includes('/local_novapanel')) {
 			const localBase = basePath.match(/^\/local_novapanel/)?.[0] ?? '';
-			if (localBase) candidates.add(`${localBase}${endpoint}`);
+			if (localBase) {
+				runningUnderNovaRoute = true;
+				candidates.add(`${localBase}${endpoint}`);
+			}
 		}
 	} catch {}
 	const ingressMatch = pathname.match(/^\/api\/hassio_ingress\/[^/]+/);
-	if (ingressMatch?.[0]) candidates.add(`${ingressMatch[0]}${endpoint}`);
-	candidates.add(endpoint);
-	candidates.add(`/local_novapanel${endpoint}`);
+	if (ingressMatch?.[0]) {
+		runningUnderNovaRoute = true;
+		candidates.add(`${ingressMatch[0]}${endpoint}`);
+	}
+	if (!runningUnderNovaRoute) {
+		candidates.add(endpoint);
+		candidates.add(`/local_novapanel${endpoint}`);
+	}
 	return [...candidates];
+}
+
+export function getNovaApiUrl(apiPath: string): string {
+	const endpoint = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
+	const candidate = getNovaApiCandidates(endpoint)[0] ?? endpoint;
+	try {
+		return new URL(candidate, window.location.origin || 'http://localhost').href;
+	} catch {
+		return candidate;
+	}
+}
+
+function extractHomeAssistantApiPath(pathname: string): string {
+	const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`;
+	const ingressMatch = normalized.match(/^\/api\/hassio_ingress\/[^/]+(\/api\/.*)$/);
+	if (ingressMatch?.[1]) return ingressMatch[1];
+	const localMatch = normalized.match(/^\/local_novapanel(\/api\/.*)$/);
+	if (localMatch?.[1]) return localMatch[1];
+	const supervisorMatch = normalized.match(/^\/(?:supervisor\/)?core(\/api\/.*)$/);
+	if (supervisorMatch?.[1]) return supervisorMatch[1];
+	return normalized.startsWith('/api/') ? normalized : '';
+}
+
+export function browserSafeHomeAssistantUrl(raw: string): string {
+	if (!raw) return '';
+	const origin = typeof window !== 'undefined' ? window.location.origin : '';
+	if (!origin) return raw;
+
+	try {
+		const parsed = new URL(raw, origin);
+		const apiPath = extractHomeAssistantApiPath(parsed.pathname);
+		if (apiPath) return getNovaApiUrl(`${apiPath}${parsed.search}${parsed.hash}`);
+		return parsed.href;
+	} catch {
+		const clean = raw.startsWith('/') ? raw : `/${raw}`;
+		const apiPath = extractHomeAssistantApiPath(clean);
+		return apiPath ? getNovaApiUrl(apiPath) : `${origin}${clean}`;
+	}
 }
 
 export function getNovaWebSocketCandidates(apiPath: string): string[] {

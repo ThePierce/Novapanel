@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { entityStore } from '$lib/ha/entities-store';
+	import { browserSafeHomeAssistantUrl, getNovaApiUrl } from '$lib/ha/entities-service-helpers';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import CameraPreviewImage from '$lib/cards/CameraPreviewImage.svelte';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
@@ -26,35 +27,12 @@
 
 	const PREVIEW_REFRESH_SECONDS = 12;
 
-	function browserSafeHaApiUrl(raw: string): string {
-		if (!raw) return '';
-		const base = typeof window !== 'undefined' ? window.location.origin : '';
-		if (!base) return raw;
-		const toLocalApiPath = (pathname: string) => {
-			const coreApiMatch = pathname.match(/^\/core(\/api\/.*)$/);
-			if (coreApiMatch?.[1]) return coreApiMatch[1];
-			return pathname.startsWith('/api/') ? pathname : '';
-		};
-		if (/^https?:\/\//i.test(raw)) {
-			try {
-				const parsed = new URL(raw);
-				const apiPath = toLocalApiPath(parsed.pathname);
-				if (apiPath) return `${base}${apiPath}${parsed.search}${parsed.hash}`;
-			} catch {}
-			return raw;
-		}
-		const clean = raw.startsWith('/') ? raw : `/${raw}`;
-		const apiPath = toLocalApiPath(clean);
-		return `${base}${apiPath || clean}`;
-	}
-
 	function snapshotUrlFor(entityPicture: string): string {
-		return browserSafeHaApiUrl(entityPicture);
+		return browserSafeHomeAssistantUrl(entityPicture);
 	}
 
 	function cameraProxyUrlFor(entityId: string): string {
-		const base = typeof window !== 'undefined' ? window.location.origin : '';
-		return `${base}/api/camera_proxy/${encodeURIComponent(entityId)}`;
+		return getNovaApiUrl(`/api/camera_proxy/${encodeURIComponent(entityId)}`);
 	}
 
 	function isCameraVisible(entityId: string): boolean {

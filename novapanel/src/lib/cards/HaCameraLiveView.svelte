@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type HlsType from 'hls.js';
-	import { getNovaApiCandidates, getNovaWebSocketCandidates } from '$lib/ha/entities-service-helpers';
+	import {
+		browserSafeHomeAssistantUrl,
+		getNovaApiCandidates,
+		getNovaWebSocketCandidates
+	} from '$lib/ha/entities-service-helpers';
 
 	type Props = {
 		entityId: string;
@@ -47,17 +51,7 @@
 	}
 
 	function resolveHaUrl(rawUrl: string): string {
-		if (!rawUrl) return '';
-		const localBase = typeof window !== 'undefined' ? window.location.origin : '';
-		try {
-			const parsed = new URL(rawUrl, localBase || undefined);
-			if (parsed.pathname.startsWith('/api/')) {
-				return `${localBase}${parsed.pathname}${parsed.search}${parsed.hash}`;
-			}
-			return parsed.href;
-		} catch {
-			return rawUrl;
-		}
+		return browserSafeHomeAssistantUrl(rawUrl);
 	}
 
 	async function callHaWs(params: Record<string, unknown>): Promise<unknown> {

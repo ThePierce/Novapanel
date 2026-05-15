@@ -31,7 +31,8 @@
 		const el = cameraScrollEl;
 		if (!el) return;
 		requestAnimationFrame(() => {
-			el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+			const scrollTarget = (el.closest('.np-editor-body') as HTMLElement | null) ?? el;
+			scrollTarget.scrollTo({ top: scrollTarget.scrollHeight, behavior: 'smooth' });
 		});
 	}
 
@@ -230,13 +231,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 11px;
-		max-height: min(62dvh, 34rem);
-		overflow-x: hidden;
-		overflow-y: auto;
-		padding-right: 2px;
-		-webkit-overflow-scrolling: touch;
-		overscroll-behavior: contain;
-		touch-action: pan-y;
+		max-height: none;
+		overflow: visible;
+		padding-right: 0;
 	}
 	.np-help {
 		font-size: 11px;

@@ -62,7 +62,7 @@
 		background: rgba(255,255,255,0.025);
 		border: 0.5px solid rgba(255,255,255,0.07);
 		border-radius: 13px;
-		overflow: hidden;
+		overflow: visible;
 		transition: border-color 0.2s, background 0.2s, transform 0.2s;
 		position: relative;
 		min-width: 0;
@@ -152,9 +152,10 @@
 		display: flex;
 		flex-direction: column;
 		gap: 11px;
+		min-height: 0;
 		min-width: 0;
 		max-width: 100%;
 		box-sizing: border-box;
-		overflow: hidden;
+		overflow: visible;
 	}
 </style>

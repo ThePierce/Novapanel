@@ -517,19 +517,30 @@ async function getHaProxyConfig(req) {
 	};
 }
 
-function getHaWebSocketUrl(hassUrl) {
+function getHaWebSocketUrls(hassUrl) {
 	const normalized = String(hassUrl || '').trim().replace(/\/+$/, '');
-	if (!normalized) return '';
-	if (normalized.startsWith('ws://') || normalized.startsWith('wss://')) {
-		return `${normalized}/api/websocket`;
+	if (!normalized) return [];
+	const socketBase = normalized.startsWith('ws://') || normalized.startsWith('wss://')
+		? normalized
+		: normalized.startsWith('https://')
+			? `wss://${normalized.slice(8)}`
+			: normalized.startsWith('http://')
+				? `ws://${normalized.slice(7)}`
+				: `ws://${normalized}`;
+	try {
+		const parsed = new URL(socketBase);
+		const basePath = parsed.pathname.replace(/\/+$/, '');
+		const origin = `${parsed.protocol}//${parsed.host}`;
+		if (basePath.endsWith('/core')) {
+			return [
+				`${origin}${basePath}/websocket`,
+				`${origin}${basePath}/api/websocket`
+			];
+		}
+		return [`${origin}${basePath}/api/websocket`];
+	} catch {
+		return [`${socketBase}/api/websocket`];
 	}
-	if (normalized.startsWith('https://')) {
-		return `wss://${normalized.slice(8)}/api/websocket`;
-	}
-	if (normalized.startsWith('http://')) {
-		return `ws://${normalized.slice(7)}/api/websocket`;
-	}
-	return `ws://${normalized}/api/websocket`;
 }
 
 function validateHaServicePart(value, label) {
@@ -608,15 +619,7 @@ app.post(
 	handleHaApiService
 );
 
-async function callHaWebSocket(req, payload, timeoutMs = 15000) {
-	const { hassUrl, token } = await getHaProxyConfig(req);
-	if (!hassUrl) throw new Error('hass_url_unavailable');
-	if (!token) throw new Error('hass_token_unavailable');
-	if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-		throw new Error('invalid_ws_payload');
-	}
-	const socketUrl = getHaWebSocketUrl(hassUrl);
-	if (!socketUrl) throw new Error('ha_ws_url_unavailable');
+async function callHaWebSocketOnce(socketUrl, token, payload, timeoutMs = 15000) {
 	const resolvesWithFirstEvent = payload.type === 'calendar/event/subscribe';
 
 	return await new Promise((resolve, reject) => {
@@ -671,6 +674,26 @@ async function callHaWebSocket(req, payload, timeoutMs = 15000) {
 			if (!settled) finish(new Error('ha_ws_closed'));
 		};
 	});
+}
+
+async function callHaWebSocket(req, payload, timeoutMs = 15000) {
+	const { hassUrl, token } = await getHaProxyConfig(req);
+	if (!hassUrl) throw new Error('hass_url_unavailable');
+	if (!token) throw new Error('hass_token_unavailable');
+	if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+		throw new Error('invalid_ws_payload');
+	}
+	const socketUrls = getHaWebSocketUrls(hassUrl);
+	if (socketUrls.length === 0) throw new Error('ha_ws_url_unavailable');
+	let lastError = null;
+	for (const socketUrl of socketUrls) {
+		try {
+			return await callHaWebSocketOnce(socketUrl, token, payload, timeoutMs);
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	throw lastError ?? new Error('ha_ws_failed');
 }
 
 async function handleHaWs(req, res) {
@@ -736,15 +759,60 @@ function setupHaWebSocketProxy(server) {
 		};
 		try {
 			const { hassUrl, token } = await getHaProxyConfig(req);
-			const socketUrl = getHaWebSocketUrl(hassUrl);
-			if (!socketUrl) {
+			const socketUrls = getHaWebSocketUrls(hassUrl);
+			if (socketUrls.length === 0) {
 				closeBoth(1011, 'hass_url_unavailable');
 				return;
 			}
 			if (client.readyState === WsClient.OPEN) {
 				client.send(JSON.stringify({ type: 'auth_required', ha_version: '2026.5.0' }));
 			}
-			upstream = new WsClient(socketUrl);
+			let socketUrlIndex = 0;
+			const connectUpstream = () => {
+				if (closed) return;
+				upstreamAuthenticated = false;
+				const socketUrl = socketUrls[socketUrlIndex];
+				upstream = new WsClient(socketUrl);
+				upstream.on('open', () => {
+					// HA always starts websocket sessions with auth_required. The message handler below
+					// will authenticate server-side before client messages are forwarded.
+				});
+				const currentUpstream = upstream;
+				upstream.on('message', (data, isBinary) => {
+					if (upstream !== currentUpstream) return;
+					try {
+						const raw = typeof data === 'string' ? data : data?.toString?.() ?? '';
+						const message = JSON.parse(raw);
+						if (message?.type === 'auth_required') {
+							upstream?.send(JSON.stringify({ type: 'auth', access_token: token }));
+							return;
+						}
+						if (message?.type === 'auth_ok') {
+							upstreamAuthenticated = true;
+							sendClientAuthOk();
+							return;
+						}
+						if (message?.type === 'auth_invalid') {
+							if (client.readyState === WsClient.OPEN) client.send(data, { binary: isBinary });
+							closeBoth(1008, 'upstream_auth_invalid');
+							return;
+						}
+					} catch {}
+					if (!clientAuthenticated || !upstreamAuthenticated) return;
+					if (client.readyState === WsClient.OPEN) client.send(data, { binary: isBinary });
+				});
+				const retryOrClose = (reason) => {
+					if (upstream !== currentUpstream) return;
+					if (!closed && !upstreamAuthenticated && socketUrlIndex < socketUrls.length - 1) {
+						socketUrlIndex += 1;
+						connectUpstream();
+						return;
+					}
+					closeBoth(1011, reason);
+				};
+				upstream.on('close', () => retryOrClose('upstream_closed'));
+				upstream.on('error', () => retryOrClose('upstream_error'));
+			};
 			client.on('message', (data, isBinary) => {
 				if (!clientAuthenticated) {
 					try {
@@ -763,36 +831,9 @@ function setupHaWebSocketProxy(server) {
 				}
 				upstream.send(data, { binary: isBinary });
 			});
-			upstream.on('open', () => {
-				// HA always starts websocket sessions with auth_required. The message handler below
-				// will authenticate server-side before client messages are forwarded.
-			});
-			upstream.on('message', (data, isBinary) => {
-				try {
-					const raw = typeof data === 'string' ? data : data?.toString?.() ?? '';
-					const message = JSON.parse(raw);
-					if (message?.type === 'auth_required') {
-						upstream?.send(JSON.stringify({ type: 'auth', access_token: token }));
-						return;
-					}
-					if (message?.type === 'auth_ok') {
-						upstreamAuthenticated = true;
-						sendClientAuthOk();
-						return;
-					}
-					if (message?.type === 'auth_invalid') {
-						if (client.readyState === WsClient.OPEN) client.send(data, { binary: isBinary });
-						closeBoth(1008, 'upstream_auth_invalid');
-						return;
-					}
-				} catch {}
-				if (!clientAuthenticated || !upstreamAuthenticated) return;
-				if (client.readyState === WsClient.OPEN) client.send(data, { binary: isBinary });
-			});
 			client.on('close', () => closeBoth());
 			client.on('error', () => closeBoth(1011, 'client_error'));
-			upstream.on('close', () => closeBoth());
-			upstream.on('error', () => closeBoth(1011, 'upstream_error'));
+			connectUpstream();
 		} catch (error) {
 			log(`ha websocket proxy error: ${error instanceof Error ? error.message : String(error)}`);
 			closeBoth(1011, 'proxy_error');
@@ -837,7 +878,10 @@ async function proxyHaRequest(req, res) {
 			res.status(502).send('hass_url_unavailable');
 			return;
 		}
-		const target = new URL(req.originalUrl || req.url, `${hassUrl}/`);
+		const forwardUrl = String(req.originalUrl || req.url || '/')
+			.replace(/^\/api\/hassio_ingress\/[^/]+(?=\/api\/)/, '')
+			.replace(/^\/local_novapanel(?=\/api\/)/, '');
+		const target = new URL(forwardUrl, `${hassUrl}/`);
 		const headers = {
 			accept: req.headers.accept || '*/*',
 			'accept-encoding': 'identity',
@@ -879,7 +923,19 @@ app.use(
 		'/api/hls',
 		'/api/image_proxy',
 		'/api/media_source',
-		'/api/stream'
+		'/api/stream',
+		'/local_novapanel/api/camera_proxy',
+		'/local_novapanel/api/camera_proxy_stream',
+		'/local_novapanel/api/hls',
+		'/local_novapanel/api/image_proxy',
+		'/local_novapanel/api/media_source',
+		'/local_novapanel/api/stream',
+		'/api/hassio_ingress/:ingressToken/api/camera_proxy',
+		'/api/hassio_ingress/:ingressToken/api/camera_proxy_stream',
+		'/api/hassio_ingress/:ingressToken/api/hls',
+		'/api/hassio_ingress/:ingressToken/api/image_proxy',
+		'/api/hassio_ingress/:ingressToken/api/media_source',
+		'/api/hassio_ingress/:ingressToken/api/stream'
 	],
 	proxyHaRequest
 );
