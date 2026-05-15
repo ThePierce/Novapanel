@@ -39,6 +39,22 @@ const HA_SIDEBAR_SELECTOR = [
 	'app-drawer ha-sidebar'
 ].join(',');
 
+const HA_DRAWER_SELECTOR = ['ha-drawer', 'app-drawer'].join(',');
+
+const HA_SIDEBAR_INNER_SELECTOR = [
+	'.mdc-drawer',
+	'.mdc-drawer--modal',
+	'.mdc-drawer--open',
+	'aside',
+	'nav',
+	'#drawer',
+	'#sidebar',
+	'.drawer',
+	'.sidebar'
+].join(',');
+
+const SIDEBAR_Z_INDEX = '2147483647';
+
 let novaOpenedSidebar = false;
 let sidebarOpening = false;
 let openAttemptId = 0;
@@ -214,6 +230,30 @@ function setImportant(snapshots: StyleSnapshot[], element: HTMLElement, property
 	element.style.setProperty(property, value, 'important');
 }
 
+function isCurrentFrame(frame: HTMLElement): boolean {
+	const iframe = frame as HTMLIFrameElement;
+	try {
+		if (iframe.contentWindow === window) return true;
+	} catch {}
+	const src = iframe.getAttribute('src') ?? '';
+	return (
+		src.includes('hassio_ingress') ||
+		src.includes('novapanel') ||
+		src.includes('e806fdae_novapanel')
+	);
+}
+
+function lowerNovaPanelFrames(targetWindow: Window, snapshots: StyleSnapshot[]) {
+	if (targetWindow === window) return;
+	const document = getAccessibleDocument(targetWindow);
+	if (!document) return;
+	for (const frame of deepQuerySelectorAllElements(document, 'iframe')) {
+		if (!isCurrentFrame(frame)) continue;
+		setImportant(snapshots, frame, 'z-index', '1');
+		setImportant(snapshots, frame, 'pointer-events', 'none');
+	}
+}
+
 function setAttributeTemporarily(
 	snapshots: AttributeSnapshot[],
 	element: HTMLElement,
@@ -292,6 +332,23 @@ function installParentOutsideHandler(targetWindow: Window, cleanupCallbacks: Arr
 	cleanupCallbacks.push(() => document.removeEventListener('pointerdown', handler, true));
 }
 
+function applyDrawerOverlay(drawer: HTMLElement, snapshots: StyleSnapshot[]) {
+	setImportant(snapshots, drawer, 'display', 'block');
+	setImportant(snapshots, drawer, 'visibility', 'visible');
+	setImportant(snapshots, drawer, 'opacity', '1');
+	setImportant(snapshots, drawer, 'position', 'fixed');
+	setImportant(snapshots, drawer, 'z-index', SIDEBAR_Z_INDEX);
+	setImportant(snapshots, drawer, 'top', '0');
+	setImportant(snapshots, drawer, 'left', '0');
+	setImportant(snapshots, drawer, 'right', '0');
+	setImportant(snapshots, drawer, 'bottom', '0');
+	setImportant(snapshots, drawer, 'width', '100vw');
+	setImportant(snapshots, drawer, 'height', '100vh');
+	setImportant(snapshots, drawer, 'overflow', 'visible');
+	setImportant(snapshots, drawer, 'pointer-events', 'none');
+	setImportant(snapshots, drawer, 'transform', 'translateX(0)');
+}
+
 function applyExpandedSidebarOverlay(
 	sidebar: HTMLElement,
 	styleSnapshots: StyleSnapshot[],
@@ -299,24 +356,51 @@ function applyExpandedSidebarOverlay(
 	propertySnapshots: PropertySnapshot[]
 ) {
 	setPropertyTemporarily(propertySnapshots, sidebar, 'alwaysExpand', true);
+	setPropertyTemporarily(propertySnapshots, sidebar, 'expanded', true);
+	setPropertyTemporarily(propertySnapshots, sidebar, 'narrow', false);
+	setPropertyTemporarily(propertySnapshots, sidebar, 'rail', false);
 	setAttributeTemporarily(attributeSnapshots, sidebar, 'always-expand', true);
 	setAttributeTemporarily(attributeSnapshots, sidebar, 'expanded', true);
+	setAttributeTemporarily(attributeSnapshots, sidebar, 'narrow', false);
+	setAttributeTemporarily(attributeSnapshots, sidebar, 'rail', false);
+	setAttributeTemporarily(attributeSnapshots, sidebar, 'collapsed', false);
 
+	setImportant(styleSnapshots, sidebar, 'display', 'block');
+	setImportant(styleSnapshots, sidebar, 'visibility', 'visible');
+	setImportant(styleSnapshots, sidebar, 'opacity', '1');
 	setImportant(styleSnapshots, sidebar, 'position', 'fixed');
-	setImportant(styleSnapshots, sidebar, 'z-index', '2147483647');
+	setImportant(styleSnapshots, sidebar, 'z-index', SIDEBAR_Z_INDEX);
 	setImportant(styleSnapshots, sidebar, 'top', '0');
 	setImportant(styleSnapshots, sidebar, 'left', '0');
 	setImportant(styleSnapshots, sidebar, 'bottom', '0');
 	setImportant(styleSnapshots, sidebar, 'height', '100vh');
-	setImportant(styleSnapshots, sidebar, 'width', 'calc(256px + var(--safe-area-inset-left, 0px))');
+	setImportant(styleSnapshots, sidebar, 'width', 'min(82vw, 320px)');
+	setImportant(styleSnapshots, sidebar, 'min-width', '240px');
 	setImportant(styleSnapshots, sidebar, 'max-width', '82vw');
 	setImportant(styleSnapshots, sidebar, 'pointer-events', 'auto');
 	setImportant(styleSnapshots, sidebar, 'transform', 'translateX(0)');
 	setImportant(styleSnapshots, sidebar, 'box-shadow', '0 0 24px rgba(0, 0, 0, 0.32)');
 
-	const menuButton = queryShadow(sidebar, 'ha-menu-button');
-	if (menuButton) {
+	const menuButtons = sidebar.shadowRoot
+		? Array.from(deepQuerySelectorAllElements(sidebar.shadowRoot, 'ha-menu-button'))
+		: [];
+	for (const menuButton of menuButtons) {
 		setImportant(styleSnapshots, menuButton, 'display', 'none');
+	}
+
+	if (sidebar.shadowRoot) {
+		for (const inner of deepQuerySelectorAllElements(sidebar.shadowRoot, HA_SIDEBAR_INNER_SELECTOR)) {
+			setImportant(styleSnapshots, inner, 'display', 'block');
+			setImportant(styleSnapshots, inner, 'visibility', 'visible');
+			setImportant(styleSnapshots, inner, 'opacity', '1');
+			setImportant(styleSnapshots, inner, 'pointer-events', 'auto');
+			setImportant(styleSnapshots, inner, 'transform', 'translateX(0)');
+			setImportant(styleSnapshots, inner, 'z-index', SIDEBAR_Z_INDEX);
+			setImportant(styleSnapshots, inner, 'width', '100%');
+			setImportant(styleSnapshots, inner, 'min-width', '240px');
+			setImportant(styleSnapshots, inner, 'max-width', '82vw');
+			setImportant(styleSnapshots, inner, 'height', '100%');
+		}
 	}
 
 	try {
@@ -337,6 +421,11 @@ function revealNativeHASidebarLayer(): boolean {
 	for (const targetWindow of getCandidateWindows()) {
 		const document = getAccessibleDocument(targetWindow);
 		if (!document) continue;
+
+		lowerNovaPanelFrames(targetWindow, styleSnapshots);
+		for (const drawer of deepQuerySelectorAllElements(document, HA_DRAWER_SELECTOR)) {
+			applyDrawerOverlay(drawer, styleSnapshots);
+		}
 
 		const sidebars = Array.from(deepQuerySelectorAllElements(document, HA_SIDEBAR_SELECTOR));
 		if (sidebars.length > 0) {
