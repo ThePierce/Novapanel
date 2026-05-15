@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { areaStore, areaById } from '$lib/ha/area-store';
+	import { areaStore } from '$lib/ha/area-store';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import { localeFor, selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Row = { id: string; label: string; displayName: string };
 
@@ -17,12 +17,22 @@
 
 	let searchQuery = $state('');
 	let expandedAreaId = $state<string | null>(null);
-	let showIgnoredArea = $state(false);
 
-	const allRows = $derived([
-		...selectedRows.map(r => ({ ...r, checked: true })),
-		...ignoredRows.map(r => ({ ...r, checked: false }))
-	]);
+	function compareRows(a: Row, b: Row): number {
+		const locale = localeFor($selectedLanguageStore);
+		const aLabel = a.label || a.displayName || a.id;
+		const bLabel = b.label || b.displayName || b.id;
+		const labelCompare = aLabel.localeCompare(bLabel, locale, { numeric: true, sensitivity: 'base' });
+		if (labelCompare !== 0) return labelCompare;
+		return a.id.localeCompare(b.id, locale, { numeric: true, sensitivity: 'base' });
+	}
+
+	const allRows = $derived(
+		[
+			...selectedRows.map(r => ({ ...r, checked: true })),
+			...ignoredRows.map(r => ({ ...r, checked: false }))
+		].sort(compareRows)
+	);
 
 	const totalCount = $derived(allRows.length);
 	const selectedCount = $derived(selectedRows.length);
@@ -73,8 +83,10 @@
 
 	function computeGroups(): AreaGroup[] {
 		const map = new Map<string, AreaGroup>();
+		const areaOrder = new Map<string, number>();
 		// Initialize known areas
-		for (const a of storeState.areas) {
+		for (const [index, a] of storeState.areas.entries()) {
+			areaOrder.set(a.area_id, index);
 			map.set(a.area_id, {
 				areaId: a.area_id,
 				areaName: a.name,
@@ -104,14 +116,19 @@
 			group.totalCount++;
 			if (row.checked) group.selectedCount++;
 		}
-		// Sort: selected first, then by name; drop empty
+		// Keep area cards stable while toggling entities. Sorting by selected/total counts
+		// made rooms jump around during editing, especially when disabling entities.
 		return [...map.values()]
 			.filter((g) => g.totalCount > 0)
 			.sort((a, b) => {
 				if (a.areaId === NO_AREA_ID) return 1;
 				if (b.areaId === NO_AREA_ID) return -1;
-				if (a.selectedCount !== b.selectedCount) return b.selectedCount - a.selectedCount;
-				return a.areaName.localeCompare(b.areaName);
+				const aOrder = areaOrder.get(a.areaId);
+				const bOrder = areaOrder.get(b.areaId);
+				if (aOrder !== undefined && bOrder !== undefined && aOrder !== bOrder) return aOrder - bOrder;
+				if (aOrder !== undefined) return -1;
+				if (bOrder !== undefined) return 1;
+				return a.areaName.localeCompare(b.areaName, localeFor($selectedLanguageStore), { numeric: true, sensitivity: 'base' });
 			});
 	}
 
