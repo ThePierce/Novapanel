@@ -758,6 +758,44 @@ app.post(
 	handleHaWs
 );
 
+async function handleHaStates(req, res) {
+	res.setHeader('Cache-Control', 'no-store');
+	try {
+		const { hassUrl, token, tokenSource } = await getHaProxyConfig(req);
+		if (!hassUrl) {
+			res.status(502).json({ ok: false, error: 'hass_url_unavailable' });
+			return;
+		}
+		if (!token) {
+			res.status(502).json({ ok: false, error: 'hass_token_unavailable' });
+			return;
+		}
+		const target = buildHaTargetUrl(hassUrl, '/api/states');
+		const upstream = await fetch(target, {
+			headers: {
+				accept: 'application/json',
+				authorization: `Bearer ${token}`
+			}
+		});
+		if (!upstream.ok) {
+			log(`ha states proxy GET /api/states -> ${upstream.status} target=${target.origin}${target.pathname} auth=${tokenSource}`);
+		}
+		res.status(upstream.status);
+		const contentType = upstream.headers.get('content-type');
+		if (contentType) res.setHeader('content-type', contentType);
+		const text = await upstream.text();
+		res.send(text);
+	} catch (error) {
+		log(`ha states proxy error: ${error instanceof Error ? error.message : String(error)}`);
+		res.status(502).json({ ok: false, error: 'ha_states_proxy_failed' });
+	}
+}
+
+app.get(
+	['/api/ha/states', '/local_novapanel/api/ha/states', '/api/hassio_ingress/:ingressToken/api/ha/states'],
+	handleHaStates
+);
+
 function setupHaWebSocketProxy(server) {
 	const wsProxy = new WebSocketServer({ noServer: true });
 

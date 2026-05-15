@@ -101,10 +101,10 @@
 			const position = numericAttribute(entry, 'current_position');
 			if (position !== null) {
 				const openPct = Math.round(Math.max(0, Math.min(100, position)));
-				return `${formatState(state)} · ${openPct}% open`;
+				return `${openPct}%`;
 			}
-			if (state === 'open' || state === 'opening') return `${formatState(state)} · 100% open`;
-			if (state === 'closed' || state === 'closing') return `${formatState(state)} · 0% open`;
+			if (state === 'open' || state === 'opening') return '100%';
+			if (state === 'closed' || state === 'closing') return '0%';
 		}
 		if (value === 'vacuum') {
 			const battery = numericAttribute(entry, 'battery_level');
