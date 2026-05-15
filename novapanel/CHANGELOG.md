@@ -1,7 +1,7 @@
 # Changelog
 
-## 0.3.1
+## 1.0.0
 
-- Eerste publieke add-on release.
-- Lege standaardinrichting met welkomstkaart.
+- First public add-on release.
+- Empty default dashboard with onboarding documentation.
 - Home Assistant add-on repository layout.
