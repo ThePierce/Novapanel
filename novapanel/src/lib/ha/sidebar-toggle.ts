@@ -40,6 +40,8 @@ const HA_SIDEBAR_SELECTOR = [
 ].join(',');
 
 let novaOpenedSidebar = false;
+let sidebarOpening = false;
+let openAttemptId = 0;
 let outsideCleanup: (() => void) | null = null;
 let frameRevealCleanup: (() => void) | null = null;
 let outsideInstallId = 0;
@@ -165,15 +167,15 @@ function findKnownHASidebarToggleButton(document: Document): HTMLElement | null 
 	const ha = asHTMLElement(document.querySelector('home-assistant'));
 	const main = queryShadow(ha, 'home-assistant-main');
 	const drawer = queryShadow(main, 'ha-drawer, app-drawer');
-	const sidebar =
-		asHTMLElement(drawer?.querySelector('ha-sidebar')) ?? queryShadow(drawer, 'ha-sidebar');
-	const sidebarMenu = queryShadow(sidebar, 'ha-menu-button');
-	if (sidebarMenu) return getClickableElement(sidebarMenu);
-
 	const topBar = queryShadow(main, 'ha-top-app-bar-fixed, ha-top-app-bar, app-header');
 	const topBarMenu =
 		asHTMLElement(topBar?.querySelector('ha-menu-button')) ?? queryShadow(topBar, 'ha-menu-button');
 	if (topBarMenu) return getClickableElement(topBarMenu);
+
+	const sidebar =
+		asHTMLElement(drawer?.querySelector('ha-sidebar')) ?? queryShadow(drawer, 'ha-sidebar');
+	const sidebarMenu = queryShadow(sidebar, 'ha-menu-button');
+	if (sidebarMenu) return getClickableElement(sidebarMenu);
 
 	return null;
 }
@@ -366,6 +368,18 @@ function revealNativeHASidebarLayer(): boolean {
 	return revealed;
 }
 
+function wait(ms: number): Promise<void> {
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function revealNativeHASidebarLayerEventually(): Promise<boolean> {
+	for (const delay of [0, 40, 90, 160, 260, 420, 650]) {
+		if (delay > 0) await wait(delay);
+		if (revealNativeHASidebarLayer()) return true;
+	}
+	return false;
+}
+
 function clearFrameRevealStyles() {
 	frameRevealCleanup?.();
 	frameRevealCleanup = null;
@@ -464,8 +478,10 @@ function clearOutsideHandlers() {
 }
 
 export function closeHASidebar() {
-	if (!novaOpenedSidebar) return;
+	if (!novaOpenedSidebar && !sidebarOpening) return;
+	openAttemptId += 1;
 	novaOpenedSidebar = false;
+	sidebarOpening = false;
 	clearOutsideHandlers();
 	clearFrameRevealStyles();
 }
@@ -496,13 +512,38 @@ export function openHASidebar(event?: MouseEvent) {
 	event?.preventDefault();
 	event?.stopPropagation();
 	const toggleButton = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
-	if (novaOpenedSidebar) {
+	if (novaOpenedSidebar || sidebarOpening) {
 		closeHASidebar();
 		return;
 	}
-	const opened = openNativeHASidebarExpanded();
-	const revealed = revealNativeHASidebarLayer();
-	if (!opened && !revealed && !toggleNativeHASidebar()) return;
+	void openHASidebarAsync(toggleButton);
+}
+
+async function openHASidebarAsync(toggleButton: HTMLElement | null) {
+	const attemptId = openAttemptId + 1;
+	openAttemptId = attemptId;
+	sidebarOpening = true;
+	clearOutsideHandlers();
+	novaOpenedSidebar = false;
+	clearFrameRevealStyles();
+
+	openNativeHASidebarExpanded();
+	let revealed = await revealNativeHASidebarLayerEventually();
+
+	if (!revealed) {
+		toggleNativeHASidebar();
+		revealed = await revealNativeHASidebarLayerEventually();
+	}
+
+	if (attemptId !== openAttemptId) return;
+
+	if (!revealed) {
+		sidebarOpening = false;
+		clearFrameRevealStyles();
+		return;
+	}
+
+	sidebarOpening = false;
 	novaOpenedSidebar = true;
 	installOutsideCloseHandler(toggleButton);
 }
