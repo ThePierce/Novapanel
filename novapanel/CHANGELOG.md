@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Collapsed the section editor's Header waarden controls by default to keep large entity lists out of the way until needed.
+
 ## 1.0.1
 
 - Removed the Home Assistant URL add-on option. Nova Panel now uses the internal Supervisor route automatically.

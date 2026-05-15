@@ -65,6 +65,8 @@
 		onSetCardVisible
 	}: Props = $props();
 
+	let headerSensorsExpanded = $state(false);
+
 	function entityName(entity: HomeAssistantEntity) {
 		return entity.friendlyName?.trim() || entity.entityId;
 	}
@@ -187,32 +189,46 @@
 			<span class="section-icon-preview"><TablerIcon name={sectionEditorIcon || 'layout-grid'} size={18} /></span>
 			<input id="section-editor-icon" type="text" value={sectionEditorIcon} placeholder="layout-grid" oninput={(event) => onSetIcon((event.currentTarget as HTMLInputElement).value)} />
 		</div>
-		<div class="section-header-sensors">
-			<div class="section-header-sensors-head">
-				<TablerIcon name="activity" size={15} />
-				<span>{translate('Header waarden', $selectedLanguageStore)}</span>
-			</div>
-			<EntitySelectPicker
-				label={translate('Temperatuur', $selectedLanguageStore)}
-				value={sectionEditorHeaderTemperatureEntityId}
-				options={temperatureEntities}
-				placeholder={translate('Geen temperatuur', $selectedLanguageStore)}
-				onChange={onSetHeaderTemperatureEntityId}
-			/>
-			<EntitySelectPicker
-				label={translate('Luchtvochtigheid', $selectedLanguageStore)}
-				value={sectionEditorHeaderHumidityEntityId}
-				options={humidityEntities}
-				placeholder={translate('Geen luchtvochtigheid', $selectedLanguageStore)}
-				onChange={onSetHeaderHumidityEntityId}
-			/>
-			<EntitySelectPicker
-				label={translate('Luchtdruk', $selectedLanguageStore)}
-				value={sectionEditorHeaderPressureEntityId}
-				options={pressureEntities}
-				placeholder={translate('Geen luchtdruk', $selectedLanguageStore)}
-				onChange={onSetHeaderPressureEntityId}
-			/>
+		<div class="section-header-sensors" class:open={headerSensorsExpanded}>
+			<button
+				type="button"
+				class="section-header-sensors-head"
+				aria-expanded={headerSensorsExpanded}
+				onclick={() => (headerSensorsExpanded = !headerSensorsExpanded)}
+			>
+				<span class="section-header-sensors-title">
+					<TablerIcon name="activity" size={15} />
+					<span>{translate('Header waarden', $selectedLanguageStore)}</span>
+				</span>
+				<span class="section-header-sensors-chevron" class:open={headerSensorsExpanded}>
+					<TablerIcon name="chevron-down" size={14} />
+				</span>
+			</button>
+			{#if headerSensorsExpanded}
+				<div class="section-header-sensors-body">
+					<EntitySelectPicker
+						label={translate('Temperatuur', $selectedLanguageStore)}
+						value={sectionEditorHeaderTemperatureEntityId}
+						options={temperatureEntities}
+						placeholder={translate('Geen temperatuur', $selectedLanguageStore)}
+						onChange={onSetHeaderTemperatureEntityId}
+					/>
+					<EntitySelectPicker
+						label={translate('Luchtvochtigheid', $selectedLanguageStore)}
+						value={sectionEditorHeaderHumidityEntityId}
+						options={humidityEntities}
+						placeholder={translate('Geen luchtvochtigheid', $selectedLanguageStore)}
+						onChange={onSetHeaderHumidityEntityId}
+					/>
+					<EntitySelectPicker
+						label={translate('Luchtdruk', $selectedLanguageStore)}
+						value={sectionEditorHeaderPressureEntityId}
+						options={pressureEntities}
+						placeholder={translate('Geen luchtdruk', $selectedLanguageStore)}
+						onChange={onSetHeaderPressureEntityId}
+					/>
+				</div>
+			{/if}
 		</div>
 		<label for="section-editor-column">{t('columns')}</label>
 		<select id="section-editor-column" value={sectionEditorColumn} onchange={(event) => onSetColumn(Number((event.currentTarget as HTMLSelectElement).value))}>
@@ -298,23 +314,54 @@
 	}
 	.section-header-sensors {
 		display: grid;
-		gap: 0.65rem;
 		margin: 0.15rem 0 0.25rem;
-		padding: 0.75rem;
+		padding: 0;
 		border: 1px solid rgba(255,255,255,0.08);
 		border-radius: 0.7rem;
 		background: rgba(255,255,255,0.035);
+		overflow: hidden;
 	}
 	.section-header-sensors-head {
+		width: 100%;
+		border: 0;
+		background: transparent;
+		padding: 0.75rem;
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
+		justify-content: space-between;
+		gap: 0.75rem;
 		color: rgba(255,255,255,0.76);
 		font-size: 0.82rem;
 		font-weight: 760;
+		text-align: left;
+		cursor: pointer;
 	}
-	.section-header-sensors-head :global(i) {
+	.section-header-sensors-title {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		min-width: 0;
+	}
+	.section-header-sensors-title :global(i) {
 		color: #60a5fa;
+	}
+	.section-header-sensors-chevron {
+		display: grid;
+		place-items: center;
+		flex: 0 0 auto;
+		color: rgba(255,255,255,0.58);
+		transition: transform 0.16s ease;
+	}
+	.section-header-sensors-chevron.open {
+		transform: rotate(180deg);
+	}
+	.section-header-sensors-chevron :global(i) {
+		color: currentColor;
+	}
+	.section-header-sensors-body {
+		display: grid;
+		gap: 0.65rem;
+		padding: 0 0.75rem 0.75rem;
 	}
 	.section-order-actions { display: flex; gap: 0.5rem; }
 	.section-visibility {
