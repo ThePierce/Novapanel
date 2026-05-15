@@ -558,6 +558,20 @@ let availabilityIgnoredOpen = $state(false);
 	}
 
 	$effect(() => {
+		if (!usesScopedEntityPicker || statusCandidates.length === 0) return;
+		const candidateKeys = new Set(
+			statusCandidates
+				.map((entity) => entity.entityId.trim().toLowerCase())
+				.filter((value) => value.length > 0)
+		);
+		if (candidateKeys.size === 0) return;
+		const selected = cardEditorStatusEntityIds ?? [];
+		const cleaned = selected.filter((entityId) => candidateKeys.has(entityId.trim().toLowerCase()));
+		if (cleaned.length === selected.length) return;
+		onStatusEntityIdsChange(cleaned);
+	});
+
+	$effect(() => {
 		if (!iconValidationNeeded) {
 			iconValidationState = 'idle';
 			iconValidationMessage = '';

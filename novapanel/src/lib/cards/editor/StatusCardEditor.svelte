@@ -41,7 +41,21 @@
 		return typeof v === 'string' && v.trim().length > 0;
 	}
 
-	const statusEntitiesCount = $derived((p.statusEntityIds ?? []).filter(v => v.trim().length > 0).length);
+	const selectedEntityIds = $derived.by(() => {
+		const rawIds = p.usesScopedEntityPicker
+			? p.scopedPickerSelectedRows.map((row) => row.id)
+			: (p.statusEntityIds ?? []);
+		const seen = new Set<string>();
+		return rawIds
+			.map((id) => id.trim())
+			.filter((id) => {
+				const key = id.toLowerCase();
+				if (!key || seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			});
+	});
+	const statusEntitiesCount = $derived(selectedEntityIds.length);
 	const statusDomainsCount = $derived((p.statusDomains ?? []).filter(v => v.trim().length > 0).length);
 
 	const statusFilterStatus = $derived((() => {
@@ -73,11 +87,11 @@
 	);
 
 	const aliasRows = $derived.by(() => {
-		const selectedIds = (p.statusEntityIds ?? []).map((id) => id.trim()).filter((id) => id.length > 0);
-		const candidateIds = p.statusCandidates.map((entity) => entity.entityId.trim()).filter((id) => id.length > 0);
-		const sourceIds = selectedIds.length > 0 ? selectedIds : candidateIds;
+		const selectedRowsById = new Map(
+			p.scopedPickerSelectedRows.map((row) => [row.id.trim().toLowerCase(), row] as const)
+		);
 		const seen = new Set<string>();
-		return sourceIds
+		return selectedEntityIds
 			.filter((id) => {
 				const key = id.toLowerCase();
 				if (seen.has(key)) return false;
@@ -86,7 +100,8 @@
 			})
 			.map((id) => {
 				const entity = $filteredEntities.find((entry) => entry.entityId.toLowerCase() === id.toLowerCase());
-				const originalName = entity?.friendlyName?.trim() || id;
+				const pickerRow = selectedRowsById.get(id.toLowerCase());
+				const originalName = entity?.friendlyName?.trim() || pickerRow?.displayName?.trim() || id;
 				const aliases = p.cardType === 'media_players_status' ? (p.mediaHubPlayerAliases ?? {}) : (p.statusEntityAliases ?? {});
 				const alias = aliases[id] ?? aliases[entity?.entityId ?? id] ?? '';
 				return {
