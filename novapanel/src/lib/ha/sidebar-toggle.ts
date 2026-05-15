@@ -53,6 +53,8 @@ const HA_SIDEBAR_INNER_SELECTOR = [
 	'.sidebar'
 ].join(',');
 
+const HA_SIDEBAR_HEADER_SELECTOR = ['.menu', '.menu .title', '.menu ha-icon-button', 'ha-menu-button'].join(',');
+
 const SIDEBAR_Z_INDEX = '2147483647';
 
 let novaOpenedSidebar = false;
@@ -349,6 +351,17 @@ function applyDrawerOverlay(drawer: HTMLElement, snapshots: StyleSnapshot[]) {
 	setImportant(snapshots, drawer, 'transform', 'translateX(0)');
 }
 
+function hideSidebarHeaderElement(element: HTMLElement, snapshots: StyleSnapshot[]) {
+	setImportant(snapshots, element, 'display', 'none');
+	setImportant(snapshots, element, 'visibility', 'hidden');
+	setImportant(snapshots, element, 'opacity', '0');
+	setImportant(snapshots, element, 'height', '0');
+	setImportant(snapshots, element, 'min-height', '0');
+	setImportant(snapshots, element, 'margin', '0');
+	setImportant(snapshots, element, 'padding', '0');
+	setImportant(snapshots, element, 'pointer-events', 'none');
+}
+
 function applyExpandedSidebarOverlay(
 	sidebar: HTMLElement,
 	styleSnapshots: StyleSnapshot[],
@@ -381,14 +394,11 @@ function applyExpandedSidebarOverlay(
 	setImportant(styleSnapshots, sidebar, 'transform', 'translateX(0)');
 	setImportant(styleSnapshots, sidebar, 'box-shadow', '0 0 24px rgba(0, 0, 0, 0.32)');
 
-	const menuButtons = sidebar.shadowRoot
-		? Array.from(deepQuerySelectorAllElements(sidebar.shadowRoot, 'ha-menu-button'))
-		: [];
-	for (const menuButton of menuButtons) {
-		setImportant(styleSnapshots, menuButton, 'display', 'none');
-	}
-
 	if (sidebar.shadowRoot) {
+		for (const headerElement of deepQuerySelectorAllElements(sidebar.shadowRoot, HA_SIDEBAR_HEADER_SELECTOR)) {
+			hideSidebarHeaderElement(headerElement, styleSnapshots);
+		}
+
 		for (const inner of deepQuerySelectorAllElements(sidebar.shadowRoot, HA_SIDEBAR_INNER_SELECTOR)) {
 			setImportant(styleSnapshots, inner, 'display', 'block');
 			setImportant(styleSnapshots, inner, 'visibility', 'visible');
