@@ -9,5 +9,5 @@ coverage
 *.bak
 *_backup
 *.log
-/.DS_Store
-src/**/*.svelte_backup
+.DS_Store
+**/*.svelte_backup

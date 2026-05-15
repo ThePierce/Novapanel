@@ -2,6 +2,21 @@
 
 Novapanel is een Home Assistant kiosk-dashboard, gebouwd met Svelte 5 en SvelteKit. De eerste start is bewust leeg: iedere gebruiker kiest zelf secties, kaarten en entiteiten.
 
+## Repository layout
+
+Deze repository is ingericht als Home Assistant add-on repository:
+
+```text
+repository.yaml
+novapanel/
+  config.yaml
+  Dockerfile
+  run.sh
+  package.json
+  src/
+  static/
+```
+
 ## Home Assistant add-on
 
 1. Voeg deze repository toe als Home Assistant add-on repository:
@@ -21,6 +36,7 @@ Novapanel gebruikt de Home Assistant API via ingress. Voor lokale ontwikkeling k
 1. Installeer dependencies:
 
    ```bash
+   cd novapanel
    npm install --legacy-peer-deps
    ```
 
