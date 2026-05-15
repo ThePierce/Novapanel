@@ -114,7 +114,7 @@
 	<div class="container">
 		<div class="icon">
 			{#if !iconFailed && !skipMeteocon}
-				<img src={meteoconSrc} alt="" width="46" height="46" on:error={() => (iconFailed = true)} />
+				<img src={meteoconSrc} alt="" width="46" height="46" onerror={() => (iconFailed = true)} />
 			{:else}
 				<WeatherIcon condition={condition} night={belowHorizon} size={46} />
 			{/if}

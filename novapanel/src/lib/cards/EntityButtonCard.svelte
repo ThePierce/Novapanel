@@ -4,6 +4,7 @@
 	import { callHaService } from '$lib/ha/service-call';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
+	import { selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
 	type Props = {
 		kind: EntityButtonKind;
@@ -51,9 +52,9 @@
 
 	function fallbackName(value: EntityButtonKind) {
 		if (value === 'climate') return 'Climate';
-		if (value === 'cover') return 'Gordijn';
-		if (value === 'vacuum') return 'Stofzuiger';
-		return 'Media player';
+		if (value === 'cover') return translate('Gordijn', $selectedLanguageStore);
+		if (value === 'vacuum') return translate('Stofzuiger', $selectedLanguageStore);
+		return translate('Media player', $selectedLanguageStore);
 	}
 
 	function fallbackIcon(value: EntityButtonKind) {
@@ -80,19 +81,7 @@
 	}
 
 	function formatState(value: string) {
-		if (value === 'off') return 'Uit';
-		if (value === 'on') return 'Aan';
-		if (value === 'open') return 'Open';
-		if (value === 'closed') return 'Dicht';
-		if (value === 'opening') return 'Opent';
-		if (value === 'closing') return 'Sluit';
-		if (value === 'playing') return 'Speelt';
-		if (value === 'paused') return 'Gepauzeerd';
-		if (value === 'idle') return 'Idle';
-		if (value === 'docked') return 'Docked';
-		if (value === 'cleaning') return 'Schoonmaken';
-		if (value === 'returning') return 'Terug naar dock';
-		return value || 'Onbekend';
+		return translateState(value, $selectedLanguageStore);
 	}
 
 	function numericAttribute(entry: HomeAssistantEntity | undefined, key: string): number | null {
@@ -101,12 +90,12 @@
 	}
 
 	function labelForEntity(value: EntityButtonKind, entry: HomeAssistantEntity | undefined, unavailable: boolean) {
-		if (unavailable) return 'Niet beschikbaar';
+		if (unavailable) return translate('Niet beschikbaar', $selectedLanguageStore);
 		if (value === 'climate') {
 			const current = numericAttribute(entry, 'current_temperature');
 			const target = numericAttribute(entry, 'temperature');
-			if (current !== null && target !== null) return `${Math.round(current)}° · doel ${Math.round(target)}°`;
-			if (target !== null) return `Doel ${Math.round(target)}°`;
+			if (current !== null && target !== null) return `${Math.round(current)}° · ${translate('doel', $selectedLanguageStore)} ${Math.round(target)}°`;
+			if (target !== null) return `${translate('Doel', $selectedLanguageStore)} ${Math.round(target)}°`;
 		}
 		if (value === 'cover') {
 			const position = numericAttribute(entry, 'current_position');
@@ -173,13 +162,13 @@
 	class:is-busy={busy}
 	role="button"
 	tabindex={editMode ? undefined : 0}
-	aria-label={`Open ${displayName}`}
+	aria-label={`${translate('Open', $selectedLanguageStore)} ${displayName}`}
 	style={`--entity-accent: ${accent}; --entity-soft: ${accentSoft};`}
 	onclick={handleOpen}
 	onkeydown={handleKeydown}
 >
 	<div class="entity-bg" aria-hidden="true"></div>
-	<button type="button" class="entity-icon-button" aria-label={`${displayName} bedienen`} onclick={quickAction}>
+	<button type="button" class="entity-icon-button" aria-label={`${displayName} ${translate('apply', $selectedLanguageStore)}`} onclick={quickAction}>
 		<StatusIcon icon={cardIcon} size={34} />
 	</button>
 	<div class="entity-copy">

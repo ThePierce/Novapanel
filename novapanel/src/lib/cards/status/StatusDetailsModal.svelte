@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TranslationKey } from '$lib/i18n';
+	import { selectedLanguageStore, translate, translateState, type TranslationKey } from '$lib/i18n';
 	import { entityStore } from '$lib/ha/entities-store';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
 	import { callHaService } from '$lib/ha/service-call';
@@ -118,12 +118,12 @@ const EMPTY_RECORD: Record<string, string> = {};
 	);
 
 	const cardTypeMeta = $derived((() => {
-		if (kind === 'lights_status') return { title: 'Lampen', icon: 'bulb', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: 'Welke lampen zijn aan' };
-		if (kind === 'openings_status') return { title: 'Openingen', icon: 'door', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: 'Welke deuren en ramen zijn open' };
-		if (kind === 'devices_status') return { title: 'Apparaten', icon: 'plug', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: 'Welke apparaten staan aan' };
-		if (kind === 'availability_status') return { title: 'Beschikbaarheid', icon: 'wifi', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: 'Bereikbaarheid en batterijen' };
-		if (kind === 'media_players_status') return { title: 'Media', icon: 'device-speaker', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: 'Spelers en queue' };
-		return { title: 'Status', icon: 'note', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: '' };
+		if (kind === 'lights_status') return { title: translate('Lampen', $selectedLanguageStore), icon: 'bulb', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: translate('Welke lampen zijn aan', $selectedLanguageStore) };
+		if (kind === 'openings_status') return { title: translate('Openingen', $selectedLanguageStore), icon: 'door', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: translate('Welke deuren en ramen zijn open', $selectedLanguageStore) };
+		if (kind === 'devices_status') return { title: translate('Apparaten', $selectedLanguageStore), icon: 'plug', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: translate('Welke apparaten staan aan', $selectedLanguageStore) };
+		if (kind === 'availability_status') return { title: translate('Beschikbaarheid', $selectedLanguageStore), icon: 'wifi', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: translate('Bereikbaarheid en batterijen', $selectedLanguageStore) };
+		if (kind === 'media_players_status') return { title: 'Media', icon: 'device-speaker', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: translate('Spelers en queue', $selectedLanguageStore) };
+		return { title: translate('Status', $selectedLanguageStore), icon: 'note', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: '' };
 	})());
 	const detailTitle = $derived(
 		typeof title === 'string' && title.trim().length > 0 ? title.trim() : cardTypeMeta.title
@@ -357,7 +357,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 		}
 		return out.sort((a, b) => a.batteryLevel - b.batteryLevel);
 	});
-	const summary = $derived(buildStatusSummary({ kind, activeCount: result.active.length }));
+	const summary = $derived(buildStatusSummary({ kind, activeCount: result.active.length, language: $selectedLanguageStore }));
 
 	// Hero stats per kind
 	const heroStats = $derived.by(() => {
@@ -367,8 +367,8 @@ const EMPTY_RECORD: Record<string, string> = {};
 			return {
 				active: activeScoped,
 				total: totalScoped,
-				activeLabel: activeScoped === 1 ? 'lamp aan' : 'lampen aan',
-				idleLabel: activeScoped === 0 ? 'Alle lampen uit' : `van ${totalScoped} totaal`,
+				activeLabel: activeScoped === 1 ? translate('lamp aan', $selectedLanguageStore) : translate('lampen aan', $selectedLanguageStore),
+				idleLabel: activeScoped === 0 ? translate('Alle lampen uit', $selectedLanguageStore) : `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
 				accent: '#ffd338',
 				accentSoft: 'rgba(255,211,56,0.18)',
 				bgGradient: 'radial-gradient(circle at 30% 20%, rgba(255,211,56,0.10), transparent 55%)'
@@ -378,8 +378,8 @@ const EMPTY_RECORD: Record<string, string> = {};
 			return {
 				active: activeScoped,
 				total: totalScoped,
-				activeLabel: activeScoped === 1 ? 'open' : 'open',
-				idleLabel: activeScoped === 0 ? 'Alles dicht' : `van ${totalScoped} totaal`,
+				activeLabel: translate('Open', $selectedLanguageStore).toLowerCase(),
+				idleLabel: activeScoped === 0 ? translate('Alles dicht', $selectedLanguageStore) : `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
 				accent: '#60a5fa',
 				accentSoft: 'rgba(96,165,250,0.18)',
 				bgGradient: 'radial-gradient(circle at 30% 20%, rgba(96,165,250,0.10), transparent 55%)'
@@ -389,8 +389,8 @@ const EMPTY_RECORD: Record<string, string> = {};
 			return {
 				active: activeScoped,
 				total: totalScoped,
-				activeLabel: activeScoped === 1 ? 'apparaat actief' : 'apparaten actief',
-				idleLabel: activeScoped === 0 ? 'Alle apparaten uit' : `van ${totalScoped} totaal`,
+				activeLabel: activeScoped === 1 ? translate('apparaat actief', $selectedLanguageStore) : translate('apparaten actief', $selectedLanguageStore),
+				idleLabel: activeScoped === 0 ? translate('Alle apparaten uit', $selectedLanguageStore) : `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
 				accent: '#34d399',
 				accentSoft: 'rgba(52,211,153,0.18)',
 				bgGradient: 'radial-gradient(circle at 30% 20%, rgba(52,211,153,0.10), transparent 55%)'
@@ -405,7 +405,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 				total: totalScoped,
 				activeLabel: offline === 1 ? 'offline' : 'offline',
 				idleLabel: offline === 0
-					? `Alle ${totalScoped} apparaten online`
+					? `${translate('alle', $selectedLanguageStore)} ${totalScoped} ${translate('Apparaten', $selectedLanguageStore).toLowerCase()} online`
 					: `${online} online · ${offline} offline`,
 				accent: offline > 0 ? '#f87171' : '#22d3ee',
 				accentSoft: offline > 0 ? 'rgba(248,113,113,0.18)' : 'rgba(34,211,238,0.18)',
@@ -543,7 +543,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 		}
 	}
 
-	function handleScopedEntityRowClick(event: MouseEvent, entity: HomeAssistantEntity) {
+	function handleScopedEntityRowClick(event: MouseEvent | KeyboardEvent, entity: HomeAssistantEntity) {
 		if (editMode) return;
 		if (kind !== 'lights_status' && kind !== 'devices_status') return;
 		const target = event.target as HTMLElement | null;
@@ -556,18 +556,12 @@ const EMPTY_RECORD: Record<string, string> = {};
 
 	function formatDeviceState(raw: string): string {
 		const s = (raw || '').trim().toLowerCase();
-		if (s === '') return 'Onbekend';
-		if (s === 'on') return 'Aan';
-		if (s === 'off') return 'Uit';
-		if (s === 'unavailable') return 'Niet bereikbaar';
-		if (s === 'unknown') return 'Onbekend';
-		if (s === 'playing') return 'Afspelen';
-		if (s === 'paused') return 'Gepauzeerd';
-		if (s === 'idle') return 'Inactief';
-		if (s === 'heat') return 'Verwarmen';
-		if (s === 'cool') return 'Koelen';
-		if (s === 'auto') return 'Auto';
-		return raw;
+		if (s === 'unavailable') return translate('Niet bereikbaar', $selectedLanguageStore);
+		if (s === 'playing') return translate('Afspelen', $selectedLanguageStore);
+		if (s === 'idle') return translate('Inactief', $selectedLanguageStore);
+		if (s === 'heat') return translate('Verwarmen', $selectedLanguageStore);
+		if (s === 'cool') return translate('Koelen', $selectedLanguageStore);
+		return translateState(s || raw, $selectedLanguageStore);
 	}
 
 	function getDeviceDetailIcon(entity: (typeof result.relevant)[number]): string {
@@ -591,10 +585,10 @@ const EMPTY_RECORD: Record<string, string> = {};
 
 	function formatOpeningState(raw: string): string {
 		const s = (raw || '').trim().toLowerCase();
-		if (s === 'on' || s === 'open' || s === 'opening') return 'Open';
-		if (s === 'off' || s === 'closed' || s === 'closing') return 'Gesloten';
-		if (s === 'unavailable') return 'Niet bereikbaar';
-		if (s === 'unknown' || s === '') return 'Onbekend';
+		if (s === 'on' || s === 'open' || s === 'opening') return translate('Open', $selectedLanguageStore);
+		if (s === 'off' || s === 'closed' || s === 'closing') return translate('Gesloten', $selectedLanguageStore);
+		if (s === 'unavailable') return translate('Niet bereikbaar', $selectedLanguageStore);
+		if (s === 'unknown' || s === '') return translate('Onbekend', $selectedLanguageStore);
 		return raw;
 	}
 
@@ -808,8 +802,16 @@ const EMPTY_RECORD: Record<string, string> = {};
 									<div class="area-header">{group._areaName ?? 'Overig'}</div>
 								{/if}
 								<div class="entity-row availability-card entity-row-toggleable"
+									role="button"
+									tabindex={editMode ? -1 : 0}
 									class:entity-group-active={groupActive}
-									onclick={() => !editMode && toggleLightGroup(group)}>
+									onclick={() => !editMode && toggleLightGroup(group)}
+									onkeydown={(event) => {
+										if (!editMode && (event.key === 'Enter' || event.key === ' ')) {
+											event.preventDefault();
+											toggleLightGroup(group);
+										}
+									}}>
 									<div class="availability-cover-wrap"><div class="availability-cover">
 										<StatusIcon icon={groupActive ? 'mdi:lightbulb-group' : 'mdi:lightbulb-group-outline'} size={20} />
 									</div></div>
@@ -828,9 +830,17 @@ const EMPTY_RECORD: Record<string, string> = {};
 							<div
 								class="entity-row availability-card popup-card-editable"
 								data-active="1"
+								role="button"
+								tabindex={!editMode && (kind === 'lights_status' || kind === 'devices_status') ? 0 : -1}
 								class:entity-row-toggleable={!editMode &&
 									(kind === 'lights_status' || kind === 'devices_status')}
 								onclick={(e) => handleScopedEntityRowClick(e, entity)}
+								onkeydown={(e) => {
+									if (!editMode && (kind === 'lights_status' || kind === 'devices_status') && (e.key === 'Enter' || e.key === ' ')) {
+										e.preventDefault();
+										handleScopedEntityRowClick(e, entity);
+									}
+								}}
 							>
 								<div
 									class="availability-cover-wrap"
@@ -843,7 +853,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 										<StatusIcon icon={getEntityDetailIcon(entity)} size={20} />
 									</div>
 									{#if iconEditorEntityId === entity.entityId}
-										<div class="icon-mini-editor" onpointerdown={(e) => e.stopPropagation()} onclick={(e) => e.stopPropagation()}>
+										<div class="icon-mini-editor" role="presentation" onpointerdown={(e) => e.stopPropagation()} onclick={(e) => e.stopPropagation()}>
 											<div class="icon-mini-preview">
 												<StatusIcon icon={iconEditorDraft && iconEditorDraft.trim().length > 0 ? iconEditorDraft : getEntityDetailIcon(entity)} size={18} />
 											</div>
@@ -1168,32 +1178,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 		border-color: rgba(248,113,113,0.30);
 		box-shadow: 0 0 12px rgba(248,113,113,0.12);
 	}
-	.tab-row { margin-top: 0.8rem; display: flex; gap: 0.6rem; align-items: center; min-height: 2.1rem; }
-	/* Keep identical vertical spacing for both tabs (players + music assistant). */
-	.status-detail-modal .status-detail-body > .tab-row { margin-top: 0; }
-	.status-detail-modal .tab-row button,
-	.status-detail-modal .tab-row button.active {
-		height: 2.1rem !important;
-		min-height: 2.1rem !important;
-		padding: 0 0.9rem !important;
-		border-radius: 0.4rem;
-		border: 0;
-		background: rgba(255, 255, 255, 0.08);
-		color: #f5f5f5;
-		cursor: pointer;
-		font-size: 0.88rem;
-		font-weight: 500;
-		line-height: 1 !important;
-		display: flex;
-		align-items: center;
-		box-sizing: border-box;
-		vertical-align: middle;
-		margin: 0;
-	}
-	.status-detail-modal .tab-row button.active {
-		background: rgba(79, 113, 168, 0.35);
-		font-weight: 500;
-	}
 	.status-detail-body {
 		margin-top: 0.45rem;
 		display: flex;
@@ -1207,35 +1191,13 @@ const EMPTY_RECORD: Record<string, string> = {};
 		flex: 1;
 		container-type: inline-size;
 	}
-	.status-detail-body.ma-mode {
-		overflow: hidden;
-		display: grid;
-		grid-template-rows: auto minmax(0, 1fr) auto;
-		min-height: 0;
-		height: 100%;
-		align-items: stretch;
-		position: relative;
-		padding-bottom: 0;
-		box-sizing: border-box;
-	}
-	.status-detail-body.ma-mode > .tab-row { grid-row: 1; margin-top: 0; }
-	.status-detail-body.ma-mode > .ma-layout { grid-row: 2; min-height: 0; height: 100%; }
-	.status-detail-body.ma-mode > .ma-bottom-player { grid-row: 3; z-index: 3; }
-	.status-detail-body.ma-mode > .ma-bottom-player-docked {
-		position: static !important;
-		width: 100% !important;
-		margin: 0 !important;
-	}
 	.status-detail-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
 	.status-detail-body > .status-hero,
 	.status-detail-body > .np-detail-tabs,
-	.status-detail-body > .tab-row,
 	.status-detail-body > .np-detail-error {
 		flex: 0 0 auto;
 	}
-	.status-detail-body > .entity-list,
-	.status-detail-body > .media-players-grid,
-	.status-detail-body > .ma-layout {
+	.status-detail-body > .entity-list {
 		flex: 1 1 0;
 		min-height: 0;
 		overflow-y: auto;
@@ -1247,9 +1209,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-	.status-detail-body > .entity-list::-webkit-scrollbar,
-	.status-detail-body > .media-players-grid::-webkit-scrollbar,
-	.status-detail-body > .ma-layout::-webkit-scrollbar {
+	.status-detail-body > .entity-list::-webkit-scrollbar {
 		width: 0;
 		height: 0;
 		display: none;
@@ -1324,7 +1284,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 		width: 100%;
 		min-width: 0;
 	}
-	.hk-popup-rename-on-player { margin-bottom: 0.15rem; }
 	.popup-rename-input {
 		flex: 1;
 		min-width: 0;
@@ -1460,123 +1419,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 		text-overflow: ellipsis;
 	}
 	.entity-actions { display: flex; gap: 0.3rem; align-items: center; justify-content: flex-end; }
-	.media-meta { display: grid; gap: 0.05rem; opacity: 0.8; font-size: 0.78rem; }
-	.media-app { opacity: 0.75; font-size: 0.75rem; }
-	.error-row { color: #ff8f84; background: rgba(225,82,65,0.14); border-radius: 0.4rem; padding: 0.45rem 0.55rem; font-size: 0.82rem; }
-	.ma-layout { display: flex; flex-direction: column; gap: 0.6rem; min-height: 0; height: 100%; background: rgba(255,255,255,0.04); border-radius: 0.5rem; padding: 0.55rem; }
-	.ma-content { display: grid; grid-template-columns: 12rem minmax(0, 1fr); gap: 0.6rem; min-height: 0; height: 100%; flex: 1 1 auto; overflow: hidden; }
-	.ma-nav { display: grid; gap: 0.45rem; align-content: start; }
-	.ma-nav button { height: 2.05rem; border-radius: 0.4rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; cursor: pointer; text-align: left; padding: 0 0.7rem; }
-	.ma-search-row { display: grid; grid-template-columns: 1fr auto; gap: 0.4rem; }
-	.ma-search-row input { height: 2.1rem; border-radius: 0.4rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; padding: 0 0.6rem; }
-	.ma-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 0.45rem; padding: 0.5rem; display: grid; gap: 0.35rem; }
-	.ma-card-title { font-size: 0.72rem; opacity: 0.74; text-transform: uppercase; letter-spacing: 0.04em; }
-	.ma-target-name { font-size: 0.85rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.ma-now-cover { width: 5.5rem; height: 5.5rem; border-radius: 0.5rem; object-fit: cover; flex: 0 0 auto; background: rgba(255,255,255,0.06); }
-	.power-cover { display: grid; place-items: center; }
-	.ma-results-panel { min-height: 0; height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 0.45rem; overflow: hidden; }
-	.ma-nav button.active-mini { background: rgba(79,113,168,0.35); }
-	.ma-discover-grid { display: grid; grid-template-columns: 1fr; gap: 0.55rem; align-content: start; }
-	.ma-discover-block { border: 1px solid rgba(255,255,255,0.06); border-radius: 0.45rem; padding: 0.45rem; display: grid; gap: 0.35rem; background: rgba(255,255,255,0.03); }
-	.ma-carousel { display: grid; grid-auto-flow: column; grid-auto-columns: 150px; gap: 0.5rem; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 0.1rem; }
-	.ma-carousel::-webkit-scrollbar { width: 0; height: 0; display: none; }
-	.ma-media-card { display: grid; gap: 0.3rem; min-width: 0; }
-	.ma-media-thumb { width: 100%; aspect-ratio: 1 / 1; border-radius: 0.35rem; border: 0; background: rgba(255,255,255,0.08); color: #d2d9e6; display: grid; place-items: center; overflow: hidden; cursor: pointer; }
-	.ma-media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-	.ma-media-title { min-width: 0; font-size: 0.79rem; line-height: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ma-media-sub { min-width: 0; font-size: 0.72rem; opacity: 0.72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ma-bottom-player {
-		margin-top: 0;
-		border: 1px solid rgba(255,255,255,0.08);
-		border-radius: 0.5rem;
-		background: rgba(9,16,31,0.7);
-		padding: 1.1rem;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-		gap: 0.9rem;
-		align-items: center;
-		align-self: end;
-		min-height: 8.5rem;
-	}
-	.ma-bottom-left { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.9rem; align-items: center; }
-	.ma-bottom-meta { min-width: 0; display: grid; gap: 0.35rem; }
-	.ma-bottom-line { min-width: 0; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.35rem; align-items: center; }
-	.ma-meta-label { font-size: 0.78rem; opacity: 0.75; text-transform: uppercase; }
-	.ma-meta-value { min-width: 0; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ma-controls { display: flex; gap: 0.5rem; justify-content: center; justify-self: center; }
-	.ma-bottom-right { display: flex; gap: 0.5rem; justify-content: flex-end; justify-self: end; }
-	.hk-player-card { display: flex; align-items: stretch; gap: 0.9rem; padding: 1.0rem 1.1rem; background: rgba(255,255,255,0.05); border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.07); margin-bottom: 0.5rem; transition: background 0.15s; height: 8rem; box-sizing: border-box; }
-	.hk-player-card:last-child { margin-bottom: 0; }
-	.hk-player-card.hk-off { opacity: 0.6; }
-	.hk-cover-wrap { flex-shrink: 0; display: flex; align-items: center; }
-	.hk-cover { width: 5.5rem; height: 5.5rem; border-radius: 0.5rem; object-fit: cover; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-	.hk-cover-empty { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.3); }
-	.hk-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
-	.hk-info { min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; justify-content: center; flex: 1; }
-	.hk-device { font-size: 0.78rem; font-weight: 600; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.01em; }
-	.hk-track { font-size: 0.92rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.hk-artist { font-size: 0.82rem; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.hk-idle { opacity: 0.4; font-style: italic; font-size: 0.85rem; }
-	.hk-controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-	.hk-btn { width: 3rem; height: 3rem; border-radius: 50%; border: 0; background: rgba(255,255,255,0.1); color: #f5f5f5; cursor: pointer; display: grid; place-items: center; transition: background 0.12s; }
-	.hk-btn:hover { background: rgba(255,255,255,0.2); }
-	.hk-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-	.hk-btn-play { width: 3.4rem; height: 3.4rem; background: rgba(79,113,168,0.5); }
-	.hk-btn-play:hover { background: rgba(79,113,168,0.7); }
-	.hk-power { flex-shrink: 0; align-self: flex-end; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(255,255,255,0.4); cursor: pointer; display: grid; place-items: center; padding: 0; line-height: 0; box-sizing: border-box; transition: all 0.12s; }
-	.hk-power:hover { background: rgba(255,255,255,0.1); }
-	.hk-power.hk-power-on { border-color: rgba(79,113,168,0.6); color: #7ea4e6; }
-	.ma-popover-wrap { position: relative; }
-	.ma-popover::-webkit-scrollbar { width: 0; height: 0; display: none; }
-	.ma-popover {
-		position: absolute;
-		right: 0;
-		bottom: calc(100% + 0.35rem);
-		width: 14.5rem;
-		max-height: 12.5rem;
-		overflow: auto;
-		scrollbar-width: none;
-		-ms-overflow-style: none;
-		display: grid;
-		gap: 0.3rem;
-		padding: 0.45rem;
-		border-radius: 0.45rem;
-		border: 1px solid rgba(255,255,255,0.1);
-		background: #1a2335;
-		z-index: 5;
-	}
-	.ma-volume-popover { width: 11rem; }
-	.ma-volume-popover input[type='range'] { width: 100%; accent-color: #7ea4e6; }
-	.ma-queue-popover { width: 22rem; max-height: 18rem; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-	.ma-queue-header { padding: 0.5rem 0.75rem; font-size: 0.8rem; font-weight: 600; opacity: 0.7; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 0.5rem; }
-	.ma-queue-list { overflow-y: auto; scrollbar-width: none; flex: 1; }
-	.ma-queue-list::-webkit-scrollbar { display: none; }
-	.ma-queue-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; }
-	.ma-queue-item:hover { background: rgba(255,255,255,0.05); }
-	.ma-queue-item:hover .ma-queue-actions { opacity: 1; }
-	.ma-queue-item.ma-queue-current { background: rgba(79,113,168,0.2); }
-	.ma-queue-thumb { width: 2rem; height: 2rem; border-radius: 0.2rem; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
-	.ma-queue-meta { flex: 1; min-width: 0; }
-	.ma-queue-title { font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ma-queue-artist { font-size: 0.72rem; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ma-queue-actions { display: flex; align-items: center; gap: 0.1rem; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
-	.ma-queue-btn { width: 1.4rem; height: 1.4rem; border-radius: 0.25rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; cursor: pointer; display: grid; place-items: center; }
-	.ma-queue-btn:hover { background: rgba(255,255,255,0.15); }
-	.ma-queue-btn-remove:hover { background: rgba(200,60,60,0.4); }
-	.ma-controls .history-btn,
-	.ma-bottom-right .history-btn { height: 3rem; width: 3rem; padding: 0; display: grid; place-items: center; border-radius: 0.5rem; }
-	.history-btn.active { background: rgba(79,113,168,0.35); }
-	.spotify-state { font-size: 0.8rem; opacity: 0.78; }
-	.spotify-warning { color: #f3ca62; background: rgba(243,202,98,0.14); border-radius: 0.4rem; padding: 0.45rem 0.55rem; font-size: 0.79rem; }
-	.spotify-list { display: grid; gap: 0.35rem; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; min-height: 0; }
-	.spotify-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
-	.spotify-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: rgba(255,255,255,0.04); border-radius: 0.35rem; padding: 0.4rem 0.5rem; }
-	.spotify-cover { width: 2rem; height: 2rem; border-radius: 0.25rem; object-fit: cover; flex: 0 0 auto; }
-	.spotify-main { min-width: 0; display: grid; gap: 0.08rem; }
-	.spotify-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.84rem; }
-	.spotify-kind { font-size: 0.7rem; opacity: 0.65; text-transform: uppercase; margin-left: 0.3rem; }
-	.spotify-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; opacity: 0.72; }
-	.spotify-section-label { font-size: 0.74rem; opacity: 0.68; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.2rem; }
 	@container (max-width: 540px) {
 		.status-hero { grid-template-columns: auto minmax(0, 1fr); }
 		.status-hero-extra {
@@ -1600,17 +1442,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 	@media (max-width: 700px) {
 		.availability-grid { grid-template-columns: 1fr; }
 	}
-	@media (max-width: 900px) {
-		.media-players-grid { grid-template-columns: 1fr; }
-		.ma-content { grid-template-columns: 1fr; }
-		.ma-nav { grid-template-columns: 1fr 1fr; }
-		.ma-discover-grid { grid-template-columns: 1fr; }
-		.ma-bottom-player { grid-template-columns: 1fr; }
-		.ma-bottom-right { justify-content: flex-start; }
-		.ma-bottom-line { grid-template-columns: 6.5rem minmax(0, 1fr); }
-		.media-player-row { grid-template-columns: 1fr; }
-		.media-player-right { justify-content: flex-start; }
-	}
 	.empty-row { opacity: 0.68; }
 	.area-header { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); padding: 8px 4px 2px; grid-column: 1 / -1; }
 	.entity-group-active { background: rgba(250,204,21,0.06); }
@@ -1619,14 +1450,4 @@ const EMPTY_RECORD: Record<string, string> = {};
 	.availability-ok-icon { color: #4ade80; filter: drop-shadow(0 0 16px rgba(74,222,128,0.5)); }
 	.availability-ok-title { font-size: 1.2rem; font-weight: 600; color: #f5f5f5; }
 	.availability-ok-sub { font-size: 0.85rem; opacity: 0.5; }
-	.target-name { min-width: 0; text-align: left; border: 0; background: transparent; color: #f5f5f5; padding: 0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.target-name-row { display: flex; align-items: center; gap: 0.25rem; }
-	.target-name-row .target-name { flex: 1; min-width: 0; }
-	.target-edit-btn { flex-shrink: 0; width: 1.6rem; height: 1.6rem; border-radius: 0.3rem; border: 0; background: transparent; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 0.75rem; display: grid; place-items: center; opacity: 0; transition: opacity 0.15s; }
-	.target-name-row:hover .target-edit-btn { opacity: 1; }
-	.target-rename-row { display: flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0; }
-	.target-rename-input { flex: 1; min-width: 0; height: 1.6rem; border-radius: 0.3rem; border: 0; background: rgba(255,255,255,0.1); color: #f5f5f5; padding: 0 0.4rem; font-size: 0.85rem; }
-	.target-rename-save { width: 1.6rem; height: 1.6rem; border-radius: 0.3rem; border: 0; background: #c89d1b; color: #fff; cursor: pointer; font-size: 0.8rem; }
-	.target-rename-cancel { width: 1.6rem; height: 1.6rem; border-radius: 0.3rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; cursor: pointer; font-size: 0.8rem; }
-	.target-name.active { color: #9cc8ff; }
 </style>

@@ -1,4 +1,5 @@
 import type { HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
+import type { LanguageCode } from '$lib/i18n';
 
 export type StatusCardKind =
 	| 'lights_status'
@@ -11,6 +12,7 @@ type BuildSummaryInput = {
 	kind: StatusCardKind;
 	activeCount: number;
 	activeEntities?: HomeAssistantEntity[];
+	language?: LanguageCode;
 };
 
 function asSet(values?: string[]) {
@@ -102,39 +104,43 @@ function classifyOpenings(entities: HomeAssistantEntity[]): { hasDoor: boolean; 
 	return { hasDoor, hasWindow };
 }
 
-export function buildStatusSummary({ kind, activeCount, activeEntities }: BuildSummaryInput): string {
+function localized(nl: string, en: string, language: LanguageCode = 'nl') {
+	return language === 'nl' ? nl : en;
+}
+
+export function buildStatusSummary({ kind, activeCount, activeEntities, language = 'nl' }: BuildSummaryInput): string {
 	if (kind === 'lights_status') {
-		if (activeCount <= 0) return 'Alle lampen zijn uitgeschakeld.';
-		if (activeCount === 1) return 'Er is 1 lamp ingeschakeld.';
-		return `Er zijn ${activeCount} lampen ingeschakeld.`;
+		if (activeCount <= 0) return localized('Alle lampen zijn uitgeschakeld.', 'All lights are off.', language);
+		if (activeCount === 1) return localized('Er is 1 lamp ingeschakeld.', '1 light is on.', language);
+		return localized(`Er zijn ${activeCount} lampen ingeschakeld.`, `${activeCount} lights are on.`, language);
 	}
 	if (kind === 'openings_status') {
-		if (activeCount <= 0) return 'Alle ramen en deuren zijn gesloten.';
+		if (activeCount <= 0) return localized('Alle ramen en deuren zijn gesloten.', 'All windows and doors are closed.', language);
 		const { hasDoor, hasWindow } = classifyOpenings(activeEntities ?? []);
 		const onlyWindows = hasWindow && !hasDoor;
 		const onlyDoors = hasDoor && !hasWindow;
 		if (onlyWindows) {
-			if (activeCount === 1) return 'Er staat 1 raam open.';
-			return `Er staan ${activeCount} ramen open.`;
+			if (activeCount === 1) return localized('Er staat 1 raam open.', '1 window is open.', language);
+			return localized(`Er staan ${activeCount} ramen open.`, `${activeCount} windows are open.`, language);
 		}
 		if (onlyDoors) {
-			if (activeCount === 1) return 'Er staat 1 deur open.';
-			return `Er staan ${activeCount} deuren open.`;
+			if (activeCount === 1) return localized('Er staat 1 deur open.', '1 door is open.', language);
+			return localized(`Er staan ${activeCount} deuren open.`, `${activeCount} doors are open.`, language);
 		}
-		if (activeCount === 1) return 'Er staat 1 raam of deur open.';
-		return `Er staan ${activeCount} ramen & deuren open.`;
+		if (activeCount === 1) return localized('Er staat 1 raam of deur open.', '1 window or door is open.', language);
+		return localized(`Er staan ${activeCount} ramen & deuren open.`, `${activeCount} windows and doors are open.`, language);
 	}
 	if (kind === 'devices_status') {
-		if (activeCount <= 0) return 'Alle apparaten zijn uitgeschakeld.';
-		if (activeCount === 1) return 'Er staat 1 apparaat aan.';
-		return `Er staan ${activeCount} apparaten aan.`;
+		if (activeCount <= 0) return localized('Alle apparaten zijn uitgeschakeld.', 'All devices are off.', language);
+		if (activeCount === 1) return localized('Er staat 1 apparaat aan.', '1 device is on.', language);
+		return localized(`Er staan ${activeCount} apparaten aan.`, `${activeCount} devices are on.`, language);
 	}
 	if (kind === 'media_players_status') {
-		if (activeCount <= 0) return 'Er word niks afgespeeld.';
-		if (activeCount === 1) return '1 Media speler is actief.';
-		return `${activeCount} Media spelers zijn actief.`;
+		if (activeCount <= 0) return localized('Er word niks afgespeeld.', 'Nothing is playing.', language);
+		if (activeCount === 1) return localized('1 Media speler is actief.', '1 media player is active.', language);
+		return localized(`${activeCount} Media spelers zijn actief.`, `${activeCount} media players are active.`, language);
 	}
-	if (activeCount <= 0) return 'Alles werkt naar behoren';
-	if (activeCount === 1) return 'Er is 1 entiteit onbereikbaar.';
-	return `Er zijn ${activeCount} entiteiten onbereikbaar.`;
+	if (activeCount <= 0) return localized('Alles werkt naar behoren', 'Everything is working as expected', language);
+	if (activeCount === 1) return localized('Er is 1 entiteit onbereikbaar.', '1 entity is unreachable.', language);
+	return localized(`Er zijn ${activeCount} entiteiten onbereikbaar.`, `${activeCount} entities are unreachable.`, language);
 }

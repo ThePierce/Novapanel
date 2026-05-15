@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TranslationKey } from '$lib/i18n';
+	import { selectedLanguageStore, translate, type TranslationKey } from '$lib/i18n';
 	import { entityStore } from '$lib/ha/entities-store';
 	import { callHaService } from '$lib/ha/service-call';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
@@ -24,11 +24,11 @@
 		: 'armed'
 	);
 	const stateLabel = $derived(
-		state.includes('disarmed') ? 'Uitgeschakeld'
-		: state.includes('arming') ? 'Wordt ingeschakeld…'
-		: state.includes('pending') ? 'In afwachting'
+		state.includes('disarmed') ? translate('Uitgeschakeld', $selectedLanguageStore)
+		: state.includes('arming') ? translate('Wordt ingeschakeld…', $selectedLanguageStore)
+		: state.includes('pending') ? translate('In afwachting', $selectedLanguageStore)
 		: state.includes('triggered') ? 'ALARM!'
-		: 'Ingeschakeld'
+		: translate('Ingeschakeld', $selectedLanguageStore)
 	);
 	const iconName = $derived(
 		state.includes('disarmed') ? 'mdi:shield-off-outline'
@@ -54,15 +54,15 @@
 			await callHaService('alarm_control_panel', service, data);
 			pin = '';
 		} catch {
-			error = 'Actie mislukt';
+			error = t('actionFailedPrefix');
 		} finally { busy = false; }
 	}
 
 	const isDisarmed = $derived(state.includes('disarmed'));
 	const modes = [
-		{ label: 'Thuis', service: 'alarm_arm_home', icon: 'mdi:shield-home-outline' },
-		{ label: 'Weg', service: 'alarm_arm_away', icon: 'mdi:shield-lock-outline' },
-		{ label: 'Nacht', service: 'alarm_arm_night', icon: 'mdi:shield-moon-outline' },
+		{ label: translate('Thuis', $selectedLanguageStore), service: 'alarm_arm_home', icon: 'mdi:shield-home-outline' },
+		{ label: translate('Weg', $selectedLanguageStore), service: 'alarm_arm_away', icon: 'mdi:shield-lock-outline' },
+		{ label: translate('Nacht', $selectedLanguageStore), service: 'alarm_arm_night', icon: 'mdi:shield-moon-outline' },
 	];
 </script>
 

@@ -2,6 +2,7 @@
 	import { entityStore } from '$lib/ha/entities-store';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import { localeFor, selectedLanguageStore, translate } from '$lib/i18n';
 
 	type CalendarSource = CameraConfig;
 
@@ -15,12 +16,12 @@
 	const calendarEntities = $derived(
 		$entityStore.entities
 			.filter((entity) => entity.domain === 'calendar')
-			.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName))
+			.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName, localeFor($selectedLanguageStore)))
 	);
 	const personEntities = $derived(
 		$entityStore.entities
 			.filter((entity) => entity.domain === 'person')
-			.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName))
+			.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName, localeFor($selectedLanguageStore)))
 	);
 	const calendarListId = 'week-calendar-entities';
 	const personListId = 'week-calendar-person-entities';
@@ -106,18 +107,18 @@
 <div class="week-calendar-editor">
 	<div class="calendar-editor-head">
 		<div>
-			<strong>Kalenders</strong>
-			<span>Kies CalDAV kalender-entiteiten, koppel optioneel een person-entiteit, geef iedere persoon een kleur en zet ze in de juiste volgorde.</span>
+			<strong>{translate('Kalenders', $selectedLanguageStore)}</strong>
+			<span>{translate('Kies CalDAV kalender-entiteiten, koppel optioneel een person-entiteit, geef iedere persoon een kleur en zet ze in de juiste volgorde.', $selectedLanguageStore)}</span>
 		</div>
 		<button type="button" class="np-mini-btn primary" onclick={addSource}>
 			<TablerIcon name="plus" size={13} />
-			Persoon toevoegen
+			{translate('Persoon toevoegen', $selectedLanguageStore)}
 		</button>
 	</div>
 
 	{#if normalizedSources.length === 0}
 		<div class="calendar-editor-empty">
-			Nog geen kalenders geselecteerd. Je kunt ook handmatig een entity id invullen, bijvoorbeeld
+			{translate('Nog geen kalenders geselecteerd. Je kunt ook handmatig een entity id invullen, bijvoorbeeld', $selectedLanguageStore)}
 			<code>calendar.family</code>.
 		</div>
 	{/if}
@@ -141,7 +142,7 @@
 					class="calendar-color"
 					type="color"
 					value={source.color ?? palette[index % palette.length]}
-					aria-label="Kleur"
+					aria-label={translate('Kleur', $selectedLanguageStore)}
 					oninput={(event) => updateSource(index, { color: (event.currentTarget as HTMLInputElement).value })}
 				/>
 				<input
@@ -155,7 +156,7 @@
 				<input
 					type="text"
 					value={source.alias ?? ''}
-					placeholder={source.entityId ? entityName(source.entityId) : 'Naam'}
+					placeholder={source.entityId ? entityName(source.entityId) : translate('Naam', $selectedLanguageStore)}
 					oninput={(event) => updateSource(index, { alias: (event.currentTarget as HTMLInputElement).value })}
 				/>
 				<input
@@ -166,11 +167,11 @@
 					placeholder={source.personEntityId ? personName(source.personEntityId) : 'person.persoon'}
 					oninput={(event) => updateSource(index, { personEntityId: (event.currentTarget as HTMLInputElement).value.trim() })}
 				/>
-				<div class="calendar-order-actions" aria-label="Volgorde aanpassen">
+				<div class="calendar-order-actions" aria-label={translate('Volgorde aanpassen', $selectedLanguageStore)}>
 					<button
 						type="button"
 						class="np-mini-btn ghost"
-						aria-label="Omhoog"
+						aria-label={translate('Omhoog', $selectedLanguageStore)}
 						disabled={index === 0}
 						onclick={() => moveSource(index, -1)}
 					>
@@ -179,14 +180,14 @@
 					<button
 						type="button"
 						class="np-mini-btn ghost"
-						aria-label="Omlaag"
+						aria-label={translate('Omlaag', $selectedLanguageStore)}
 						disabled={index === normalizedSources.length - 1}
 						onclick={() => moveSource(index, 1)}
 					>
 						<TablerIcon name="arrow-down" size={13} />
 					</button>
 				</div>
-				<button type="button" class="np-mini-btn ghost danger" aria-label="Verwijderen" onclick={() => removeSource(index)}>
+				<button type="button" class="np-mini-btn ghost danger" aria-label={translate('Verwijderen', $selectedLanguageStore)} onclick={() => removeSource(index)}>
 					<TablerIcon name="trash" size={13} />
 				</button>
 			</div>

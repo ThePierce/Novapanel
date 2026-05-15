@@ -23,11 +23,11 @@
 	let p: Props = $props();
 </script>
 
-<EditorSection title="Stijl en weergave" icon="palette" tone="cyan" status="filled" statusLabel={p.clockStyle ?? 'digital'} open>
-	<div class="np-help">Kies wat de klok toont: digitaal, analoog of beide.</div>
+<EditorSection title={p.t('Stijl en weergave')} icon="palette" tone="cyan" status="filled" statusLabel={p.clockStyle ?? 'digital'} open>
+	<div class="np-help">{p.t('Kies wat de klok toont: digitaal, analoog of beide.')}</div>
 	<div class="np-grid-2">
 		<div class="np-field">
-			<span class="np-label">Modus</span>
+			<span class="np-label">{p.t('clockMode')}</span>
 			<select
 				class="np-input"
 				value={p.clockMode}
@@ -45,7 +45,7 @@
 			</select>
 		</div>
 		<div class="np-field">
-			<span class="np-label">Stijl</span>
+			<span class="np-label">{p.t('Stijl')}</span>
 			<select
 				class="np-input"
 				value={p.clockStyle ?? 'digital'}
@@ -81,7 +81,7 @@
 		</label>
 	</div>
 </EditorSection>
-<EditorSection title="Live voorbeeld" icon="eye" tone="purple" status="filled" statusLabel="real-time" open>
+<EditorSection title={p.t('Live voorbeeld')} icon="eye" tone="purple" status="filled" statusLabel="real-time" open>
 	<div class="np-preview-frame">
 		<ClockCard
 			analogStyle={p.analogStyle}

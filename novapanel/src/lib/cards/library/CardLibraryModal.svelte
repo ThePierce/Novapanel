@@ -6,7 +6,7 @@
 	type CardLibraryTab = 'sidebar' | 'view';
 
 	type Props = {
-		t: (key: TranslationKey) => string;
+		t: (key: TranslationKey | string) => string;
 		title: string;
 		editMode: boolean;
 		activeTab: CardLibraryTab;
@@ -105,17 +105,16 @@
 		<div class="np-detail-head-icon"><TablerIcon name="layout-grid-add" size={22} /></div>
 		<div class="np-detail-head-text">
 			<div class="np-detail-head-title editable-title-row">
-				<h3
+				<div
 					class:editable-title={editMode}
 					contenteditable={editMode}
 					role={editMode ? 'textbox' : undefined}
-					tabindex={editMode ? 0 : undefined}
 					onblur={(event) => onTitleBlur((event.currentTarget as HTMLElement).innerText)}
 				>
 					{title}
-				</h3>
+				</div>
 			</div>
-			<div class="np-detail-head-sub">Kies een kaart om toe te voegen</div>
+			<div class="np-detail-head-sub">{t('Kies een kaart om toe te voegen')}</div>
 		</div>
 	</div>
 
@@ -160,8 +159,8 @@
 						class="library-icon-section"
 						onclick={startSectionRename}
 						disabled={!activeSection}
-						title="Sectie hernoemen"
-						aria-label="Sectie hernoemen"
+						title={t('Sectie hernoemen')}
+						aria-label={t('Sectie hernoemen')}
 					>
 						<TablerIcon name="pencil" size={14} />
 					</button>
@@ -175,18 +174,18 @@
 								type="text"
 								class="library-section-rename-input"
 								value={renameSectionDraft}
-								placeholder="Sectie zonder titel"
-								aria-label="Sectienaam"
+								placeholder={t('Sectie zonder titel')}
+								aria-label={t('Sectienaam')}
 								oninput={(event) => (renameSectionDraft = (event.currentTarget as HTMLInputElement).value)}
 								onkeydown={(event) => {
 									if (event.key === 'Enter') saveSectionRename();
 									if (event.key === 'Escape') renameSectionOpen = false;
 								}}
 							/>
-							<button type="button" class="library-section-rename-save" onclick={saveSectionRename} aria-label="Opslaan">
+							<button type="button" class="library-section-rename-save" onclick={saveSectionRename} aria-label={t('save')}>
 								<TablerIcon name="check" size={14} />
 							</button>
-							<button type="button" class="library-section-rename-cancel" onclick={() => (renameSectionOpen = false)} aria-label="Annuleren">
+							<button type="button" class="library-section-rename-cancel" onclick={() => (renameSectionOpen = false)} aria-label={t('cancel')}>
 								<TablerIcon name="x" size={14} />
 							</button>
 						</div>
@@ -198,11 +197,10 @@
 		<div class="library-grid">
 			{#each cards.filter((entry) => entry.target === activeTab) as entry (entry.id)}
 				{@const tone = cardTypeStyling(entry.type)}
-				<article
+				<button
+					type="button"
 					class="library-tile"
 					style="--tile-accent: {tone.accent}; --tile-accent-soft: {tone.accentSoft};"
-					role="button"
-					tabindex="0"
 					onclick={() => onAddCard(entry.id)}
 					onkeydown={(event) => {
 						if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -264,14 +262,14 @@
 								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
 								{#each [0, 1, 2, 3, 4] as i}
 									<line x1={62 + i * 45} y1="42" x2={62 + i * 45} y2="142" stroke="rgba(255,255,255,0.08)" />
-									<text x={42 + i * 45} y="34" text-anchor="middle" font-size="11" font-weight="700" fill="rgba(245,245,245,0.84)" font-family="Inter, system-ui, Arial">Ma</text>
+									<text x={42 + i * 45} y="34" text-anchor="middle" font-size="11" font-weight="700" fill="rgba(245,245,245,0.84)" font-family="Inter, system-ui, Arial">{t('Ma')}</text>
 								{/each}
 								<text x="26" y="66" font-size="10" fill="rgba(245,245,245,0.54)" font-family="Inter, system-ui, Arial">15:00</text>
 								<text x="26" y="106" font-size="10" fill="rgba(245,245,245,0.54)" font-family="Inter, system-ui, Arial">16:00</text>
 								<rect x="68" y="54" width="40" height="50" rx="8" fill="#a7f3d0" opacity="0.88" />
 								<rect x="116" y="78" width="40" height="44" rx="8" fill="#f9a8d4" opacity="0.88" />
 								<rect x="210" y="58" width="40" height="66" rx="8" fill="#93c5fd" opacity="0.88" />
-								<text x="160" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">Weekkalender</text>
+								<text x="160" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Weekkalender')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'alarm_panel'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -280,8 +278,8 @@
 								<path d="M80 68 C80 68 95 73 95 82 C95 93 87 100 80 103 C73 100 65 93 65 82 C65 73 80 68 80 68Z" fill="none" stroke="#e15241" stroke-width="2.2" stroke-linejoin="round" />
 								<line x1="80" y1="77" x2="80" y2="89" stroke="#e15241" stroke-width="2.2" stroke-linecap="round" />
 								<circle cx="80" cy="93" r="1.8" fill="#e15241" />
-								<text x="124" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">Alarmpaneel</text>
-								<text x="124" y="96" font-size="11" font-weight="600" fill="#e15241" font-family="Inter, system-ui, Arial">Ingeschakeld</text>
+								<text x="124" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Alarmpaneel')}</text>
+								<text x="124" y="96" font-size="11" font-weight="600" fill="#e15241" font-family="Inter, system-ui, Arial">{t('Ingeschakeld')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'lights_status'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -291,8 +289,8 @@
 								<rect x="74" y="94" width="12" height="5" rx="2.5" fill="#ffd338" opacity="0.6" />
 								<circle cx="104" cy="62" r="10" fill="#ffd338" />
 								<text x="104" y="66" text-anchor="middle" font-size="11" font-weight="700" fill="#1b2433" font-family="Inter, system-ui, Arial">3</text>
-								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">Lampen</text>
-								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">3 aan</text>
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Lampen')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">3 {t('aan')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'light_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -302,7 +300,7 @@
 								<path d="M62 90H74M64 96H72" stroke="#ffd338" stroke-width="4" stroke-linecap="round" />
 								<rect x="122" y="54" width="136" height="10" rx="5" fill="rgba(255,255,255,0.13)" />
 								<rect x="122" y="54" width="92" height="10" rx="5" fill="#ffd338" opacity="0.92" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">Leeslamp</text>
+								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Leeslamp')}</text>
 								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">68%</text>
 							</svg>
 						{:else if entry.preview.kind === 'climate_button'}
@@ -311,8 +309,8 @@
 								<circle cx="68" cy="70" r="27" fill="rgba(251,146,60,0.18)" />
 								<path d="M68 48v43M58 82a10 10 0 1 0 20 0M68 48a7 7 0 0 0-7 7v24h14V55a7 7 0 0 0-7-7Z" fill="none" stroke="#fb923c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
 								<rect x="122" y="54" width="86" height="10" rx="5" fill="#fb923c" opacity="0.9" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">Thermostaat</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">21° · doel 22°</text>
+								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Thermostaat')}</text>
+								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">21° · {t('doel')} 22°</text>
 							</svg>
 						{:else if entry.preview.kind === 'cover_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -321,8 +319,8 @@
 								<path d="M52 49h32M55 55v36M81 55v36M55 55c7 4 13 4 26 0M55 70c7 4 13 4 26 0" fill="none" stroke="#60a5fa" stroke-width="4" stroke-linecap="round" />
 								<rect x="122" y="54" width="118" height="10" rx="5" fill="rgba(255,255,255,0.13)" />
 								<rect x="122" y="54" width="78" height="10" rx="5" fill="#60a5fa" opacity="0.9" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">Gordijnen</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">66% open</text>
+								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Gordijnen')}</text>
+								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">66% {t('open')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'vacuum_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -331,8 +329,8 @@
 								<circle cx="68" cy="70" r="18" fill="none" stroke="#34d399" stroke-width="5" />
 								<circle cx="68" cy="70" r="5" fill="#34d399" />
 								<path d="M84 55l8-8M83 85l8 8" stroke="#34d399" stroke-width="4" stroke-linecap="round" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">Stofzuiger</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">Schoonmaken · 82%</text>
+								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Stofzuiger')}</text>
+								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">{t('Schoonmaken')} · 82%</text>
 							</svg>
 						{:else if entry.preview.kind === 'media_player_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -342,8 +340,8 @@
 								<path d="M90 60c6 7 6 13 0 20" fill="none" stroke="#c084fc" stroke-width="4" stroke-linecap="round" />
 								<rect x="122" y="54" width="128" height="10" rx="5" fill="rgba(255,255,255,0.13)" />
 								<rect x="122" y="54" width="64" height="10" rx="5" fill="#c084fc" opacity="0.9" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">Woonkamer</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">Speelt muziek</text>
+								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Woonkamer')}</text>
+								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">{t('Speelt muziek')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'openings_status'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -352,9 +350,9 @@
 								<rect x="66" y="67" width="28" height="36" rx="3" fill="none" stroke="#60a5fa" stroke-width="2" />
 								<path d="M66 77 L94 67" stroke="#60a5fa" stroke-width="2" />
 								<circle cx="90" cy="85" r="2.5" fill="#60a5fa" />
-								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">Ramen/Deuren</text>
+								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Ramen/Deuren')}</text>
 								<text x="140" y="96" font-size="20" font-weight="700" fill="#60a5fa" font-family="Inter, system-ui, Arial">2</text>
-								<text x="158" y="96" font-size="11" fill="rgba(245,245,245,0.45)" font-family="Inter, system-ui, Arial"> open</text>
+								<text x="158" y="96" font-size="11" fill="rgba(245,245,245,0.45)" font-family="Inter, system-ui, Arial"> {t('open')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'devices_status'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -363,24 +361,24 @@
 								<rect x="68" y="72" width="24" height="16" rx="3" fill="none" stroke="#a78bfa" stroke-width="2" />
 								<rect x="76" y="88" width="8" height="10" rx="1.5" fill="#a78bfa" opacity="0.7" />
 								<line x1="72" y1="98" x2="88" y2="98" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" />
-								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">Apparatenstatus</text>
+								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Apparatenstatus')}</text>
 								<text x="140" y="96" font-size="20" font-weight="700" fill="#a78bfa" font-family="Inter, system-ui, Arial">5</text>
-								<text x="158" y="96" font-size="11" fill="rgba(245,245,245,0.45)" font-family="Inter, system-ui, Arial"> actief</text>
+								<text x="158" y="96" font-size="11" fill="rgba(245,245,245,0.45)" font-family="Inter, system-ui, Arial"> {t('actief')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'availability_status'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
 								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
 								<circle cx="80" cy="85" r="28" fill="rgba(74,222,128,0.1)" stroke="rgba(74,222,128,0.3)" stroke-width="1.5" />
 								<path d="M67 85 L76 94 L95 74" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">Bereikbaarheid</text>
-								<text x="140" y="96" font-size="11" font-weight="600" fill="#4ade80" font-family="Inter, system-ui, Arial">Alles bereikbaar</text>
+								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Bereikbaarheid')}</text>
+								<text x="140" y="96" font-size="11" font-weight="600" fill="#4ade80" font-family="Inter, system-ui, Arial">{t('Alles bereikbaar')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'media_players_status'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
 								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
 								<circle cx="80" cy="85" r="28" fill="rgba(79,113,168,0.15)" stroke="rgba(79,113,168,0.4)" stroke-width="1.5" />
 								<polygon points="72,74 72,96 95,85" fill="#7ea4e6" />
-								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">Media Spelers</text>
+								<text x="140" y="75" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Media Spelers')}</text>
 								<text x="140" y="96" font-size="11" fill="rgba(245,245,245,0.55)" font-family="Inter, system-ui, Arial">Music Assistant</text>
 							</svg>
 						{:else if entry.preview.kind === 'energy'}
@@ -388,11 +386,11 @@
 								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
 								<circle cx="56" cy="58" r="16" fill="rgba(250,204,21,0.1)" stroke="rgba(250,204,21,0.3)" stroke-width="1.2" />
 								<text x="56" y="63" text-anchor="middle" font-size="14" fill="#facc15">☀</text>
-								<text x="80" y="54" font-size="11" font-weight="600" fill="rgba(245,245,245,0.7)" font-family="Inter, system-ui, Arial">Zonnepanelen</text>
+								<text x="80" y="54" font-size="11" font-weight="600" fill="rgba(245,245,245,0.7)" font-family="Inter, system-ui, Arial">{t('Zonnepanelen')}</text>
 								<text x="80" y="67" font-size="12" font-weight="700" fill="#facc15" font-family="Inter, system-ui, Arial">2.4 kW</text>
 								<circle cx="56" cy="103" r="16" fill="rgba(74,222,128,0.1)" stroke="rgba(74,222,128,0.3)" stroke-width="1.2" />
 								<text x="56" y="108" text-anchor="middle" font-size="13" fill="#4ade80">⚡</text>
-								<text x="80" y="99" font-size="11" font-weight="600" fill="rgba(245,245,245,0.7)" font-family="Inter, system-ui, Arial">Thuisaccu</text>
+								<text x="80" y="99" font-size="11" font-weight="600" fill="rgba(245,245,245,0.7)" font-family="Inter, system-ui, Arial">{t('Thuisaccu')}</text>
 								<text x="80" y="112" font-size="12" font-weight="700" fill="#4ade80" font-family="Inter, system-ui, Arial">82%</text>
 							</svg>
 						{:else if entry.preview.kind === 'cameras_strip'}
@@ -418,12 +416,12 @@
 						<div class="library-tile-icon">
 							<TablerIcon name={tone.icon} size={16} />
 						</div>
-						<h3>{getLocalizedCardLabel(entry.type)}</h3>
+						<span class="library-tile-title">{getLocalizedCardLabel(entry.type)}</span>
 						<div class="library-tile-add">
 							<TablerIcon name="plus" size={14} />
 						</div>
 					</div>
-				</article>
+				</button>
 			{/each}
 		</div>
 	</div>
@@ -490,7 +488,7 @@
 		position: relative; z-index: 1;
 	}
 	.np-detail-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
-	.np-detail-head-title h3 {
+	.np-detail-head-title {
 		margin: 0;
 		font-size: 15px; font-weight: 500;
 		letter-spacing: -0.01em;
@@ -705,6 +703,10 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
+		width: 100%;
+		font: inherit;
+		text-align: left;
+		color: inherit;
 		background: rgba(255,255,255,0.025);
 		border: 0.5px solid rgba(255,255,255,0.08);
 		border-radius: 14px;
@@ -784,7 +786,7 @@
 		transition: transform 0.2s;
 	}
 	.library-tile:hover .library-tile-icon { transform: scale(1.08); }
-	.library-tile-meta h3 {
+	.library-tile-title {
 		flex: 1;
 		margin: 0;
 		font-size: 13.5px;
@@ -853,7 +855,7 @@
 			padding: 7px 9px;
 			gap: 7px;
 		}
-		.library-tile-meta h3 {
+		.library-tile-title {
 			font-size: 12.5px;
 		}
 	}

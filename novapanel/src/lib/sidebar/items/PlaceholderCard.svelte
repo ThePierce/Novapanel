@@ -12,7 +12,12 @@
 	import AvailabilityStatusCard from '$lib/cards/AvailabilityStatusCard.svelte';
 	import MediaPlayersStatusCard from '$lib/cards/MediaPlayersStatusCard.svelte';
 	import EnergyCard from '$lib/cards/EnergyCard.svelte';
-	import CamerasStripCard from '$lib/cards/CamerasStripCard.svelte';
+	import LazyComponent from '$lib/lazy/LazyComponent.svelte';
+
+	let camerasStripCardPromise: Promise<typeof import('$lib/cards/CamerasStripCard.svelte')> | null =
+		null;
+	const loadCamerasStripCard = () =>
+		(camerasStripCardPromise ??= import('$lib/cards/CamerasStripCard.svelte'));
 
 	type Props = {
 		item: SidebarItemBase;
@@ -43,13 +48,20 @@ function applyDragCursorIndicatorOnly(event: DragEvent) {
 }
 </script>
 
-<article
+<div
 	class="placeholder-card"
 	class:editable={editable}
 	class:has-title={!!(item.title && item.title.trim().length > 0)}
+	role="button"
+	tabindex="0"
 	draggable={editable}
 	data-type={item.type}
 	onclick={() => onSelectItem?.(item)}
+	onkeydown={(event) => {
+		if (event.key !== 'Enter' && event.key !== ' ') return;
+		event.preventDefault();
+		onSelectItem?.(item);
+	}}
 	ondragstart={(event) => {
 		if (!editable) return;
 		applyDragCursorIndicatorOnly(event);
@@ -139,15 +151,18 @@ function applyDragCursorIndicatorOnly(event: DragEvent) {
 			batteryChargeEntityId={item.batteryChargeEntityId}
 		/>
 	{:else if item.type === 'cameras_strip'}
-		<CamerasStripCard
-			cameras={item.cameras}
-			title={item.title}
-			onCameraClick={onCameraClick}
+		<LazyComponent
+			loader={loadCamerasStripCard}
+			props={{
+				cameras: item.cameras,
+				title: item.title,
+				onCameraClick
+			}}
 		/>
 	{:else}
 		<p>{item.type}</p>
 	{/if}
-</article>
+</div>
 
 <style>
 	.placeholder-card {

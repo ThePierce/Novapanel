@@ -69,16 +69,16 @@
 </script>
 
 <EditorSection
-	title="Welke entiteiten"
+	title={p.t('Welke entiteiten')}
 	icon="target"
 	tone={statusTone}
 	status={statusFilterStatus.status}
 	statusLabel={statusFilterStatus.label}
 	open
 >
-	<div class="np-help">Kies de domeinen die meetellen, en/of selecteer specifieke entiteiten handmatig.</div>
+	<div class="np-help">{p.t('Kies de domeinen die meetellen, en/of selecteer specifieke entiteiten handmatig.')}</div>
 	<div class="np-field">
-		<span class="np-label">Domeinen <span class="np-hint">(komma-gescheiden)</span></span>
+		<span class="np-label">{p.t('Domeinen')} <span class="np-hint">({p.t('komma-gescheiden')})</span></span>
 		<input
 			type="text"
 			class="np-input mono"
@@ -95,7 +95,7 @@
 	</div>
 	{#if showsIconField}
 		<div class="np-field">
-			<span class="np-label">Icoon <span class="np-hint">(MDI naam, bv. lightbulb)</span></span>
+			<span class="np-label">{p.t('Icoon')} <span class="np-hint">({p.t('MDI naam, bv. lightbulb')})</span></span>
 			<input
 				type="text"
 				class="np-input mono"
@@ -135,9 +135,9 @@
 		status={openingsClassesStatus.status}
 		statusLabel={openingsClassesStatus.label}
 	>
-		<div class="np-help">Optioneel. Beperk tot specifieke device classes (door, window, garage…).</div>
+		<div class="np-help">{p.t('Optioneel. Beperk tot specifieke device classes (door, window, garage…).')}</div>
 		<div class="np-field">
-			<span class="np-label">Classes <span class="np-hint">(komma-gescheiden)</span></span>
+			<span class="np-label">{p.t('Classes')} <span class="np-hint">({p.t('komma-gescheiden')})</span></span>
 			<input
 				type="text"
 				class="np-input mono"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { entityStore } from '$lib/ha/entities-store';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		netEntityId?: string;
@@ -55,17 +56,17 @@
 
 	// Summary line for the sidebar card
 	const netLabel = $derived((() => {
-		if (!netEntityId) return 'Geen entiteit ingesteld';
+		if (!netEntityId) return translate('Geen entiteit ingesteld', $selectedLanguageStore);
 		if (net === null) {
 			const found = entities.some(e => e.entityId === (netEntityId || '').trim());
-			return found ? 'Sensor geeft geen getal' : `Niet gevonden: ${(netEntityId || '').trim()}`;
+			return found ? translate('Sensor geeft geen getal', $selectedLanguageStore) : `${translate('Niet gevonden', $selectedLanguageStore)}: ${(netEntityId || '').trim()}`;
 		}
 		const abs = Math.abs(net);
 		const unit = getUnit(netEntityId);
 		const formatted = fmtW(net, unit);
-		if (net < 0) return `↑ ${formatted} terug`;
-		if (net === 0) return 'Geen verbruik';
-		return `↓ ${formatted} afname`;
+		if (net < 0) return `↑ ${formatted} ${translate('terug', $selectedLanguageStore)}`;
+		if (net === 0) return translate('Geen verbruik', $selectedLanguageStore);
+		return `↓ ${formatted} ${translate('afname', $selectedLanguageStore)}`;
 	})());
 
 	const netColor = $derived(
@@ -83,7 +84,7 @@
 		</div>
 	</div>
 	<div class="info">
-		<div class="name">Energie</div>
+		<div class="name">{translate('Energie', $selectedLanguageStore)}</div>
 		<div class="summary" style="color:{netColor}">{netLabel}</div>
 	</div>
 </div>

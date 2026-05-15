@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TranslationKey } from '$lib/i18n';
+	import { translate, type TranslationKey } from '$lib/i18n';
 	import LanguageConfig from '$lib/LanguageConfig.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 
@@ -160,18 +160,18 @@
 			const resp = await fetch(buildIngressPath('/api/spotify/auth/start'));
 			if (!resp.ok) {
 				const text = await resp.text();
-				spotifyAuthError = `Kon Spotify-auth niet starten (${resp.status}). ${text || ''}`.trim();
+				spotifyAuthError = `${translate('Kon Spotify-auth niet starten. Controleer de credentials en redirect URI.', selectedLanguage)} (${resp.status}). ${text || ''}`.trim();
 				return;
 			}
 			const data = await resp.json();
 			if (!data?.url) {
-				spotifyAuthError = 'Geen auth-URL ontvangen van de server.';
+				spotifyAuthError = translate('Geen auth-URL ontvangen van de server.', selectedLanguage);
 				return;
 			}
 			// Open in nieuw tabblad zodat het ingress-iframe rustig blijft.
 			spotifyAuthWindow = window.open(data.url, '_blank', 'noopener=no');
 			if (!spotifyAuthWindow) {
-				spotifyAuthError = 'Pop-up geblokkeerd door de browser. Sta pop-ups toe voor deze site en probeer opnieuw.';
+				spotifyAuthError = translate('Pop-up geblokkeerd door de browser. Sta pop-ups toe voor deze site en probeer opnieuw.', selectedLanguage);
 				return;
 			}
 			spotifyAuthInProgress = true;
@@ -249,7 +249,7 @@
 		<div class="np-detail-head-icon"><TablerIcon name="adjustments" size={22} /></div>
 		<div class="np-detail-head-text">
 			<h3>{t('settings')}</h3>
-			<div class="np-detail-head-sub">Personaliseer Novapanel</div>
+			<div class="np-detail-head-sub">{translate('Personaliseer Novapanel', selectedLanguage)}</div>
 		</div>
 	</div>
 
@@ -305,7 +305,7 @@
 			<div class="settings-section integrations">
 				<div class="settings-section-head">
 					<TablerIcon name="apps" size={16} />
-					<h4>Derde-partij integraties</h4>
+					<h4>{t('thirdPartyIntegrations')}</h4>
 				</div>
 
 				<!-- Spotify -->
@@ -321,12 +321,12 @@
 						{#if spotifyAuthStatus === 'connected'}
 							<span class="integration-badge ok">
 								<TablerIcon name="circle-check" size={11} />
-								verbonden
+								{t('spotifyStatusConnected')}
 							</span>
 						{:else if spotifyAuthStatus === 'not_connected' && spotifyClientId && spotifyClientSecret}
 							<span class="integration-badge warn">
 								<TablerIcon name="alert-circle" size={11} />
-								niet ingelogd
+								{t('spotifyStatusNotConnected')}
 							</span>
 						{/if}
 					</span>
@@ -347,14 +347,13 @@
 						/>
 						{#if spotifyRedirectUri && isIngressSpotifyRedirectUri(spotifyRedirectUri)}
 							<div class="integration-help-text warning">
-								Deze redirect gebruikt nog een Home Assistant ingress-token. Novapanel vervangt dit bij verbinden
-								automatisch door de stabiele callback-URL hieronder, maar plak die nieuwe URL ook in het Spotify Dashboard.
+								{translate('Deze redirect gebruikt nog een Home Assistant ingress-token. Novapanel vervangt dit bij verbinden automatisch door de stabiele callback-URL hieronder, maar plak die nieuwe URL ook in het Spotify Dashboard.', selectedLanguage)}
 							</div>
 						{/if}
 						<div class="integration-help-text">
-							Maak een gratis app aan op
+							{translate('Maak een gratis app aan op', selectedLanguage)}
 							<a class="integration-help-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>.
-							Klik op <em>Create app</em>, vul een naam in, kies "Web API" en kopieer daarna de <em>Client ID</em> uit het overzicht hierheen.
+							{translate('Klik op Create app, vul een naam in, kies Web API en kopieer daarna de Client ID uit het overzicht hierheen.', selectedLanguage)}
 						</div>
 
 						<label for="np-spotify-client-secret">Client Secret</label>
@@ -367,8 +366,7 @@
 							spellcheck="false"
 						/>
 						<div class="integration-help-text">
-							Klik op je app in het dashboard, daarna op <em>Settings</em>, en bij <em>View client secret</em>
-							plak je de waarde hier.
+							{translate('Klik op je app in het dashboard, daarna op Settings, en plak de Client Secret hier.', selectedLanguage)}
 						</div>
 
 						<label for="np-spotify-redirect">Redirect URI</label>
@@ -382,19 +380,18 @@
 							spellcheck="false"
 						/>
 						<div class="integration-help-text">
-							Open je app op <a class="integration-help-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>,
-							klik op <em>Settings</em> en plak deze URI bij <em>Redirect URIs</em>:
+							{translate('Open je app op', selectedLanguage)} <a class="integration-help-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>,
+							{translate('klik op Settings en plak deze URI bij Redirect URIs:', selectedLanguage)}
 							<code>{exampleRedirectUri}</code>
-							Vervang het domein door je eigen Home Assistant-adres. Gebruik geen
-							<code>/api/hassio_ingress/&lt;token&gt;</code> URL: die token-URL kan na de Spotify redirect
-							een 401 geven. Je kunt hieronder je actuele callback-URL kopiëren — die kun je rechtstreeks plakken in het dashboard.
-							Klik daarna op <em>Add</em> en <em>Save</em>. Laat dit veld leeg om de automatisch herkende
-							URL te gebruiken.
+							{translate('Vervang het domein door je eigen Home Assistant-adres. Gebruik geen', selectedLanguage)}
+							<code>/api/hassio_ingress/&lt;token&gt;</code>
+							{translate('een 401 geven. Je kunt hieronder je actuele callback-URL kopiëren en rechtstreeks plakken in het dashboard.', selectedLanguage)}
+							{translate('Klik daarna op Add en Save. Laat dit veld leeg om de automatisch herkende URL te gebruiken.', selectedLanguage)}
 						</div>
 						<div class="integration-actions">
 							<button type="button" class="np-btn" onclick={() => void copyDetectedRedirect()} disabled={!detectedRedirectUri}>
 								<TablerIcon name={copiedRedirect ? 'check' : 'copy'} size={14} />
-								{copiedRedirect ? 'Gekopieerd' : 'Kopieer mijn callback-URL'}
+								{copiedRedirect ? translate('Gekopieerd', selectedLanguage) : translate('Kopieer mijn callback-URL', selectedLanguage)}
 							</button>
 						</div>
 
@@ -402,7 +399,7 @@
 							{#if spotifyAuthStatus === 'connected'}
 								<span class="integration-status ok">
 									<TablerIcon name="circle-check" size={13} />
-									<span>Spotify is verbonden</span>
+									<span>{t('spotifyStatusConnected')}</span>
 								</span>
 							{:else if spotifyAuthInProgress}
 								<button
@@ -411,7 +408,7 @@
 									disabled
 								>
 									<TablerIcon name="loader-2" size={14} />
-									Bezig met verbinden…
+									{translate('Bezig met verbinden…', selectedLanguage)}
 								</button>
 							{:else}
 								<button
@@ -421,18 +418,18 @@
 									onclick={startSpotifyAuth}
 								>
 									<TablerIcon name="brand-spotify" size={14} />
-									Verbinden met Spotify
+									{t('spotifyConnect')}
 								</button>
 							{/if}
 							<button type="button" class="np-btn" onclick={() => void checkSpotifyAuth()}>
 								<TablerIcon name="refresh" size={14} />
-								Status controleren
+								{translate('Status controleren', selectedLanguage)}
 							</button>
 						</div>
 						{#if spotifyAuthInProgress}
 							<div class="integration-status info">
 								<TablerIcon name="info-circle" size={13} />
-								<span>Voltooi de Spotify-koppeling in het nieuw geopende tabblad. Dit venster pikt het automatisch op.</span>
+								<span>{translate('Voltooi de Spotify-koppeling in het nieuw geopende tabblad. Dit venster pikt het automatisch op.', selectedLanguage)}</span>
 							</div>
 						{/if}
 						{#if spotifyAuthError}
@@ -512,7 +509,7 @@
 				</div>
 				<div class="settings-empty">
 					<TablerIcon name="paint" size={32} />
-					<div class="settings-empty-text">Thema-opties komen binnenkort</div>
+					<div class="settings-empty-text">{translate('Thema-opties komen binnenkort', selectedLanguage)}</div>
 				</div>
 			</div>
 		</div>
@@ -839,11 +836,6 @@
 	.integration-help-text a.integration-help-link:hover {
 		color: #bfdbfe;
 		border-bottom-color: #bfdbfe;
-	}
-	.integration-help-text em {
-		font-style: normal;
-		font-weight: 600;
-		color: rgba(255,255,255,0.75);
 	}
 	.integration-help-text code {
 		display: inline-block;

@@ -5,6 +5,7 @@
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
 	import EntitySelectPicker from '$lib/cards/editor/EntitySelectPicker.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		t: (key: TranslationKey) => string;
@@ -181,7 +182,7 @@
 	<div class="tab-content card-editor-content">
 		<label for="section-editor-title">{t('sectionTitle')}</label>
 		<input id="section-editor-title" type="text" value={sectionEditorTitle} oninput={(event) => onSetTitle((event.currentTarget as HTMLInputElement).value)} />
-		<label for="section-editor-icon">Popup icoon</label>
+		<label for="section-editor-icon">{translate('Popup icoon', $selectedLanguageStore)}</label>
 		<div class="section-icon-input">
 			<span class="section-icon-preview"><TablerIcon name={sectionEditorIcon || 'layout-grid'} size={18} /></span>
 			<input id="section-editor-icon" type="text" value={sectionEditorIcon} placeholder="layout-grid" oninput={(event) => onSetIcon((event.currentTarget as HTMLInputElement).value)} />
@@ -189,27 +190,27 @@
 		<div class="section-header-sensors">
 			<div class="section-header-sensors-head">
 				<TablerIcon name="activity" size={15} />
-				<span>Header waarden</span>
+				<span>{translate('Header waarden', $selectedLanguageStore)}</span>
 			</div>
 			<EntitySelectPicker
-				label="Temperatuur"
+				label={translate('Temperatuur', $selectedLanguageStore)}
 				value={sectionEditorHeaderTemperatureEntityId}
 				options={temperatureEntities}
-				placeholder="Geen temperatuur"
+				placeholder={translate('Geen temperatuur', $selectedLanguageStore)}
 				onChange={onSetHeaderTemperatureEntityId}
 			/>
 			<EntitySelectPicker
-				label="Luchtvochtigheid"
+				label={translate('Luchtvochtigheid', $selectedLanguageStore)}
 				value={sectionEditorHeaderHumidityEntityId}
 				options={humidityEntities}
-				placeholder="Geen luchtvochtigheid"
+				placeholder={translate('Geen luchtvochtigheid', $selectedLanguageStore)}
 				onChange={onSetHeaderHumidityEntityId}
 			/>
 			<EntitySelectPicker
-				label="Luchtdruk"
+				label={translate('Luchtdruk', $selectedLanguageStore)}
 				value={sectionEditorHeaderPressureEntityId}
 				options={pressureEntities}
-				placeholder="Geen luchtdruk"
+				placeholder={translate('Geen luchtdruk', $selectedLanguageStore)}
 				onChange={onSetHeaderPressureEntityId}
 			/>
 		</div>
@@ -241,7 +242,7 @@
 		{#if sectionCards.length > 0}
 			<div class="section-visibility">
 				<div class="section-visibility-head">
-					<span>Kaarten zichtbaar in sectie</span>
+					<span>{translate('Kaarten zichtbaar in sectie', $selectedLanguageStore)}</span>
 				</div>
 				<div class="section-visibility-list">
 					{#each sectionCards as card, index (card.id)}

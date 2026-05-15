@@ -2,6 +2,7 @@
 	import { entityStore } from '$lib/ha/entities-store';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import type { EnergyAnchors } from '$lib/persistence/panel-state-types';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		// Identifier (voor custom-asset URLs)
@@ -260,10 +261,10 @@
 	const COLOR_RAIL = '#3a3f4a'; // donkergrijze rail onder elk pad
 
 	const netStatus = $derived((() => {
-		if (netW === null) return { label: 'Geen data', color: 'rgba(255,255,255,0.4)', value: '–' };
-		if (netW < -flowMinW) return { label: 'Teruglevering', color: COLOR_GRID_EXPORT, value: fmtPowerW(netW) };
-		if (netW > flowMinW) return { label: 'Afname', color: COLOR_GRID_IMPORT, value: fmtPowerW(netW) };
-		return { label: 'In balans', color: '#f5f5f5', value: '0 W' };
+		if (netW === null) return { label: translate('Geen data', $selectedLanguageStore), color: 'rgba(255,255,255,0.4)', value: '–' };
+		if (netW < -flowMinW) return { label: translate('Teruglevering', $selectedLanguageStore), color: COLOR_GRID_EXPORT, value: fmtPowerW(netW) };
+		if (netW > flowMinW) return { label: translate('Afname', $selectedLanguageStore), color: COLOR_GRID_IMPORT, value: fmtPowerW(netW) };
+		return { label: translate('In balans', $selectedLanguageStore), color: '#f5f5f5', value: '0 W' };
 	})());
 
 	// === Ankerpunten ===
@@ -618,28 +619,28 @@
 	}
 </script>
 
-<button type="button" class="modal-overlay" onclick={onClose} aria-label="Sluiten"></button>
-<section class="energy-modal np-detail" role="dialog" aria-modal="true" aria-label="Energieoverzicht">
+<button type="button" class="modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
+<section class="energy-modal np-detail" role="dialog" aria-modal="true" aria-label={translate('Energieoverzicht', $selectedLanguageStore)}>
 	<div class="np-detail-head" style="--np-tint: rgba(74,222,128,0.18); --np-color: #4ade80;">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
 		<div class="np-detail-head-icon"><TablerIcon name="bolt" size={22} /></div>
 		<div class="np-detail-head-text">
-			<div class="np-detail-head-title">Energie</div>
-			<div class="np-detail-head-sub">Vandaag</div>
+			<div class="np-detail-head-title">{translate('Energie', $selectedLanguageStore)}</div>
+			<div class="np-detail-head-sub">{translate('Vandaag', $selectedLanguageStore)}</div>
 		</div>
 	</div>
 
 	<div class="modal-body">
 		<div class="stat-row top">
 			<div class="stat">
-				<div class="stat-label">Opwek</div>
+				<div class="stat-label">{translate('Opwek', $selectedLanguageStore)}</div>
 				<div class="stat-value">
 					<span class="num">{fmtKwh(solarToday)}</span>
 					<span class="unit">kWh</span>
 				</div>
 			</div>
 			<div class="stat right">
-				<div class="stat-label">Zelfvoorzienend</div>
+				<div class="stat-label">{translate('Zelfvoorzienend', $selectedLanguageStore)}</div>
 				<div class="stat-value">
 					<span class="num">{selfSufficiencyComputed !== null ? Math.round(selfSufficiencyComputed) : '–'}</span>
 					<span class="unit">%</span>
@@ -663,20 +664,20 @@
 
 		<div class="stat-row bottom">
 			<div class="stat">
-				<div class="stat-label">Net</div>
+				<div class="stat-label">{translate('Net', $selectedLanguageStore)}</div>
 				<div class="stat-value">
 					<span class="num">{fmtKwh(importToday)}</span>
 					<span class="unit">kWh</span>
 				</div>
 			</div>
 			<div class="stat center">
-				<div class="stat-label">Kosten</div>
+				<div class="stat-label">{translate('Kosten', $selectedLanguageStore)}</div>
 				<div class="stat-value">
 					<span class="num">{netCostToday !== null ? fmtEuro(netCostToday) : '–'}</span>
 				</div>
 			</div>
 			<div class="stat right">
-				<div class="stat-label">Teruglevering</div>
+				<div class="stat-label">{translate('Teruglevering', $selectedLanguageStore)}</div>
 				<div class="stat-value">
 					<span class="num">{fmtKwh(exportToday)}</span>
 					<span class="unit">kWh</span>
@@ -690,7 +691,7 @@
 				class="hero-status hero-status-btn"
 				style="color: {netStatus.color}"
 				onclick={openDevices}
-				aria-label="Bekijk verbruik per apparaat"
+				aria-label={translate('Bekijk verbruik per apparaat', $selectedLanguageStore)}
 			>
 				<div class="hero-value">{netStatus.value}</div>
 				<div class="hero-label">
@@ -710,16 +711,16 @@
 </section>
 
 {#if devicesOpen}
-	<button type="button" class="modal-overlay devices-overlay" onclick={closeDevices} aria-label="Sluiten"></button>
-	<section class="devices-modal np-detail" role="dialog" aria-modal="true" aria-label="Verbruik per apparaat">
+	<button type="button" class="modal-overlay devices-overlay" onclick={closeDevices} aria-label={translate('close', $selectedLanguageStore)}></button>
+	<section class="devices-modal np-detail" role="dialog" aria-modal="true" aria-label={translate('Verbruik per apparaat', $selectedLanguageStore)}>
 		<div class="np-detail-head" style="--np-tint: rgba(251,146,60,0.18); --np-color: #fb923c;">
 			<div class="np-detail-head-glow" aria-hidden="true"></div>
 			<div class="np-detail-head-icon"><TablerIcon name="device-desktop-analytics" size={22} /></div>
 			<div class="np-detail-head-text">
-				<div class="np-detail-head-title">Verbruik per apparaat</div>
-				<div class="np-detail-head-sub">Live · vandaag</div>
+				<div class="np-detail-head-title">{translate('Verbruik per apparaat', $selectedLanguageStore)}</div>
+				<div class="np-detail-head-sub">{translate('Live', $selectedLanguageStore)} · {translate('vandaag', $selectedLanguageStore)}</div>
 			</div>
-			<button type="button" class="devices-close" onclick={closeDevices} aria-label="Sluiten">
+			<button type="button" class="devices-close" onclick={closeDevices} aria-label={translate('close', $selectedLanguageStore)}>
 				<TablerIcon name="x" size={18} />
 			</button>
 		</div>
@@ -727,19 +728,19 @@
 		<div class="modal-body devices-body">
 			<div class="devices-summary">
 				<div class="summary-card">
-					<div class="summary-label">Live verbruik</div>
+					<div class="summary-label">{translate('Live verbruik', $selectedLanguageStore)}</div>
 					<div class="summary-value">
 						<span class="num">{fmtPowerW(devicesTotalW)}</span>
 					</div>
-					<div class="summary-foot">{deviceRows.filter((r) => (r.powerW ?? 0) > 50).length} apparaten actief</div>
+					<div class="summary-foot">{deviceRows.filter((r) => (r.powerW ?? 0) > 50).length} {translate('apparaten actief', $selectedLanguageStore)}</div>
 				</div>
 				<div class="summary-card summary-card-accent">
-					<div class="summary-label">Vandaag totaal</div>
+					<div class="summary-label">{translate('Vandaag', $selectedLanguageStore)} {translate('Totaal', $selectedLanguageStore).toLowerCase()}</div>
 					<div class="summary-value">
 						<span class="num">{fmtKwh(devicesTotalKwh)}</span>
 						<span class="unit">kWh</span>
 					</div>
-					<div class="summary-foot">sinds 00:00</div>
+					<div class="summary-foot">{translate('sinds 00:00', $selectedLanguageStore)}</div>
 				</div>
 			</div>
 
@@ -752,7 +753,7 @@
 					onclick={() => (chartMode = 'now')}
 				>
 					<TablerIcon name="bolt" size={13} />
-					Huidig verbruik
+					{translate('Huidig verbruik', $selectedLanguageStore)}
 				</button>
 				<button
 					type="button"
@@ -761,7 +762,7 @@
 					onclick={() => (chartMode = 'today')}
 				>
 					<TablerIcon name="chart-bar" size={13} />
-					Vandaag totaal
+					{translate('Vandaag', $selectedLanguageStore)} {translate('Totaal', $selectedLanguageStore).toLowerCase()}
 				</button>
 			</div>
 
@@ -770,9 +771,9 @@
 				{#if visibleRows.length === 0}
 					<div class="chart-empty">
 						{#if deviceRows.length === 0}
-							Geen apparaten geconfigureerd.
+							{translate('Geen apparaten geconfigureerd.', $selectedLanguageStore)}
 						{:else}
-							Alle apparaten verborgen — klik er hieronder eentje aan.
+							{translate('Alle apparaten verborgen — klik er hieronder eentje aan.', $selectedLanguageStore)}
 						{/if}
 					</div>
 				{:else}
@@ -839,15 +840,9 @@
 					{@const isHidden = hiddenEntities.has(row.entityId)}
 					{@const isActive = (row.powerW ?? 0) > 50}
 					<div class="legend-item" class:hidden={isHidden}>
-						<button
-							type="button"
-							class="legend-btn"
-							onclick={() => toggleEntityVisibility(row.entityId)}
-							aria-pressed={!isHidden}
-							title={isHidden ? 'Tonen' : 'Verbergen'}
-						>
-							<span class="legend-dot" style="background: {colorFor(row.entityId)}"></span>
-							{#if renameEntityId === row.entityId}
+						{#if renameEntityId === row.entityId}
+							<div class="legend-btn legend-btn-static" role="group" aria-label={translate('Hernoemen', $selectedLanguageStore)}>
+								<span class="legend-dot" style="background: {colorFor(row.entityId)}"></span>
 								<div class="device-rename" onclick={(e) => e.stopPropagation()} role="presentation">
 									<input
 										class="device-rename-input"
@@ -858,30 +853,39 @@
 											if (e.key === 'Enter') commitRename();
 											if (e.key === 'Escape') cancelRename();
 										}}
-										aria-label="Naam"
+										aria-label={translate('Naam', $selectedLanguageStore)}
 									/>
-									<button type="button" class="device-rename-btn save" onclick={(e) => { e.stopPropagation(); commitRename(); }} aria-label="Opslaan">
+									<button type="button" class="device-rename-btn save" onclick={(e) => { e.stopPropagation(); commitRename(); }} aria-label={translate('save', $selectedLanguageStore)}>
 										<TablerIcon name="check" size={12} />
 									</button>
-									<button type="button" class="device-rename-btn cancel" onclick={(e) => { e.stopPropagation(); cancelRename(); }} aria-label="Annuleren">
+									<button type="button" class="device-rename-btn cancel" onclick={(e) => { e.stopPropagation(); cancelRename(); }} aria-label={translate('cancel', $selectedLanguageStore)}>
 										<TablerIcon name="x" size={12} />
 									</button>
 								</div>
-							{:else}
+							</div>
+						{:else}
+							<button
+								type="button"
+								class="legend-btn"
+								onclick={() => toggleEntityVisibility(row.entityId)}
+								aria-pressed={!isHidden}
+								title={isHidden ? translate('Tonen', $selectedLanguageStore) : translate('Verbergen', $selectedLanguageStore)}
+							>
+								<span class="legend-dot" style="background: {colorFor(row.entityId)}"></span>
 								<span class="legend-name">{row.name}</span>
 								{#if isActive && !isHidden}
 									<span class="legend-live-dot"></span>
 								{/if}
 								<span class="legend-value">{fmtValue(valueFor(row))}</span>
-							{/if}
-						</button>
+							</button>
+						{/if}
 						{#if renameEntityId !== row.entityId && onEntityAliasChange}
 							<button
 								type="button"
 								class="legend-rename"
 								onclick={(e) => { e.stopPropagation(); openRename(row.entityId, row.name); }}
-								aria-label="Hernoemen"
-								title="Hernoemen"
+								aria-label={translate('Hernoemen', $selectedLanguageStore)}
+								title={translate('Hernoemen', $selectedLanguageStore)}
 							>
 								<TablerIcon name="pencil" size={11} />
 							</button>
@@ -1256,6 +1260,12 @@
 	.legend-btn:hover {
 		background: rgba(255,255,255,0.045);
 		border-color: rgba(255,255,255,0.10);
+	}
+	.legend-btn-static,
+	.legend-btn-static:hover {
+		cursor: default;
+		background: rgba(255,255,255,0.025);
+		border-color: rgba(255,255,255,0.06);
 	}
 	.legend-item.hidden .legend-btn {
 		opacity: 0.4;

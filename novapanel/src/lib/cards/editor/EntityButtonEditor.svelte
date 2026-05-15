@@ -4,6 +4,7 @@
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
 	import EntitySelectPicker from '$lib/cards/editor/EntitySelectPicker.svelte';
+	import { selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
 	type Props = {
 		kind: EntityButtonKind;
@@ -40,21 +41,10 @@
 	}
 
 	function domainLabel(value: EntityButtonKind) {
-		if (value === 'climate') return 'Climate entiteit';
-		if (value === 'cover') return 'Cover entiteit';
-		if (value === 'vacuum') return 'Vacuum entiteit';
-		return 'Media player entiteit';
-	}
-
-	function readableState(value: string) {
-		if (value === 'off') return 'Uit';
-		if (value === 'on') return 'Aan';
-		if (value === 'open') return 'Open';
-		if (value === 'closed') return 'Dicht';
-		if (value === 'playing') return 'Speelt';
-		if (value === 'paused') return 'Gepauzeerd';
-		if (value === 'cleaning') return 'Schoonmaken';
-		return value || 'Onbekend';
+		if (value === 'climate') return translate('Climate entiteit', $selectedLanguageStore);
+		if (value === 'cover') return translate('Cover entiteit', $selectedLanguageStore);
+		if (value === 'vacuum') return translate('Vacuum entiteit', $selectedLanguageStore);
+		return translate('Media player entiteit', $selectedLanguageStore);
 	}
 </script>
 
@@ -63,7 +53,7 @@
 		label={domainLabel(kind)}
 		value={entityId ?? ''}
 		options={candidates}
-		placeholder="Kies een entiteit"
+		placeholder={translate('Kies een entiteit', $selectedLanguageStore)}
 		onChange={onEntityIdChange}
 	/>
 
@@ -74,13 +64,13 @@
 			</div>
 			<div>
 				<strong>{selectedEntity.friendlyName}</strong>
-				<span>{readableState(selectedEntity.state)}</span>
+				<span>{translateState(selectedEntity.state, $selectedLanguageStore)}</span>
 			</div>
 		</div>
 	{/if}
 
 	<label class="np-field">
-		<span class="np-label">MDI icoon</span>
+		<span class="np-label">{translate('MDI icoon', $selectedLanguageStore)}</span>
 		<div class="icon-input-row">
 			<input
 				type="text"
@@ -118,7 +108,7 @@
 			{iconValidationMessage}
 		</span>
 		<span class="icon-help">
-			Gebruik een Material Design Icon naam, bijvoorbeeld <code>mdi:sofa-outline</code>. Sla de kaart daarna op.
+			{translate('Gebruik een Material Design Icon naam, bijvoorbeeld', $selectedLanguageStore)} <code>mdi:sofa-outline</code>. {translate('Sla de kaart daarna op.', $selectedLanguageStore)}
 		</span>
 	</label>
 </div>

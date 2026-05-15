@@ -1,6 +1,7 @@
 <script lang="ts">
 	import EditorSection from '$lib/cards/editor/EditorSection.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type LightGroup = { id: string; name: string; entityIds: string[] };
 	type Status = 'filled' | 'empty';
@@ -20,52 +21,52 @@
 
 	const lightGroupsStatus = $derived((() => {
 		const n = p.lightGroups.length;
-		if (n === 0) return { status: 'empty' as Status, label: 'geen' };
-		return { status: 'filled' as Status, label: `${n} groep${n === 1 ? '' : 'en'}` };
+		if (n === 0) return { status: 'empty' as Status, label: translate('geen', $selectedLanguageStore) };
+		return { status: 'filled' as Status, label: `${n} ${translate('Lampengroepen', $selectedLanguageStore).toLowerCase()}` };
 	})());
 </script>
 
 <EditorSection
-	title="Lampengroepen"
+	title={translate('Lampengroepen', $selectedLanguageStore)}
 	icon="folders"
 	tone="purple"
 	status={lightGroupsStatus.status}
 	statusLabel={lightGroupsStatus.label}
 >
-	<div class="np-help">Groepen tellen als 1 item in het overzicht. Handig om "Woonkamer" als één entiteit te zien.</div>
+	<div class="np-help">{translate('Groepen tellen als 1 item in het overzicht. Handig om "Woonkamer" als één entiteit te zien.', $selectedLanguageStore)}</div>
 	{#each p.lightGroups as group (group.id)}
 		<div class="lg-row" class:lg-row-selected={p.lgEditingId === group.id} role="button" tabindex="0" onclick={() => p.lgStartEdit(group)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.lgStartEdit(group); } }}>
 			<div class="lg-row-top">
 				<span class="lg-name">{group.name}</span>
-				<span class="lg-count-pill">{group.entityIds.length} {group.entityIds.length === 1 ? 'lamp' : 'lampen'}</span>
-				<button type="button" class="lg-btn" onclick={(e) => { e.stopPropagation(); p.lgStartEdit(group); }} title="Bewerken">
+				<span class="lg-count-pill">{group.entityIds.length} {group.entityIds.length === 1 ? translate('Lamp', $selectedLanguageStore).toLowerCase() : translate('Lampen', $selectedLanguageStore).toLowerCase()}</span>
+				<button type="button" class="lg-btn" onclick={(e) => { e.stopPropagation(); p.lgStartEdit(group); }} title={translate('Bewerken', $selectedLanguageStore)}>
 					<TablerIcon name="pencil" size={12} />
 				</button>
-				<button type="button" class="lg-btn lg-btn-delete" onclick={(e) => { e.stopPropagation(); p.lgDelete(group.id); }} title="Verwijderen">
+				<button type="button" class="lg-btn lg-btn-delete" onclick={(e) => { e.stopPropagation(); p.lgDelete(group.id); }} title={translate('Verwijderen', $selectedLanguageStore)}>
 					<TablerIcon name="trash" size={12} />
 				</button>
 			</div>
 			{#if group.entityIds.length === 0}
-				<div class="lg-empty">Nog geen lampen toegevoegd</div>
+				<div class="lg-empty">{translate('Nog geen lampen toegevoegd', $selectedLanguageStore)}</div>
 			{:else}
 				<div class="lg-tags-row">
 					{#each group.entityIds.slice(0, 4) as eid (eid)}
 						<span class="lg-tag">{p.getFriendlyName(eid)}</span>
 					{/each}
 					{#if group.entityIds.length > 4}
-						<span class="lg-tag more">+ {group.entityIds.length - 4} meer</span>
+						<span class="lg-tag more">+ {group.entityIds.length - 4} {translate('meer', $selectedLanguageStore)}</span>
 					{/if}
 				</div>
 			{/if}
 		</div>
 	{/each}
 	<div class="lg-new-group">
-		<input class="np-input" type="text" placeholder="Nieuwe groepsnaam"
+		<input class="np-input" type="text" placeholder={translate('Nieuwe groepsnaam', $selectedLanguageStore)}
 			value={p.lgNewGroupName}
 			oninput={(e) => p.onLgNewGroupNameChange((e.currentTarget as HTMLInputElement).value)}
 			onkeydown={(e) => { if (e.key === 'Enter') p.lgCreate(); }} />
 		<button type="button" class="np-mini-btn primary" onclick={p.lgCreate} disabled={!p.lgNewGroupName.trim()}>
-			<TablerIcon name="plus" size={12} /> Toevoegen
+			<TablerIcon name="plus" size={12} /> {translate('Toevoegen', $selectedLanguageStore)}
 		</button>
 	</div>
 </EditorSection>

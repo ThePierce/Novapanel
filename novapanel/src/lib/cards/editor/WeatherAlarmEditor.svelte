@@ -16,23 +16,23 @@
 </script>
 
 <EditorSection
-	title={p.isAlarm ? 'Alarm-entiteit' : 'Weer-entiteit'}
+	title={p.t(p.isAlarm ? 'Alarm-entiteit' : 'Weer-entiteit')}
 	icon={p.isAlarm ? 'shield-lock' : 'cloud'}
 	tone={p.isAlarm ? 'rose' : 'cyan'}
 	status={p.entityId ? 'filled' : 'required'}
-	statusLabel={p.entityId ? 'gekoppeld' : 'vereist'}
+	statusLabel={p.t(p.entityId ? 'gekoppeld' : 'vereist')}
 	open
 >
-	<div class="np-help">{p.isAlarm ? 'Selecteer het alarm_control_panel uit Home Assistant.' : 'Selecteer een weer-entiteit uit Home Assistant.'}</div>
+	<div class="np-help">{p.t(p.isAlarm ? 'Selecteer het alarm_control_panel uit Home Assistant.' : 'Selecteer een weer-entiteit uit Home Assistant.')}</div>
 	<EntitySelectPicker
-		label="Kies uit beschikbare entiteiten"
+		label={p.t('Kies uit beschikbare entiteiten')}
 		value={p.entityId ?? ''}
 		options={p.entities}
 		placeholder="-"
 		onChange={p.onEntityIdChange}
 	/>
 	<div class="np-field">
-		<span class="np-label">Of typ handmatig</span>
+		<span class="np-label">{p.t('Of typ handmatig')}</span>
 		<input
 			type="text"
 			class="np-input mono"

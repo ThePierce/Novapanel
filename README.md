@@ -1,10 +1,10 @@
-# Novapanel
+# Nova Panel
 
-Novapanel is een Home Assistant kiosk-dashboard, gebouwd met Svelte 5 en SvelteKit. De eerste start is bewust leeg: iedere gebruiker kiest zelf secties, kaarten en entiteiten.
+Nova Panel is a Home Assistant kiosk dashboard built with Svelte 5 and SvelteKit. A fresh install starts empty on purpose: every user creates their own sections, cards, entities, and layout.
 
-## Repository layout
+## Repository Layout
 
-Deze repository is ingericht als Home Assistant add-on repository:
+This repository is structured as a Home Assistant add-on repository:
 
 ```text
 repository.yaml
@@ -17,66 +17,91 @@ novapanel/
   static/
 ```
 
-## Home Assistant add-on
+## Requirements
 
-1. Voeg deze repository toe als Home Assistant add-on repository:
+Required:
+
+- Home Assistant OS or Home Assistant Supervised with the Add-on Store.
+- Home Assistant Supervisor, because Nova Panel runs as an add-on.
+- Network access during add-on installation so Home Assistant can clone this repository and Docker can download the base image and npm packages.
+
+Optional Home Assistant integrations:
+
+- Home Assistant entities for the cards you want to use, such as `light`, `switch`, `climate`, `cover`, `vacuum`, `media_player`, `camera`, `calendar`, `person`, `zone`, and sensors.
+- CalDAV or another calendar integration if you want to use the week calendar card.
+- Person and zone entities if you want calendar avatars and location popups.
+- Advanced Camera Card if you enable the Advanced Camera Card option for camera tiles.
+- Spotify developer credentials if you want Spotify controls in the media card.
+
+Local development only:
+
+- Node.js 22 or newer.
+- npm.
+- A Home Assistant long-lived access token when running outside Home Assistant ingress.
+- Docker, only if you want to test the add-on container locally.
+
+## Install As A Home Assistant Add-on
+
+1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**.
+2. Open the three-dot menu and choose **Repositories**.
+3. Add this repository:
 
    ```text
    https://github.com/ThePierce/Novapanel
    ```
 
-2. Installeer de add-on **Nova Panel**.
-3. Start de add-on en open Novapanel via de Home Assistant zijbalk.
-4. Open edit mode en voeg kaarten toe aan het hoofdgedeelte of de sidebar.
+4. Install the **Nova Panel** add-on.
+5. Start the add-on and open Nova Panel from the Home Assistant sidebar.
+6. Open edit mode and add cards to the main area or sidebar.
 
-Novapanel gebruikt de Home Assistant API via ingress. Voor lokale ontwikkeling kun je ook een long-lived access token gebruiken.
+Nova Panel uses the Home Assistant API through ingress when it runs as an add-on.
 
-## Standalone ontwikkelen
+## Local Development
 
-1. Installeer dependencies:
+1. Install dependencies:
 
    ```bash
    cd novapanel
    npm install --legacy-peer-deps
    ```
 
-2. Maak een lokale config:
+2. Create a local environment file:
 
    ```bash
    cp .env.example .env
    ```
 
-3. Vul in `.env` je Home Assistant URL en long-lived access token in:
+3. Add your Home Assistant URL and a long-lived access token:
 
    ```env
    HASS_URL=http://homeassistant.local:8123
    HASS_TOKEN=replace-with-token
    ```
 
-4. Start de standalone dev-server:
+4. Start the standalone development server:
 
    ```bash
    npm run dev:standalone
    ```
 
-5. Open Novapanel:
+5. Open Nova Panel:
 
    ```text
    http://localhost:8099
    ```
 
-Laat `HOST=0.0.0.0` staan als andere apparaten in je netwerk Novapanel moeten kunnen openen. Gebruik `HOST=127.0.0.1` als je alleen lokaal test.
+Use `HOST=0.0.0.0` if other devices on your network should be able to open Nova Panel. Use `HOST=127.0.0.1` when testing on your own machine only.
 
-## Dashboard opzet
+## Dashboard Model
 
-- Sidebar-kaarten zijn bedoeld voor statusoverzichten zoals weer, alarm, media en apparaten.
-- Hoofdsecties zijn bedoeld voor bedieningskaarten zoals lampen, climate, cover, vacuum, mediaspelers, camera's en kalender.
-- Alle inrichting wordt lokaal of via de add-on state opgeslagen; de repository bevat geen persoonlijke dashboardconfiguratie.
+- Sidebar cards are intended for status views such as weather, alarm, media, availability, and device summaries.
+- Main sections are intended for controls such as lights, climate, covers, vacuum, media players, cameras, and calendar cards.
+- All personal dashboard state is stored locally or in the add-on state file. The repository does not include a preconfigured personal dashboard.
 
 ## Privacy
 
-Commit geen `.env`, `.data`, exports, tokens of Home Assistant-entiteitsnamen. De voorbeeldafbeeldingen zijn neutrale placeholders.
+Do not commit `.env`, `.data`, exports, tokens, Home Assistant entity names, or personal images. The included static images are neutral placeholders.
 
 ## Build
 
-De productie-add-on draait via `NODE_ENV=production`, waarbij Express de SvelteKit build uit `build/handler.js` serveert.
+The production add-on runs with `NODE_ENV=production`. Express serves the SvelteKit build from `build/handler.js`.

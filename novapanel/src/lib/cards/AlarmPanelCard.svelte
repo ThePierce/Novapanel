@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { entityStore } from '$lib/ha/entities-store';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		entityId?: string;
@@ -30,14 +31,14 @@
 	);
 	const label = $derived(
 		state.includes('disarmed')
-			? 'Uitgeschakeld'
+			? translate('Uitgeschakeld', $selectedLanguageStore)
 			: state.includes('arming')
-				? 'Wordt ingeschakeld…'
+				? translate('Wordt ingeschakeld…', $selectedLanguageStore)
 				: state.includes('pending')
-					? 'In afwachting'
+					? translate('In afwachting', $selectedLanguageStore)
 					: state.includes('triggered')
 						? 'ALARM!'
-						: 'Ingeschakeld'
+						: translate('Ingeschakeld', $selectedLanguageStore)
 	);
 	const tone = $derived(
 		state.includes('disarmed')
@@ -56,7 +57,7 @@
 		<StatusIcon icon={defaultIcon} size={26} />
 	</div>
 	<div class="alarm-body">
-		<div class="alarm-name">{alarmEntity?.friendlyName ?? 'Alarmpaneel'}</div>
+		<div class="alarm-name">{alarmEntity?.friendlyName ?? translate('cardTypeAlarmPanel', $selectedLanguageStore)}</div>
 		<div class="alarm-state">{label}</div>
 	</div>
 </div>

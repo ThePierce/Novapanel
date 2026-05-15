@@ -1,13 +1,15 @@
 <script lang="ts">
+	import { selectedLanguageStore, translate } from '$lib/i18n';
+
 	const readmeUrl = 'https://github.com/ThePierce/Novapanel#readme';
 </script>
 
 <div class="welcome-card">
 	<div class="welcome-mark" aria-hidden="true">N</div>
 	<div class="welcome-copy">
-		<span>Welkom bij</span>
+		<span>{translate('Welkom bij', $selectedLanguageStore)}</span>
 		<strong>Novapanel</strong>
-		<p>Begin met een leeg dashboard en voeg zelf secties, kaarten en Home Assistant-entiteiten toe.</p>
+		<p>{translate('Begin met een leeg dashboard en voeg zelf secties, kaarten en Home Assistant-entiteiten toe.', $selectedLanguageStore)}</p>
 	</div>
 	<a class="welcome-link" href={readmeUrl} target="_blank" rel="noreferrer">
 		README

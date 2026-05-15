@@ -1,11 +1,10 @@
 <script lang="ts">
-	import type { TranslationKey } from '$lib/i18n';
 	import WeatherIcon from '$lib/cards/WeatherIcon.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { getHassWithRetry, type HassLike } from '$lib/ha/entities-service-helpers';
 	import { entityStore } from '$lib/ha/entities-store';
 	import { extractWeatherForecast, subscribeWeatherForecastDirect } from '$lib/ha/weather-forecast-service';
-	import { translations, type LanguageCode } from '$lib/i18n';
+	import { translate, translations, type LanguageCode, type TranslationKey } from '$lib/i18n';
 
 	type Props = {
 		t: (key: TranslationKey) => string;
@@ -339,7 +338,7 @@
 
 		<!-- Hourly forecast strip — horizontal scroll -->
 		{#if next24Hours.length > 0}
-			<div class="np-detail-section-title">Uurlijks</div>
+			<div class="np-detail-section-title">{t('forecastTypeHourly')}</div>
 			<div class="hour-strip">
 				{#each next24Hours as item, idx (idx)}
 					{@const dt = typeof item.datetime === 'string' ? item.datetime : ''}
@@ -352,7 +351,7 @@
 					{@const skipMc = cond.trim().toLowerCase() === 'clear-night'}
 					{@const src = `${ingressBase}/weather/meteocons/${meteoconName(cond, belowHorizon)}.svg`}
 					<div class="hour-card">
-						<div class="hour-time">{idx === 0 ? 'Nu' : formatHour(dt)}</div>
+						<div class="hour-time">{idx === 0 ? translate('Nu', locale as LanguageCode) : formatHour(dt)}</div>
 						<div class="hour-icon">
 							{#if !hourlyIconFailed[idx] && !skipMc && cond}
 								<img src={src} alt={translateCondition(cond)} width="36" height="36"
@@ -389,7 +388,7 @@
 				{/each}
 			</div>
 		{:else}
-			<div class="empty-state">Uurvoorspelling laden…</div>
+			<div class="empty-state">{translate('Uurvoorspelling laden…', locale as LanguageCode)}</div>
 		{/if}
 
 	</div>
@@ -423,8 +422,6 @@
 	.np-detail-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
 	.np-detail-head-title { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; color: #f5f5f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.np-detail-head-sub { font-size: 11.5px; color: rgba(255,255,255,0.5); margin-top: 3px; }
-	.np-detail-head-close { background: rgba(255,255,255,0.05); border: 0.5px solid rgba(255,255,255,0.08); width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: rgba(255,255,255,0.6); cursor: pointer; position: relative; z-index: 1; transition: background 0.15s, transform 0.15s; flex-shrink: 0; }
-	.np-detail-head-close:hover { background: rgba(255,255,255,0.10); transform: scale(1.05); }
 
 	.weather-body {
 		display: flex; flex-direction: column; gap: 12px;

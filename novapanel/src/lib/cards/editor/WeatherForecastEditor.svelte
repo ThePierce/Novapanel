@@ -1,5 +1,6 @@
 <script lang="ts">
 	import EditorSection from '$lib/cards/editor/EditorSection.svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		t: (key: string) => string;
@@ -12,11 +13,11 @@
 	let p: Props = $props();
 </script>
 
-<EditorSection title="Voorspelling" icon="chart-line" tone="cyan" status="filled" statusLabel={`${p.weatherForecastDaysToShow ?? 5} dagen`} open>
-	<div class="np-help">Welk type voorspelling en hoeveel dagen er getoond worden.</div>
+<EditorSection title={translate('Voorspelling', $selectedLanguageStore)} icon="chart-line" tone="cyan" status="filled" statusLabel={`${p.weatherForecastDaysToShow ?? 5} ${translate('Dagen', $selectedLanguageStore).toLowerCase()}`} open>
+	<div class="np-help">{translate('Welk type voorspelling en hoeveel dagen er getoond worden.', $selectedLanguageStore)}</div>
 	<div class="np-grid-2">
 		<div class="np-field">
-			<span class="np-label">Type</span>
+			<span class="np-label">{p.t('forecastType')}</span>
 			<select
 				class="np-input"
 				value={p.weatherForecastType ?? 'daily'}
@@ -28,7 +29,7 @@
 			</select>
 		</div>
 		<div class="np-field">
-			<span class="np-label">Dagen</span>
+			<span class="np-label">{p.t('daysToShow')}</span>
 			<input
 				class="np-input"
 				type="number"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { areaStore, areaById } from '$lib/ha/area-store';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Row = { id: string; label: string; displayName: string };
 
@@ -86,7 +87,7 @@
 		// Add "no area" bucket
 		map.set(NO_AREA_ID, {
 			areaId: NO_AREA_ID,
-			areaName: 'Geen kamer toegewezen',
+			areaName: translate('Geen kamer toegewezen', $selectedLanguageStore),
 			areaIcon: 'question-mark',
 			rows: [],
 			selectedCount: 0,
@@ -134,7 +135,7 @@
 	function selectAllInArea(group: AreaGroup) {
 		const unchecked = group.rows.filter((r) => !r.checked);
 		if (unchecked.length > 50) {
-			if (!confirm(`Alle ${unchecked.length} entiteiten in "${group.areaName}" aanvinken?`)) return;
+			if (!confirm(`${translate('alle', $selectedLanguageStore)} ${unchecked.length} ${translate('entityPicker', $selectedLanguageStore).toLowerCase()} "${group.areaName}"?`)) return;
 		}
 		for (const r of unchecked) onToggle(r.id, true);
 	}
@@ -146,7 +147,7 @@
 
 	function handleSelectAllGlobal() {
 		if (totalCount > 50) {
-			if (!confirm(`Alle ${totalCount} entiteiten aanvinken? Dit raakt veel devices.`)) return;
+			if (!confirm(`${translate('alle', $selectedLanguageStore)} ${totalCount} ${translate('entityPicker', $selectedLanguageStore).toLowerCase()}?`)) return;
 		}
 		onSelectAll();
 	}
@@ -157,11 +158,11 @@
 		<TablerIcon name="search" size={14} />
 		<input
 			type="text"
-			placeholder="Zoek in entiteiten..."
+			placeholder={translate('Zoek in entiteiten...', $selectedLanguageStore)}
 			bind:value={searchQuery}
 		/>
 		{#if searchQuery}
-			<button type="button" class="ap-search-clear" onclick={() => (searchQuery = '')} aria-label="Wis zoekopdracht">
+			<button type="button" class="ap-search-clear" onclick={() => (searchQuery = '')} aria-label={translate('Wis zoekopdracht', $selectedLanguageStore)}>
 				<TablerIcon name="x" size={12} />
 			</button>
 		{/if}
@@ -170,24 +171,24 @@
 	<div class="ap-master-row">
 		<div class="ap-master-left">
 			<TablerIcon name="list" size={13} />
-			<span class="ap-master-count">{selectedCount} actief</span>
-			<span class="ap-master-total">van {totalCount} gevonden</span>
+			<span class="ap-master-count">{selectedCount} {translate('actief', $selectedLanguageStore)}</span>
+			<span class="ap-master-total">{translate('van', $selectedLanguageStore)} {totalCount} {translate('gevonden', $selectedLanguageStore)}</span>
 		</div>
 		<div class="ap-master-actions">
-			<button type="button" class="ap-mini-btn" onclick={onClearAll}>geen</button>
-			<button type="button" class="ap-mini-btn primary" onclick={handleSelectAllGlobal}>alles aan</button>
+			<button type="button" class="ap-mini-btn" onclick={onClearAll}>{translate('geen', $selectedLanguageStore)}</button>
+			<button type="button" class="ap-mini-btn primary" onclick={handleSelectAllGlobal}>{translate('alles aan', $selectedLanguageStore)}</button>
 		</div>
 	</div>
 
 	{#if !storeState.loaded}
 		<div class="ap-empty-state">
 			<TablerIcon name="loader-2" size={16} />
-			Kamerinformatie laden…
+			{translate('Kamerinformatie laden…', $selectedLanguageStore)}
 		</div>
 	{:else if filteredGroups.length === 0}
 		<div class="ap-empty-state">
 			<TablerIcon name="search-off" size={16} />
-			{isFiltering ? 'Geen entiteiten gevonden voor je zoekopdracht.' : 'Geen entiteiten beschikbaar.'}
+			{isFiltering ? translate('Geen entiteiten gevonden voor je zoekopdracht.', $selectedLanguageStore) : translate('Geen entiteiten beschikbaar.', $selectedLanguageStore)}
 		</div>
 	{:else}
 		<div class="ap-areas-grid">
@@ -221,17 +222,17 @@
 						<div class="ap-area-list-title">
 							<TablerIcon name={group.areaIcon} size={13} />
 							{group.areaName}
-							<span class="ap-area-list-summary">{group.selectedCount} van {group.rows.length} geselecteerd</span>
+							<span class="ap-area-list-summary">{group.selectedCount} {translate('van', $selectedLanguageStore)} {group.rows.length} {translate('geselecteerd', $selectedLanguageStore)}</span>
 						</div>
 						<div class="ap-area-list-actions">
 							{#if group.selectedCount < group.rows.length}
 								<button type="button" class="ap-mini-btn primary" onclick={(e) => { e.stopPropagation(); selectAllInArea(group); }}>
-									alle {group.rows.length} aan
+									{translate('alle', $selectedLanguageStore)} {group.rows.length}
 								</button>
 							{/if}
 							{#if group.selectedCount > 0}
 								<button type="button" class="ap-mini-btn ghost" onclick={(e) => { e.stopPropagation(); clearAllInArea(group); }}>
-									wis
+									{translate('wissen', $selectedLanguageStore)}
 								</button>
 							{/if}
 						</div>

@@ -3,6 +3,7 @@
 	import { entityStore } from '$lib/ha/entities-store';
 	import { callHaService } from '$lib/ha/service-call';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		title?: string;
@@ -33,10 +34,10 @@
 	const displayName = $derived(
 		(title && title.trim().length > 0)
 			? title.trim()
-			: entity?.friendlyName ?? entityId ?? 'Lamp'
+			: entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
 	);
 	const stateLabel = $derived(
-		isUnavailable ? 'Niet beschikbaar' : isOn ? `${brightnessPct}%` : 'Uit'
+		isUnavailable ? translate('Niet beschikbaar', $selectedLanguageStore) : isOn ? `${brightnessPct}%` : translate('Uit', $selectedLanguageStore)
 	);
 	const accent = $derived(isOn ? '#ffd338' : '#8d98aa');
 	const accentSoft = $derived(isOn ? 'rgba(255,211,56,0.22)' : 'rgba(141,152,170,0.16)');
@@ -79,13 +80,13 @@
 	class:is-busy={busy}
 	role="button"
 	tabindex={editMode ? undefined : 0}
-	aria-label={`Open ${displayName}`}
+	aria-label={`${translate('Open', $selectedLanguageStore)} ${displayName}`}
 	style={`--light-accent: ${accent}; --light-soft: ${accentSoft}; --light-level: ${brightnessPct}%;`}
 	onclick={handleOpen}
 	onkeydown={handleKeydown}
 >
 	<div class="light-bg" aria-hidden="true"></div>
-	<button type="button" class="light-icon-button" aria-label={`${displayName} schakelen`} onclick={toggleLight}>
+	<button type="button" class="light-icon-button" aria-label={`${displayName} ${isOn ? translate('uitzetten', $selectedLanguageStore) : translate('aanzetten', $selectedLanguageStore)}`} onclick={toggleLight}>
 		<StatusIcon icon={cardIcon} size={34} />
 	</button>
 	<div class="light-copy">

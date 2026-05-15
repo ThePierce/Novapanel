@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { EnergyAnchors, EnergyFlowKey, EnergyFlowWaypoints } from '$lib/persistence/panel-state-types';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		bgUrl: string;
@@ -262,7 +263,7 @@
 	</div>
 
 	<div class="toolbar">
-		<div class="section-label">Buig flow-lijnen</div>
+		<div class="section-label">{translate('Buig flow-lijnen', $selectedLanguageStore)}</div>
 		{#each FLOWS as flow}
 			<button
 				type="button"
@@ -272,7 +273,7 @@
 				onclick={() => (mode = { kind: 'flow', key: flow.key })}
 			>
 				<span class="dot" style="background: {flow.color}"></span>
-				{flow.label}
+				{translate(flow.label, $selectedLanguageStore)}
 				{#if getWaypoints(flow.key).length > 0}
 					<span class="badge">{getWaypoints(flow.key).length}</span>
 				{/if}
@@ -282,16 +283,16 @@
 
 	{#if mode.kind === 'flow'}
 		<div class="flow-actions">
-			<span class="hint">Klik op de foto om een buigpunt toe te voegen, of sleep een bestaand punt. Klik op een buigpunt om te verwijderen.</span>
-			<button type="button" class="action-btn" onclick={() => mode.kind === 'flow' && appendWaypoint(mode.key)}>+ Buigpunt toevoegen</button>
+			<span class="hint">{translate('Klik op de foto om een buigpunt toe te voegen, of sleep een bestaand punt. Klik op een buigpunt om te verwijderen.', $selectedLanguageStore)}</span>
+			<button type="button" class="action-btn" onclick={() => mode.kind === 'flow' && appendWaypoint(mode.key)}>+ {translate('Buigpunt toevoegen', $selectedLanguageStore)}</button>
 			{#if currentWaypoints.length > 0}
-				<button type="button" class="action-btn ghost" onclick={clearWaypointsForCurrentFlow}>Wis alle buigpunten</button>
+				<button type="button" class="action-btn ghost" onclick={clearWaypointsForCurrentFlow}>{translate('Wis alle buigpunten', $selectedLanguageStore)}</button>
 			{/if}
 		</div>
 	{:else}
 		<div class="flow-actions">
-			<span class="hint">Klik op de foto om het geselecteerde anker te plaatsen, of sleep een anker direct.</span>
-			<button type="button" class="action-btn ghost" onclick={resetAnchors}>Reset alle ankers</button>
+			<span class="hint">{translate('Klik op de foto om het geselecteerde anker te plaatsen, of sleep een anker direct.', $selectedLanguageStore)}</span>
+			<button type="button" class="action-btn ghost" onclick={resetAnchors}>{translate('Reset alle ankers', $selectedLanguageStore)}</button>
 		</div>
 	{/if}
 
@@ -320,7 +321,7 @@
 				class="anchor-marker"
 				class:dim={mode.kind === 'flow'}
 				style="left: {pct(p.x)}; top: {pct(p.y)}; --c: {ANCHOR_COLORS[k]}"
-				data-label={ANCHOR_LABELS[k]}
+				data-label={translate(ANCHOR_LABELS[k], $selectedLanguageStore)}
 				onpointerdown={(e) => startDragAnchor(k, e)}
 				role="presentation"
 			></div>
@@ -334,15 +335,15 @@
 					onpointerdown={(e) => startDragWaypoint(currentFlow.key, i, e)}
 					onclick={(e) => { e.stopPropagation(); if (!didDrag) removeWaypoint(currentFlow.key, i); }}
 					role="presentation"
-					title="Sleep om te verplaatsen, klik om te verwijderen"
+					title={translate('Sleep om te verplaatsen, klik om te verwijderen', $selectedLanguageStore)}
 				></div>
 			{/each}
 		{/if}
 	</div>
 
 	<footer class="actions">
-		<button type="button" class="btn ghost" onclick={onCancel}>Annuleren</button>
-		<button type="button" class="btn primary" onclick={() => onSave(anchors)}>Opslaan</button>
+		<button type="button" class="btn ghost" onclick={onCancel}>{translate('cancel', $selectedLanguageStore)}</button>
+		<button type="button" class="btn primary" onclick={() => onSave(anchors)}>{translate('save', $selectedLanguageStore)}</button>
 	</footer>
 </div>
 

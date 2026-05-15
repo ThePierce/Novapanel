@@ -5,6 +5,7 @@
 	import { getHaConnectionConfig, type HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
 	import { listCalendarEvents, type CalendarEvent } from '$lib/ha/calendar-service';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import { localeFor, selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
 	type CalendarSource = CameraConfig;
 	type PositionedEvent = CalendarEvent & {
@@ -294,9 +295,9 @@
 	}
 
 	function locationLabel(entity: HomeAssistantEntity) {
-		if (entity.state === 'home') return 'Thuis';
-		if (entity.state === 'not_home') return 'Niet thuis';
-		return entity.state || 'Locatie onbekend';
+		if (entity.state === 'home') return translate('Thuis', $selectedLanguageStore);
+		if (entity.state === 'not_home') return translate('Niet thuis', $selectedLanguageStore);
+		return entity.state ? translateState(entity.state, $selectedLanguageStore) : translate('Locatie onbekend', $selectedLanguageStore);
 	}
 
 	function openPersonModal(source: CalendarSource, index: number, event: MouseEvent) {
@@ -423,10 +424,10 @@
 
 	function travelTimeFor(location: PersonLocation, mode: 'car' | 'bike') {
 		const home = homeCoordinates();
-		if (!home) return 'Onbekend';
-		if (location.isHome) return 'Thuis';
+		if (!home) return translate('Onbekend', $selectedLanguageStore);
+		if (location.isHome) return translate('Thuis', $selectedLanguageStore);
 		const km = distanceKm({ lat: location.lat, lon: location.lon }, home);
-		if (km < 0.12) return 'Thuis';
+		if (km < 0.12) return translate('Thuis', $selectedLanguageStore);
 		const speed = mode === 'car' ? 45 : 16;
 		const buffer = mode === 'car' ? 4 : 2;
 		return formatTravelMinutes(Math.max(1, Math.ceil((km / speed) * 60 + buffer)));
@@ -501,7 +502,7 @@
 			events = batches.flat().sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 		} catch (err) {
 			if (token !== loadToken) return;
-			error = err instanceof Error && err.message ? err.message : 'Kalender laden mislukt';
+			error = err instanceof Error && err.message ? err.message : translate('Kalender laden mislukt', $selectedLanguageStore);
 			events = [];
 		} finally {
 			if (token === loadToken) loading = false;
@@ -574,19 +575,19 @@
 	}
 
 	function formatDayName(date: Date) {
-		const value = date.toLocaleDateString('nl-NL', { weekday: expanded ? 'long' : 'short' });
+		const value = date.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: expanded ? 'long' : 'short' });
 		return expanded ? value : shortLabel(value);
 	}
 
 	function formatMonthName(date: Date) {
-		const value = date.toLocaleDateString('nl-NL', { month: expanded ? 'long' : 'short' });
+		const value = date.toLocaleDateString(localeFor($selectedLanguageStore), { month: expanded ? 'long' : 'short' });
 		return expanded ? value : shortLabel(value);
 	}
 
 	function formatEventTime(event: PositionedEvent) {
-		if (event.allDay) return 'Hele dag';
-		const start = event.startDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', hour12: false });
-		const end = event.endDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', hour12: false });
+		if (event.allDay) return translate('Hele dag', $selectedLanguageStore);
+		const start = event.startDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
+		const end = event.endDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
 		return `${start}-${end}`;
 	}
 </script>
@@ -596,8 +597,8 @@
 		<div class="wc-title-row">
 			<TablerIcon name="calendar-week" size={18} />
 			<div>
-				<strong>{title && title.trim().length > 0 ? title.trim() : 'Weekkalender'}</strong>
-				<span>{now.toLocaleDateString('nl-NL', { weekday: 'long', day: '2-digit', month: 'long' })} · {now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+				<strong>{title && title.trim().length > 0 ? title.trim() : translate('Weekkalender', $selectedLanguageStore)}</strong>
+				<span>{now.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: 'long', day: '2-digit', month: 'long' })} · {now.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
 			</div>
 		</div>
 		{#if visibleSources.length > 0}
@@ -609,7 +610,7 @@
 						type="button"
 						class="wc-person"
 						style={`--person-color: ${sourceColor(source, index)};`}
-						aria-label={`Open locatie van ${sourceDisplayName(source)}`}
+						aria-label={`${translate('Locatie van', $selectedLanguageStore)} ${sourceDisplayName(source)}`}
 						onclick={(event) => openPersonModal(source, index, event)}
 					>
 						{#if avatar}
@@ -625,7 +626,7 @@
 	</div>
 
 	{#if visibleSources.length === 0}
-		<div class="wc-empty">Kies kalender-entiteiten in edit mode.</div>
+		<div class="wc-empty">{translate('Kies kalender-entiteiten in edit mode.', $selectedLanguageStore)}</div>
 	{:else}
 			<div
 				class="wc-scroll"
@@ -643,16 +644,16 @@
 				{/each}
 
 				{#if hasAllDayEvents}
-					<div class="wc-all-day-label">Hele dag</div>
+					<div class="wc-all-day-label">{translate('Hele dag', $selectedLanguageStore)}</div>
 					{#each days as day (day.key)}
 						<div class="wc-all-day-cell">
 							{#each allDayEventsForDay(day) as event (event.uid ?? `${event.source.entityId}-${event.summary}-${event.startDate.toISOString()}`)}
 								<div
 									class="wc-all-day-event"
 									style={`--event-color: ${event.color};`}
-									title={`${event.summary || 'Afspraak'} · Hele dag`}
+									title={`${event.summary || translate('Afspraak', $selectedLanguageStore)} · ${translate('Hele dag', $selectedLanguageStore)}`}
 								>
-									<strong>{event.summary || 'Afspraak'}</strong>
+									<strong>{event.summary || translate('Afspraak', $selectedLanguageStore)}</strong>
 								</div>
 							{/each}
 						</div>
@@ -676,7 +677,7 @@
 							{@const eventPerson = personEntityForSource(event.source)}
 							{@const eventAvatar = avatarUrlFor(eventPerson)}
 							<div class="wc-event" style={eventStyle(event, day)} title={`${event.summary} · ${formatEventTime(event)}`}>
-								<strong>{event.summary || 'Afspraak'}</strong>
+								<strong>{event.summary || translate('Afspraak', $selectedLanguageStore)}</strong>
 								<span>{formatEventTime(event)}</span>
 								{#if eventAvatar && eventHasAvatarRoom(event, day)}
 									<img class="wc-event-avatar" src={eventAvatar} alt="" loading="lazy" />
@@ -688,7 +689,7 @@
 			</div>
 		</div>
 		{#if loading}
-			<div class="wc-status">Kalender laden...</div>
+			<div class="wc-status">{translate('Kalender laden...', $selectedLanguageStore)}</div>
 		{:else if error}
 			<div class="wc-status error">{error}</div>
 		{/if}
@@ -697,22 +698,22 @@
 
 {#if personModal}
 	{@const mapView = mapViewFor(personModal.people)}
-	<div
+	<button
+		type="button"
 		class="wc-person-overlay"
-		role="presentation"
+		aria-label={translate('closeOverlay', $selectedLanguageStore)}
 		onclick={(event) => {
 			event.stopPropagation();
 			closePersonModal();
 		}}
+	></button>
+	<section
+		class="wc-person-modal"
+		role="dialog"
+		aria-modal="true"
+		aria-label={`${translate('Locatie van', $selectedLanguageStore)} ${personModal.title}`}
+		style={`--person-color: ${personModal.color};`}
 	>
-		<section
-			class="wc-person-modal"
-			role="dialog"
-			aria-modal="true"
-			aria-label={`Locatie van ${personModal.title}`}
-			style={`--person-color: ${personModal.color};`}
-			onclick={(event) => event.stopPropagation()}
-		>
 			<div class="wc-person-modal-head">
 				<div class="wc-person-modal-title">
 					<div class="wc-person-modal-icon">
@@ -724,10 +725,10 @@
 					</div>
 					<div>
 						<strong>{personModal.title}</strong>
-						<span>{personModal.isGroup ? 'Locatie van iedereen' : (personModal.people[0]?.label ?? 'Locatie onbekend')}</span>
+						<span>{personModal.isGroup ? translate('Locatie van iedereen', $selectedLanguageStore) : (personModal.people[0]?.label ?? translate('Locatie onbekend', $selectedLanguageStore))}</span>
 					</div>
 				</div>
-				<button type="button" class="wc-person-close" aria-label="Sluiten" onclick={closePersonModal}>
+				<button type="button" class="wc-person-close" aria-label={translate('close', $selectedLanguageStore)} onclick={closePersonModal}>
 					<TablerIcon name="x" size={18} />
 				</button>
 			</div>
@@ -751,7 +752,7 @@
 					{@const home = homeCoordinates()}
 					<div class="wc-map-marker home" style={home ? mapPointStyle(home.lat, home.lon, personModal.people, mapView) : ''}>
 						<TablerIcon name="home" size={15} />
-						<span>Thuis</span>
+						<span>{translate('Thuis', $selectedLanguageStore)}</span>
 					</div>
 				{/if}
 				{#each personModal.people as person (person.entity.entityId)}
@@ -765,7 +766,7 @@
 					</div>
 				{/each}
 				{#if personModal.people.length === 0}
-					<div class="wc-map-empty">Geen locatie beschikbaar. Koppel een person-entiteit of controleer de locatie-attributen.</div>
+					<div class="wc-map-empty">{translate('Geen locatie beschikbaar. Koppel een person-entiteit of controleer de locatie-attributen.', $selectedLanguageStore)}</div>
 				{/if}
 				<a
 					class="wc-map-attribution"
@@ -782,20 +783,19 @@
 						<TablerIcon name="car" size={22} />
 						<div>
 							<strong>{travelTimeFor(personModal.people[0], 'car')}</strong>
-							<span>met de auto naar huis</span>
+							<span>{translate('met de auto naar huis', $selectedLanguageStore)}</span>
 						</div>
 					</div>
 					<div class="wc-travel-item">
 						<TablerIcon name="bike" size={22} />
 						<div>
 							<strong>{travelTimeFor(personModal.people[0], 'bike')}</strong>
-							<span>met de fiets naar huis</span>
+							<span>{translate('met de fiets naar huis', $selectedLanguageStore)}</span>
 						</div>
 					</div>
 				</div>
 			{/if}
-		</section>
-	</div>
+	</section>
 {/if}
 
 <style>
@@ -1095,8 +1095,7 @@
 		backdrop-filter: blur(4px);
 	}
 	.wc-event strong,
-	.wc-event span,
-	.wc-event em {
+	.wc-event span {
 		display: block;
 		min-width: 0;
 		white-space: nowrap;
@@ -1107,8 +1106,7 @@
 		font-size: 0.64rem;
 		line-height: 1.05;
 	}
-	.wc-event span,
-	.wc-event em {
+	.wc-event span {
 		margin-top: 0.12rem;
 		font-size: 0.54rem;
 		font-style: normal;
@@ -1145,13 +1143,19 @@
 		position: fixed;
 		inset: 0;
 		z-index: 80;
-		display: grid;
-		place-items: center;
+		display: block;
 		padding: 1.25rem;
+		border: 0;
+		margin: 0;
 		background: rgba(0,0,0,0.38);
 		backdrop-filter: blur(14px);
 	}
 	.wc-person-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		z-index: 81;
+		transform: translate(-50%, -50%);
 		width: min(40rem, calc(100vw - 2rem));
 		max-height: min(42rem, calc(100vh - 2rem));
 		display: grid;
@@ -1395,9 +1399,6 @@
 			left: 0.1rem;
 			right: 0.1rem;
 			padding: 0.25rem;
-		}
-		.wc-event em {
-			display: none;
 		}
 		.wc-person-overlay {
 			padding: 0.75rem;

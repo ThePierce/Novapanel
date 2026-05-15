@@ -1,11 +1,10 @@
 <script lang="ts">
-	import type { TranslationKey } from '$lib/i18n';
 	import WeatherIcon from '$lib/cards/WeatherIcon.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { getHassWithRetry, type HassLike } from '$lib/ha/entities-service-helpers';
 	import { entityStore } from '$lib/ha/entities-store';
 	import { extractWeatherForecast, subscribeWeatherForecastDirect } from '$lib/ha/weather-forecast-service';
-	import { translations, type LanguageCode } from '$lib/i18n';
+	import { translate, translations, type LanguageCode, type TranslationKey } from '$lib/i18n';
 
 	type Props = {
 		t: (key: TranslationKey) => string;
@@ -121,7 +120,7 @@
 			const tomorrow = new Date(today.getTime() + 86400000);
 			const isToday = d >= today && d < tomorrow;
 			const isTomorrow = d >= tomorrow && d < new Date(tomorrow.getTime() + 86400000);
-			const name = isToday ? 'Vandaag' : isTomorrow ? 'Morgen'
+			const name = isToday ? translate('Vandaag', locale as LanguageCode) : isTomorrow ? translate('Morgen', locale as LanguageCode)
 				: d.toLocaleDateString(locale, { weekday: 'long' });
 			const date = d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 			return { name, date };
@@ -150,7 +149,7 @@
 		<div class="np-detail-head-icon"><TablerIcon name="cloud-storm" size={22} /></div>
 		<div class="np-detail-head-text">
 			<div class="np-detail-head-title">{t('cardTypeWeatherForecast')}</div>
-			<div class="np-detail-head-sub">Voorspelling voor de komende dagen</div>
+			<div class="np-detail-head-sub">{translate('Voorspelling voor de komende dagen', locale as LanguageCode)}</div>
 		</div>
 		<div class="np-forecast-sun-times">
 			{#if sunriseTime}
@@ -182,7 +181,7 @@
 		{#if !entityId}
 			<div class="empty-state">{t('cardTypeWeatherForecast')}</div>
 		{:else if shown.length === 0}
-			<div class="empty-state">Voorspelling laden…</div>
+			<div class="empty-state">{translate('Voorspelling laden…', locale as LanguageCode)}</div>
 		{:else}
 			<div class="day-list">
 				{#each shown as item, idx (idx)}
@@ -279,8 +278,6 @@
 	.np-detail-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
 	.np-detail-head-title { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; color: #f5f5f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.np-detail-head-sub { font-size: 11.5px; color: rgba(255,255,255,0.5); margin-top: 3px; }
-	.np-detail-head-close { background: rgba(255,255,255,0.05); border: 0.5px solid rgba(255,255,255,0.08); width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: rgba(255,255,255,0.6); cursor: pointer; position: relative; z-index: 1; transition: background 0.15s, transform 0.15s; flex-shrink: 0; }
-	.np-detail-head-close:hover { background: rgba(255,255,255,0.10); transform: scale(1.05); }
 	.np-forecast-sun-times { display: flex; align-items: center; gap: 0.7rem; position: relative; z-index: 1; flex-shrink: 0; }
 
 	.sun-item {
@@ -448,5 +445,4 @@
 	}
 
 	/* Hide column-style classes that may still be referenced elsewhere */
-	.col-r, .col-wind { /* legacy */ }
 </style>

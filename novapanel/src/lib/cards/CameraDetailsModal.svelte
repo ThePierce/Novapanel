@@ -11,6 +11,7 @@
 	} from '$lib/ha/entities-service-helpers';
 	import HaCameraLiveView from '$lib/cards/HaCameraLiveView.svelte';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type AdvancedCameraCardElement = HTMLElement & {
 		setConfig?: (config: Record<string, unknown>) => void;
@@ -42,6 +43,7 @@
 		'/local/community/advanced-camera-card/advanced-camera-card.js',
 		'/local/advanced-camera-card/advanced-camera-card.js'
 	];
+	const CAMERA_DEBUG = false;
 
 	let advancedCameraCardLoad: Promise<void> | null = null;
 
@@ -586,7 +588,7 @@
 						if (!advancedEnough && (snapshotUrl || cameraProxyStreamUrl)) {
 							if (!fallbackReasonLogged) {
 								fallbackReasonLogged = true;
-								console.info('[NovaPanel] ACC video blijft stil; schakel naar NovaPanel live-stream fallback.', {
+								if (CAMERA_DEBUG) console.info('[NovaPanel] ACC video blijft stil; schakel naar NovaPanel live-stream fallback.', {
 									entityId: camera.entityId,
 									src: video.currentSrc || video.src || '',
 									poster: video.poster || '',
@@ -662,8 +664,8 @@
 				}, 8000);
 			} catch (err) {
 				if (cancelled) return;
-				console.error('[NovaPanel] advanced-camera-card niet beschikbaar:', err);
-				advancedError = 'Advanced Camera Card kon niet worden geladen. Ik toon de normale cameraview.';
+				if (CAMERA_DEBUG) console.warn('[NovaPanel] advanced-camera-card niet beschikbaar:', err);
+				advancedError = translate('Advanced Camera Card kon niet worden geladen. Ik toon de normale cameraview.', $selectedLanguageStore);
 			}
 		})();
 
@@ -677,7 +679,7 @@
 	});
 </script>
 
-<button type="button" class="modal-overlay" onclick={onClose} aria-label="Sluiten"></button>
+<button type="button" class="modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
 <section class="camera-detail-modal np-detail" role="dialog" aria-modal="true" aria-label={name} style:--camera-aspect={String(cameraAspectRatio)}>
 	<div class="np-detail-head" style="--np-tint: rgba(96,165,250,0.18); --np-color: #60a5fa;">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
@@ -689,7 +691,25 @@
 
 	<div class="camera-body">
 		{#if snapshotUrl || cameraProxyStreamUrl}
-			<div class="camera-live-shell" data-advanced={useAdvancedHA ? '1' : '0'}>
+			{#if useAdvancedHA}
+				<div class="camera-advanced-shell" class:fallback-visible={advancedFallbackVisible}>
+					<div class="camera-advanced" bind:this={advancedContainer}></div>
+					{#if advancedFallbackVisible}
+						<div class="camera-advanced-fallback">
+							<HaCameraLiveView
+								entityId={camera.entityId}
+								active={advancedFallbackVisible}
+								fallbackSrc={snapshotUrl}
+								fallbackStreamSrc={cameraProxyStreamUrl}
+								alt={name}
+								fit="contain"
+								onAspectRatio={handleAspectRatio}
+							/>
+						</div>
+					{/if}
+				</div>
+			{:else}
+				<div class="camera-live-shell">
 				<HaCameraLiveView
 					entityId={camera.entityId}
 					active={true}
@@ -699,11 +719,12 @@
 					fit="contain"
 					onAspectRatio={handleAspectRatio}
 				/>
-			</div>
+				</div>
+			{/if}
 		{:else}
 			<div class="camera-fallback">
 				<TablerIcon name="device-cctv-off" size={44} />
-				<div>Geen beeld beschikbaar</div>
+				<div>{translate('Geen beeld beschikbaar', $selectedLanguageStore)}</div>
 			</div>
 		{/if}
 		{#if advancedError}

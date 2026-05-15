@@ -146,7 +146,7 @@ let availabilityTargetRenamingName = $state('');
 let availabilityIgnoredOpen = $state(false);
 
 	type Props = {
-		t: (key: TranslationKey) => string;
+		t: (key: TranslationKey | string) => string;
 	cardEditorId?: string;
 		cardCatalog: CardDefinition[];
 		getLocalizedCardLabel: (type: string) => string;
@@ -412,26 +412,26 @@ let availabilityIgnoredOpen = $state(false);
 	);
 
 	const cardTypeMeta = $derived((() => {
-		const t = cardEditorType ?? '';
-		if (t === 'energy') return { icon: 'bolt', tone: 'amber', tint: 'rgba(250,204,21,0.18)', color: '#facc15', subtitle: 'Bewerk hoe deze kaart leest en weergeeft' };
-		if (t === 'cameras_strip') return { icon: 'device-cctv', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: "Camera's selecteren en in Apple Home stijl tonen" };
-		if (t === 'week_calendar') return { icon: 'calendar-week', tone: 'cyan', tint: 'rgba(56,189,248,0.18)', color: '#38bdf8', subtitle: 'Weekkalender met CalDAV personen en kleuren' };
-		if (t === 'light_button') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: 'Lampknop met helderheid en kleur' };
-		if (t === 'climate_button') return { icon: 'temperature', tone: 'orange', tint: 'rgba(251,146,60,0.18)', color: '#fb923c', subtitle: 'Thermostaatknop met temperatuur en modus' };
-		if (t === 'cover_button') return { icon: 'curtains', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: 'Gordijnknop met positiebediening' };
-		if (t === 'vacuum_button') return { icon: 'robot', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: 'Robotstofzuiger met start, pauze en dock' };
-		if (t === 'media_player_button') return { icon: 'device-speaker', tone: 'purple', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: 'Media player met afspelen en volume' };
-		if (t === 'alarm_panel') return { icon: 'shield-lock', tone: 'rose', tint: 'rgba(248,113,113,0.18)', color: '#f87171', subtitle: 'Koppel aan een alarm-entiteit' };
-		if (t === 'lights_status') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: 'Selecteer welke lampen meedoen' };
-		if (t === 'openings_status') return { icon: 'door', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: 'Welke deuren en ramen zijn open' };
-		if (t === 'devices_status') return { icon: 'plug', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: 'Welke apparaten staan aan' };
-		if (t === 'availability_status') return { icon: 'wifi', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: 'Welke apparaten zijn bereikbaar' };
-		if (t === 'media_players_status') return { icon: 'device-speaker', tone: 'purple', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: 'Welke spelers worden gevolgd' };
-		if (t === 'clock') return { icon: 'clock', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: 'Stijl en weergave van de klok' };
-		if (t === 'date') return { icon: 'calendar', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: 'Datumweergave instellen' };
-		if (t === 'weather') return { icon: 'cloud', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: 'Koppel aan een weer-entiteit' };
-		if (t === 'weather_forecast') return { icon: 'cloud-storm', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: 'Voorspelling weergeven' };
-		return { icon: 'note', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: 'Kaart bewerken' };
+		const type = cardEditorType ?? '';
+		if (type === 'energy') return { icon: 'bolt', tone: 'amber', tint: 'rgba(250,204,21,0.18)', color: '#facc15', subtitle: t('Bewerk hoe deze kaart leest en weergeeft') };
+		if (type === 'cameras_strip') return { icon: 'device-cctv', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t("Camera's selecteren en in Apple Home stijl tonen") };
+		if (type === 'week_calendar') return { icon: 'calendar-week', tone: 'cyan', tint: 'rgba(56,189,248,0.18)', color: '#38bdf8', subtitle: t('Weekkalender met CalDAV personen en kleuren') };
+		if (type === 'light_button') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: t('Lampknop met helderheid en kleur') };
+		if (type === 'climate_button') return { icon: 'temperature', tone: 'orange', tint: 'rgba(251,146,60,0.18)', color: '#fb923c', subtitle: t('Thermostaatknop met temperatuur en modus') };
+		if (type === 'cover_button') return { icon: 'curtains', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Gordijnknop met positiebediening') };
+		if (type === 'vacuum_button') return { icon: 'robot', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Robotstofzuiger met start, pauze en dock') };
+		if (type === 'media_player_button') return { icon: 'device-speaker', tone: 'purple', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: t('Media player met afspelen en volume') };
+		if (type === 'alarm_panel') return { icon: 'shield-lock', tone: 'rose', tint: 'rgba(248,113,113,0.18)', color: '#f87171', subtitle: t('Koppel aan een alarm-entiteit') };
+		if (type === 'lights_status') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: t('Selecteer welke lampen meedoen') };
+		if (type === 'openings_status') return { icon: 'door', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Welke deuren en ramen zijn open') };
+		if (type === 'devices_status') return { icon: 'plug', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Welke apparaten staan aan') };
+		if (type === 'availability_status') return { icon: 'wifi', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Welke apparaten zijn bereikbaar') };
+		if (type === 'media_players_status') return { icon: 'device-speaker', tone: 'purple', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: t('Welke spelers worden gevolgd') };
+		if (type === 'clock') return { icon: 'clock', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Stijl en weergave van de klok') };
+		if (type === 'date') return { icon: 'calendar', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Datumweergave instellen') };
+		if (type === 'weather') return { icon: 'cloud', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Koppel aan een weer-entiteit') };
+		if (type === 'weather_forecast') return { icon: 'cloud-storm', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Voorspelling weergeven') };
+		return { icon: 'note', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Kaart bewerken') };
 	})());
 
 	const scopedPickerRows = $derived(
@@ -967,36 +967,35 @@ let availabilityIgnoredOpen = $state(false);
 
 <!-- Light group picker - rendered outside modal to avoid overflow:hidden clipping -->
 {#if lgEntityPickerOpen && lgEditingId}
-	<div class="lg-picker-overlay" onclick={() => lgSave()}>
-		<div class="lg-picker-modal" onclick={(e) => e.stopPropagation()}>
-			<div class="lg-picker-head">
-				<input class="lg-name-input" type="text" value={lgDraftName}
-					oninput={(e) => lgDraftName = (e.currentTarget as HTMLInputElement).value}
-					placeholder="Groepsnaam" />
-				<span class="lg-picker-hint">Selecteer lampen voor deze groep</span>
-			</div>
-			<div class="lg-picker-list">
-				{#each (cardEditorStatusEntityIds ?? []) as entityId}
-					{@const inOtherGroup = lightGroups.some(g => g.id !== lgEditingId && g.entityIds.includes(entityId))}
-					<label class="lg-entity-row" class:lg-in-other={inOtherGroup}>
-						<input type="checkbox"
-							checked={lgDraftEntityIds.includes(entityId)}
-							disabled={inOtherGroup}
-							onchange={() => lgToggleEntity(entityId)} />
-						<span class="lg-entity-name">{getFriendlyName(entityId)}</span>
-						{#if inOtherGroup}<span class="lg-entity-tag">in andere groep</span>{/if}
-					</label>
-				{/each}
-				{#if (cardEditorStatusEntityIds ?? []).length === 0}
-					<div class="lg-empty">Voeg eerst lampen toe via de entiteitenlijst hierboven.</div>
-				{/if}
-			</div>
-			<div class="lg-picker-actions">
-				<button type="button" class="lg-btn-delete-group" onclick={() => { lgDelete(lgEditingId!); lgEntityPickerOpen = false; lgEditingId = null; }}>
-					<StatusIcon icon="mdi:delete-outline" size={14} /> Verwijder groep
-				</button>
-				<button type="button" class="lg-btn-save" onclick={lgSave}>Opslaan</button>
-			</div>
+	<button type="button" class="lg-picker-overlay" onclick={() => lgSave()} aria-label={t('closeOverlay')}></button>
+	<div class="lg-picker-modal" role="dialog" aria-modal="true" aria-label={t('Selecteer lampen voor deze groep')}>
+		<div class="lg-picker-head">
+			<input class="lg-name-input" type="text" value={lgDraftName}
+				oninput={(e) => lgDraftName = (e.currentTarget as HTMLInputElement).value}
+				placeholder={t('Groepsnaam')} />
+			<span class="lg-picker-hint">{t('Selecteer lampen voor deze groep')}</span>
+		</div>
+		<div class="lg-picker-list">
+			{#each (cardEditorStatusEntityIds ?? []) as entityId}
+				{@const inOtherGroup = lightGroups.some(g => g.id !== lgEditingId && g.entityIds.includes(entityId))}
+				<label class="lg-entity-row" class:lg-in-other={inOtherGroup}>
+					<input type="checkbox"
+						checked={lgDraftEntityIds.includes(entityId)}
+						disabled={inOtherGroup}
+						onchange={() => lgToggleEntity(entityId)} />
+					<span class="lg-entity-name">{getFriendlyName(entityId)}</span>
+					{#if inOtherGroup}<span class="lg-entity-tag">{t('in andere groep')}</span>{/if}
+				</label>
+			{/each}
+			{#if (cardEditorStatusEntityIds ?? []).length === 0}
+				<div class="lg-empty">{t('Voeg eerst lampen toe via de entiteitenlijst hierboven.')}</div>
+			{/if}
+		</div>
+		<div class="lg-picker-actions">
+			<button type="button" class="lg-btn-delete-group" onclick={() => { lgDelete(lgEditingId!); lgEntityPickerOpen = false; lgEditingId = null; }}>
+				<StatusIcon icon="mdi:delete-outline" size={14} /> {t('Verwijder groep')}
+			</button>
+			<button type="button" class="lg-btn-save" onclick={lgSave}>{t('save')}</button>
 		</div>
 	</div>
 {/if}
@@ -1010,96 +1009,10 @@ let availabilityIgnoredOpen = $state(false);
 	.tab-content { overflow: auto; padding-right: 0.2rem; scrollbar-width: none; -ms-overflow-style: none; }
 	.tab-content::-webkit-scrollbar { width: 0; height: 0; display: none; }
 	.card-editor-content { display: grid; gap: 0.6rem; align-content: start; }
-	.card-editor-content input:not(.np-input), .card-editor-content select { height: 2.2rem; border-radius: 0.4rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; padding: 0 0.7rem; }
-	.clock-editor-toggles { display: flex; gap: 0.8rem; flex-wrap: wrap; }
-	.toggle { display: inline-flex; align-items: center; gap: 0.5rem; user-select: none; }
-	.toggle input { width: 1.05rem; height: 1.05rem; }
-	.card-editor-actions { display: flex; justify-content: space-between; margin-top: 0.8rem; }
-	.delete-btn, .save-btn, .history-btn { height: 2.2rem; padding: 0 0.9rem; border-radius: 0.4rem; border: 0; color: #ffffff; cursor: pointer; }
-	.delete-btn { background: #b73232; }
-	.save-btn { background: #c89d1b; }
-	.history-btn { background: rgba(255,255,255,0.08); color: #f5f5f5; }
-	.clock-editor-preview { margin-top: 0.35rem; display: grid; justify-items: center; }
-	.entity-picker-open { height: 2.2rem; border-radius: 0.4rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; padding: 0 0.7rem; text-align: left; cursor: pointer; }
-	.icon-validation { font-size: 0.8rem; opacity: 0.85; display: inline-flex; align-items: center; gap: 0.42rem; min-height: 1.2rem; }
-	.icon-validation.checking { color: #f3ca62; }
-	.icon-validation.ok { color: #67ad5b; }
-	.icon-validation.error { color: #e15241; }
-	.icon-preview { display: inline-block; flex: 0 0 auto; }
-	.ma-target-picker { display: grid; gap: 0.4rem; margin-top: 0.35rem; padding: 0.45rem; border-radius: 0.45rem; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
-	.ma-target-picker-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-	.availability-clear-btn { height: 1.85rem; padding: 0 0.6rem; font-size: 0.78rem; white-space: nowrap; }
-	.ma-target-picker-title { font-size: 0.8rem; opacity: 0.85; }
-	.ma-target-picker-empty { font-size: 0.78rem; opacity: 0.72; }
-	.ma-target-picker-list { display: grid; gap: 0.3rem; max-height: 9.5rem; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; }
-	.availability-target-picker-list { max-height: 23.75rem; }
-	.ignored-target-picker-list { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.35rem; }
-	.ignored-toggle-row { display: flex; justify-content: flex-start; margin-top: 0.2rem; }
-	.ma-target-picker-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
-	.energy-editor-section { display: flex; flex-direction: column; gap: 0.9rem; }
-	.energy-editor-group { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.4rem; border-top: 1px solid rgba(255,255,255,0.06); }
-	.energy-editor-group:first-child { padding-top: 0; border-top: 0; }
-	.energy-editor-group-title { font-size: 0.85rem; font-weight: 600; color: #f5f5f5; letter-spacing: 0.005em; }
-	.energy-asset-row {
-		display: flex; align-items: center; gap: 0.6rem;
-		padding: 0.5rem;
-		background: rgba(255,255,255,0.03);
-		border-radius: 0.4rem;
-		flex-wrap: wrap;
-	}
-	.energy-asset-info { flex: 1; min-width: 0; }
-	.energy-asset-label {
-		font-size: 0.85rem; font-weight: 500;
-		color: #f5f5f5;
-	}
-	.energy-asset-status {
-		font-size: 0.75rem;
-		color: rgba(255,255,255,0.5);
-	}
-	.energy-asset-actions {
-		display: flex; gap: 0.4rem; flex-wrap: wrap;
-	}
-	.energy-asset-btn {
-		padding: 0.35rem 0.7rem;
-		font-size: 0.8rem;
-		color: rgba(255,255,255,0.85);
-		background: rgba(255,255,255,0.06);
-		border: 1px solid rgba(255,255,255,0.1);
-		border-radius: 0.35rem;
-		cursor: pointer;
-		font-family: inherit;
-	}
-	.energy-asset-btn.primary {
-		background: rgba(37, 99, 235, 0.6);
-		border-color: rgba(37, 99, 235, 0.8);
-		color: #fff;
-	}
-	.energy-asset-btn.ghost {
-		background: transparent;
-	}
-	.lg-section { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.08); }
-	.lg-section-header { display: flex; flex-direction: column; gap: 0.1rem; }
-	.lg-section-title { font-size: 0.85rem; font-weight: 600; opacity: 0.85; }
-	.lg-section-hint { font-size: 0.72rem; opacity: 0.45; }
-	.lg-group-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.5rem; background: rgba(255,255,255,0.04); border-radius: 0.4rem; cursor: pointer; }
-	.lg-group-row:hover { background: rgba(255,255,255,0.08); }
-	.lg-group-row.lg-group-row-selected {
-		background: rgba(255,255,255,0.16);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
-	}
-	.lg-group-name { flex: 1; font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.lg-group-count { font-size: 0.72rem; opacity: 0.45; white-space: nowrap; }
-	.lg-btn-icon { width: 1.6rem; height: 1.6rem; border-radius: 0.3rem; border: 0; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55); cursor: pointer; display: grid; place-items: center; }
-	.lg-btn-icon:hover { background: rgba(255,255,255,0.12); }
-	.lg-btn-delete:hover { background: rgba(225,82,65,0.2); color: #e15241; }
-	.lg-name-input { flex: 1; height: 2rem; border-radius: 0.35rem; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #f5f5f5; padding: 0 0.5rem; font-size: 0.85rem; min-width: 0; }
-	.lg-new-group { display: flex; gap: 0.4rem; }
-	.lg-btn-add { height: 2rem; padding: 0 0.7rem; border-radius: 0.35rem; border: 0; background: rgba(255,255,255,0.07); color: #f5f5f5; cursor: pointer; font-size: 0.82rem; display: flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
-	.lg-btn-add:hover:not(:disabled) { background: rgba(255,255,255,0.13); }
-	.lg-btn-add:disabled { opacity: 0.35; cursor: not-allowed; }
 	/* Picker popup */
-	.lg-picker-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: center; justify-content: center; }
-	.lg-picker-modal { background: #121722; border: 1px solid #2e384d; border-radius: 0.85rem; width: min(340px, calc(100vw - 2rem)); display: flex; flex-direction: column; max-height: 80vh; overflow: hidden; }
+	.lg-name-input { flex: 1; height: 2rem; border-radius: 0.35rem; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #f5f5f5; padding: 0 0.5rem; font-size: 0.85rem; min-width: 0; }
+	.lg-picker-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; border: 0; padding: 0; cursor: default; }
+	.lg-picker-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 201; background: #121722; border: 1px solid #2e384d; border-radius: 0.85rem; width: min(340px, calc(100vw - 2rem)); display: flex; flex-direction: column; max-height: 80vh; overflow: hidden; }
 	.lg-picker-head { padding: 0.85rem 1rem 0; display: flex; flex-direction: column; gap: 0.3rem; }
 	.lg-picker-hint { font-size: 0.75rem; opacity: 0.5; }
 	.lg-picker-list { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 0.5rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
@@ -1113,22 +1026,8 @@ let availabilityIgnoredOpen = $state(false);
 	.lg-picker-actions { display: flex; gap: 0.4rem; padding: 0.75rem 1rem; border-top: 1px solid rgba(255,255,255,0.07); }
 	.lg-btn-save { flex: 1; height: 2.2rem; border-radius: 0.4rem; border: 0; background: rgba(79,113,168,0.45); color: #f5f5f5; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
 	.lg-btn-save:hover { background: rgba(79,113,168,0.65); }
-	.lg-btn-cancel { height: 2.2rem; padding: 0 0.85rem; border-radius: 0.4rem; border: 0; background: rgba(255,255,255,0.07); color: #f5f5f5; cursor: pointer; font-size: 0.85rem; }
 	.lg-btn-delete-group { height: 2.2rem; padding: 0 0.85rem; border-radius: 0.4rem; border: 0; background: rgba(225,82,65,0.15); color: #e15241; cursor: pointer; font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem; }
 	.lg-btn-delete-group:hover { background: rgba(225,82,65,0.3); }
-	.field-group { display: flex; flex-direction: column; gap: 0.25rem; }
-	.field-group label { font-size: 0.82rem; opacity: 0.7; }
-	.field-hint { font-size: 0.72rem; opacity: 0.55; font-style: italic; }
-	.entity-input { width: 100%; height: 2rem; border-radius: 0.35rem; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #f5f5f5; padding: 0 0.5rem; font-size: 0.82rem; box-sizing: border-box; }
-	.ma-target-picker-row { display: flex; align-items: center; gap: 0.45rem; min-height: 1.75rem; flex: 1; }
-	.ma-target-row-wrap { display: flex; align-items: center; gap: 0.25rem; min-height: 1.75rem; }
-	.ma-target-edit-btn { flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 0.3rem; border: 0; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); cursor: pointer; font-size: 0.75rem; display: grid; place-items: center; }
-	.ma-target-rename-row { display: flex; align-items: center; gap: 0.3rem; min-height: 1.75rem; }
-	.ma-rename-input { flex: 1; min-width: 0; height: 1.6rem; border-radius: 0.3rem; border: 0; background: rgba(255,255,255,0.1); color: #f5f5f5; padding: 0 0.4rem; font-size: 0.85rem; }
-	.ma-rename-save { width: 1.5rem; height: 1.5rem; border-radius: 0.3rem; border: 0; background: #c89d1b; color: #fff; cursor: pointer; font-size: 0.85rem; }
-	.ma-rename-cancel { width: 1.5rem; height: 1.5rem; border-radius: 0.3rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; cursor: pointer; font-size: 0.85rem; }
-	.ma-target-picker-row input { width: 1rem; height: 1rem; }
-
 	/* === New editor shell + sections (np-* prefix) === */
 	.np-editor.settings-modal {
 		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
@@ -1221,21 +1120,6 @@ let availabilityIgnoredOpen = $state(false);
 		0%, 100% { opacity: 1; transform: scale(1); }
 		50% { opacity: 0.4; transform: scale(1.4); }
 	}
-	.np-editor-head-close {
-		background: rgba(255,255,255,0.05);
-		border: 0.5px solid rgba(255,255,255,0.08);
-		width: 30px; height: 30px;
-		border-radius: 9px;
-		display: grid; place-items: center;
-		color: rgba(255,255,255,0.6);
-		cursor: pointer;
-		position: relative;
-		z-index: 1;
-		transition: background 0.15s, transform 0.15s;
-		flex-shrink: 0;
-	}
-	.np-editor-head-close:hover { background: rgba(255,255,255,0.10); transform: scale(1.05); }
-
 	.np-editor-body {
 		padding: 14px 22px;
 		display: flex;
@@ -1262,11 +1146,6 @@ let availabilityIgnoredOpen = $state(false);
 		font-weight: 500;
 		display: block;
 	}
-	.np-hint {
-		text-transform: none;
-		letter-spacing: normal;
-		opacity: 0.7;
-	}
 	.np-input {
 		background: rgba(255,255,255,0.04);
 		border: 0.5px solid rgba(255,255,255,0.08);
@@ -1280,7 +1159,6 @@ let availabilityIgnoredOpen = $state(false);
 		height: auto;
 		transition: border-color 0.15s, background 0.15s;
 	}
-	.np-input.mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11.5px; }
 	.np-input::placeholder { color: rgba(255,255,255,0.3); }
 	.np-input:focus {
 		outline: none;
@@ -1288,177 +1166,6 @@ let availabilityIgnoredOpen = $state(false);
 		background: rgba(96,165,250,0.06);
 		box-shadow: 0 0 0 3px rgba(96,165,250,0.08);
 	}
-	.np-field {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-		min-width: 0;
-	}
-	.np-help {
-		font-size: 11px;
-		color: rgba(255,255,255,0.45);
-		line-height: 1.4;
-	}
-	.np-grid-2 {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 9px;
-	}
-	.np-toggles {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 14px;
-		padding: 4px 0;
-	}
-	.np-toggle {
-		display: inline-flex;
-		align-items: center;
-		gap: 7px;
-		font-size: 12px;
-		color: rgba(255,255,255,0.85);
-		cursor: pointer;
-		user-select: none;
-	}
-	.np-toggle input[type="checkbox"] {
-		width: 14px; height: 14px;
-		accent-color: #60a5fa;
-		margin: 0;
-	}
-	.np-preview-frame {
-		display: grid;
-		place-items: center;
-		padding: 18px 8px;
-		background: rgba(0,0,0,0.18);
-		border-radius: 9px;
-		min-height: 80px;
-	}
-
-	/* Lampengroep-rij (nieuwe twee-regel layout) */
-	.lg-row {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-		padding: 9px 12px;
-		background: rgba(255,255,255,0.03);
-		border: 0.5px solid rgba(255,255,255,0.07);
-		border-radius: 9px;
-		cursor: pointer;
-		transition: background 0.12s, border-color 0.12s;
-	}
-	.lg-row:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.13); }
-	.lg-row-selected { background: rgba(96,165,250,0.10); border-color: rgba(96,165,250,0.30); }
-	.lg-row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-	.lg-name {
-		font-size: 12.5px; font-weight: 500; color: #f5f5f5;
-		flex: 1; min-width: 0;
-		overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-	}
-	.lg-count-pill {
-		font-size: 10px;
-		padding: 2px 7px;
-		background: rgba(255,255,255,0.07);
-		border-radius: 4px;
-		color: rgba(255,255,255,0.6);
-		font-variant-numeric: tabular-nums;
-		flex-shrink: 0;
-	}
-	.lg-btn {
-		width: 22px; height: 22px;
-		display: grid; place-items: center;
-		background: rgba(255,255,255,0.05);
-		border: 0.5px solid rgba(255,255,255,0.08);
-		border-radius: 5px;
-		color: rgba(255,255,255,0.65);
-		cursor: pointer;
-		flex-shrink: 0;
-		transition: background 0.12s, color 0.12s;
-	}
-	.lg-btn:hover { background: rgba(255,255,255,0.10); color: #fff; }
-	.lg-btn-delete:hover { background: rgba(248,113,113,0.15); color: #f87171; border-color: rgba(248,113,113,0.25); }
-	.lg-tags-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-	}
-	.lg-tag {
-		font-size: 10.5px;
-		padding: 2px 7px;
-		background: rgba(255,255,255,0.05);
-		border: 0.5px solid rgba(255,255,255,0.06);
-		border-radius: 4px;
-		color: rgba(255,255,255,0.7);
-	}
-	.lg-tag.more {
-		color: rgba(255,255,255,0.45);
-		background: transparent;
-		border-style: dashed;
-	}
-	.lg-empty {
-		font-size: 10.5px;
-		color: rgba(255,255,255,0.4);
-		font-style: italic;
-		padding: 2px 0;
-	}
-	.lg-new-group { display: flex; gap: 6px; padding-top: 6px; border-top: 0.5px solid rgba(255,255,255,0.06); }
-	.lg-new-group .np-input { flex: 1; }
-
-	/* Variant grid (foto's en ankerpunten) */
-	.np-variant-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-	}
-	.np-variant {
-		background: rgba(255,255,255,0.04);
-		border: 0.5px solid rgba(255,255,255,0.08);
-		border-radius: 10px;
-		overflow: hidden;
-	}
-	.np-variant.has { border-color: rgba(192,132,252,0.25); }
-	.np-variant-thumb {
-		height: 60px;
-		background: linear-gradient(135deg, #1e2944, #2c3a5e);
-		display: grid; place-items: center;
-		color: rgba(255,255,255,0.4);
-		font-size: 11.5px;
-		font-weight: 500;
-		position: relative;
-	}
-	.np-variant.has .np-variant-thumb {
-		background: linear-gradient(135deg, #44368a, #2c3a5e);
-		color: rgba(255,255,255,0.85);
-	}
-	.np-variant-mark {
-		position: absolute;
-		top: 6px; right: 6px;
-		width: 8px; height: 8px;
-		border-radius: 50%;
-		background: #4ade80;
-		box-shadow: 0 0 0 2px rgba(74,222,128,0.25);
-	}
-	.np-variant-meta {
-		padding: 7px 9px 9px;
-	}
-	.np-variant-name { font-size: 11px; font-weight: 500; color: #f5f5f5; }
-	.np-variant-actions { display: flex; gap: 4px; margin-top: 6px; }
-	.np-mini-btn {
-		font-size: 10px;
-		padding: 4px 8px;
-		background: rgba(255,255,255,0.06);
-		border: 0.5px solid rgba(255,255,255,0.08);
-		border-radius: 5px;
-		cursor: pointer;
-		color: rgba(255,255,255,0.7);
-		flex: 1;
-		text-align: center;
-		font-family: inherit;
-		transition: background 0.12s, color 0.12s;
-	}
-	.np-mini-btn:hover { background: rgba(255,255,255,0.10); color: #fff; }
-	.np-mini-btn.ghost { background: transparent; }
-	.np-mini-btn.primary { background: rgba(96,165,250,0.15); color: #93c5fd; border-color: rgba(96,165,250,0.25); }
-	.np-mini-btn.primary:hover { background: rgba(96,165,250,0.25); }
-
 	/* Footer */
 	.np-editor-foot {
 		display: flex;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 	/**
 	 * Modal overlay voor het bewerken van een lampengroep — kiezen welke entiteiten
 	 * tot een groep behoren, naam wijzigen of de groep verwijderen.
@@ -56,9 +57,9 @@
 			<div style="padding:0.85rem 1rem 0;display:flex;flex-direction:column;gap:0.3rem;">
 				<input type="text" value={draftName}
 					oninput={(e) => onDraftNameChange((e.currentTarget as HTMLInputElement).value)}
-					placeholder="Groepsnaam"
+					placeholder={translate('Groepsnaam', $selectedLanguageStore)}
 					style="height:2rem;border-radius:0.35rem;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#f5f5f5;padding:0 0.5rem;font-size:0.9rem;width:100%;box-sizing:border-box;" />
-				<span style="font-size:0.75rem;opacity:0.5;">Selecteer lampen voor deze groep</span>
+				<span style="font-size:0.75rem;opacity:0.5;">{translate('Selecteer lampen voor deze groep', $selectedLanguageStore)}</span>
 			</div>
 			<div class="lg-picker-scroll" style="overflow-y:auto;scrollbar-width:none;padding:0.5rem 1rem;display:flex;flex-direction:column;gap:0.15rem;">
 				{#each (statusEntityIds ?? []) as entityId}
@@ -67,21 +68,21 @@
 						<input type="checkbox" checked={draftEntityIds.includes(entityId)} disabled={inOther}
 							onchange={() => onToggleEntity(entityId)} />
 						<span style="flex:1;font-size:0.85rem;">{getFriendlyName(entityId)}</span>
-						{#if inOther}<span style="font-size:0.68rem;opacity:0.5;">in andere groep</span>{/if}
+						{#if inOther}<span style="font-size:0.68rem;opacity:0.5;">{translate('in andere groep', $selectedLanguageStore)}</span>{/if}
 					</label>
 				{/each}
 				{#if (statusEntityIds ?? []).length === 0}
-					<div style="font-size:0.82rem;opacity:0.45;padding:1rem 0;text-align:center;">Voeg eerst lampen toe via de entiteitenlijst hierboven.</div>
+					<div style="font-size:0.82rem;opacity:0.45;padding:1rem 0;text-align:center;">{translate('Voeg eerst lampen toe via de entiteitenlijst hierboven.', $selectedLanguageStore)}</div>
 				{/if}
 			</div>
 			<div style="display:flex;gap:0.5rem;padding:0.75rem 1rem;border-top:1px solid rgba(255,255,255,0.07);">
 				<button type="button" onclick={onDelete}
 					style="height:2.2rem;padding:0 0.85rem;border-radius:0.4rem;border:0;background:rgba(225,82,65,0.15);color:#e15241;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;gap:0.3rem;">
-					Verwijder groep
+					{translate('Verwijder groep', $selectedLanguageStore)}
 				</button>
 				<button type="button" onclick={onSave}
 					style="flex:1;height:2.2rem;border-radius:0.4rem;border:0;background:rgba(79,113,168,0.45);color:#f5f5f5;cursor:pointer;font-size:0.85rem;font-weight:500;">
-					Opslaan
+					{translate('Opslaan', $selectedLanguageStore)}
 				</button>
 			</div>
 		</div>

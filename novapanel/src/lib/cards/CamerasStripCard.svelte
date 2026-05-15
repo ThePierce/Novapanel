@@ -4,6 +4,7 @@
 	import { getHaConnectionConfig } from '$lib/ha/entities-service-helpers';
 	import CameraPreviewImage from '$lib/cards/CameraPreviewImage.svelte';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		cameras?: CameraConfig[];
@@ -210,7 +211,7 @@
 	{#if cameraInfos.length === 0}
 		<div class="cameras-strip-empty">
 			<TablerIcon name="device-cctv-off" size={28} />
-			<div>Geen camera's geconfigureerd</div>
+			<div>{translate("Geen camera's geconfigureerd", $selectedLanguageStore)}</div>
 		</div>
 	{:else}
 		<div class="cameras-strip-scroll">
@@ -223,7 +224,7 @@
 							class="camera-tile camera-tile-large"
 							use:trackCameraVisibility={cam.config.entityId}
 							onclick={() => handleClick(cam)}
-							aria-label="Open {cam.name}"
+							aria-label={`${translate('Open', $selectedLanguageStore)} ${cam.name}`}
 							style:--camera-aspect={String(cameraAspect(cam.config.entityId))}
 						>
 							{#if isCameraVisible(cam.config.entityId)}
@@ -250,7 +251,7 @@
 									class="camera-tile camera-tile-small"
 									use:trackCameraVisibility={cam.config.entityId}
 									onclick={() => handleClick(cam)}
-									aria-label="Open {cam.name}"
+									aria-label={`${translate('Open', $selectedLanguageStore)} ${cam.name}`}
 									style:--camera-aspect={String(cameraAspect(cam.config.entityId))}
 								>
 									{#if isCameraVisible(cam.config.entityId)}

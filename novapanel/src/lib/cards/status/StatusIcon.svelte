@@ -62,7 +62,7 @@
 		style:--icon-url={`url('${iconSrc}')`}
 		aria-hidden="true"
 	></span>
-	<img class="mdi-probe" src={iconSrc} alt="" width="1" height="1" aria-hidden="true" on:error={() => (mdiLoadFailed = true)} />
+	<img class="mdi-probe" src={iconSrc} alt="" width="1" height="1" aria-hidden="true" onerror={() => (mdiLoadFailed = true)} />
 {:else}
 	<svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
 		{#if kind === 'shield' || kind === 'shield_off' || kind === 'shield_alert'}

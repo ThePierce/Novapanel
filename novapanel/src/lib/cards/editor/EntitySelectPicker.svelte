@@ -1,5 +1,6 @@
 <script lang="ts">
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type EntityOption = {
 		entityId: string;
@@ -19,12 +20,14 @@
 		label,
 		value = '',
 		options,
-		placeholder = 'Kies een entiteit',
-		searchPlaceholder = 'Zoek in entiteiten...',
+		placeholder = '',
+		searchPlaceholder = '',
 		onChange
 	}: Props = $props();
 
 	let searchQuery = $state('');
+	const effectivePlaceholder = $derived(placeholder || translate('Kies een entiteit', $selectedLanguageStore));
+	const effectiveSearchPlaceholder = $derived(searchPlaceholder || translate('Zoek in entiteiten...', $selectedLanguageStore));
 
 	function optionLabel(option: EntityOption) {
 		const name = option.friendlyName?.trim();
@@ -54,13 +57,13 @@
 		<TablerIcon name="search" size={14} />
 		<input
 			type="text"
-			placeholder={searchPlaceholder}
+			placeholder={effectiveSearchPlaceholder}
 			bind:value={searchQuery}
 		/>
 		{#if searchQuery}
 			<button
 				type="button"
-				aria-label="Zoekterm wissen"
+				aria-label={translate('Zoekterm wissen', $selectedLanguageStore)}
 				onclick={() => (searchQuery = '')}
 			>
 				<TablerIcon name="x" size={12} />
@@ -71,7 +74,7 @@
 		value={value ?? ''}
 		onchange={(event) => onChange((event.currentTarget as HTMLSelectElement).value)}
 	>
-		<option value="">{placeholder}</option>
+		<option value="">{effectivePlaceholder}</option>
 		{#each filteredOptions as option (option.entityId)}
 			<option value={option.entityId}>{optionLabel(option)}</option>
 		{/each}

@@ -1,10 +1,16 @@
 <script lang="ts">
 	import type { CardDraft } from '$lib/persistence/panel-state';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import CamerasStripCard from '$lib/cards/CamerasStripCard.svelte';
 	import EntityButtonCard from '$lib/cards/EntityButtonCard.svelte';
 	import LightButtonCard from '$lib/cards/LightButtonCard.svelte';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import LazyComponent from '$lib/lazy/LazyComponent.svelte';
+
+	let camerasStripCardPromise: Promise<typeof import('$lib/cards/CamerasStripCard.svelte')> | null =
+		null;
+	const loadCamerasStripCard = () =>
+		(camerasStripCardPromise ??= import('$lib/cards/CamerasStripCard.svelte'));
 
 	type GroupKey = 'lights' | 'devices' | 'media' | 'other';
 	type Group = {
@@ -64,12 +70,14 @@
 		return null;
 	}
 
+	function noopCameraClick() {}
+
 	const groups = $derived.by<Group[]>(() => {
 		const base: Group[] = [
-			{ key: 'lights', title: 'Lampen', icon: 'bulb', cards: [] },
-			{ key: 'devices', title: 'Apparaten', icon: 'plug', cards: [] },
-			{ key: 'media', title: 'Media Spelers', icon: 'device-speaker', cards: [] },
-			{ key: 'other', title: 'Overig', icon: 'layout-grid', cards: [] }
+			{ key: 'lights', title: translate('Lampen', $selectedLanguageStore), icon: 'bulb', cards: [] },
+			{ key: 'devices', title: translate('Apparaten', $selectedLanguageStore), icon: 'plug', cards: [] },
+			{ key: 'media', title: translate('Media Spelers', $selectedLanguageStore), icon: 'device-speaker', cards: [] },
+			{ key: 'other', title: translate('Overig', $selectedLanguageStore), icon: 'layout-grid', cards: [] }
 		];
 		const map = new Map(base.map((group) => [group.key, group]));
 		for (const card of cards ?? []) {
@@ -79,7 +87,7 @@
 	});
 </script>
 
-<button type="button" class="modal-overlay section-cards-overlay" onclick={onClose} aria-label="Sluiten"></button>
+<button type="button" class="modal-overlay section-cards-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
 <section class="settings-modal app-popup section-cards-modal np-detail" role="dialog" aria-modal="true" aria-label={title}>
 	<div class="np-detail-head" style="--np-tint: rgba(96,165,250,0.18); --np-color: #60a5fa;">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
@@ -93,7 +101,7 @@
 		{#if cards.length === 0}
 			<div class="section-cards-empty">
 				<TablerIcon name="layout-grid-off" size={24} />
-				<span>Geen kaarten in deze sectie</span>
+				<span>{translate('Geen kaarten in deze sectie', $selectedLanguageStore)}</span>
 			</div>
 		{:else}
 			{#each groups as group (group.key)}
@@ -111,10 +119,13 @@
 								class:button-card-item={card.cardType === 'light_button' || !!entityButtonKind}
 							>
 								{#if card.cardType === 'cameras_strip'}
-									<CamerasStripCard
-										cameras={card.cameras}
-										title={card.title}
-										onCameraClick={() => {}}
+									<LazyComponent
+										loader={loadCamerasStripCard}
+										props={{
+											cameras: card.cameras,
+											title: card.title,
+											onCameraClick: noopCameraClick
+										}}
 									/>
 								{:else if card.cardType === 'light_button'}
 									<LightButtonCard

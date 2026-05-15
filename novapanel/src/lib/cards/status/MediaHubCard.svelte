@@ -14,7 +14,7 @@
 	};
 
 	type Props = {
-		t: (key: TranslationKey) => string;
+		t: (key: TranslationKey | string) => string;
 		entities: HomeAssistantEntity[];
 		/** Volledige media_player lijst uit HA, ongefilterd door card-config. Nodig voor Spotify-controller. */
 		allEntities?: HomeAssistantEntity[];
@@ -864,40 +864,40 @@
 		// Bekende Spotify reason codes vertalen
 		switch (reason) {
 			case 'RATE_LIMITED':
-				return 'Spotify gaf "te veel verzoeken" terug. Novapanel pauzeert nu een minuut en probeert daarna automatisch opnieuw.';
+				return _t('Spotify gaf "te veel verzoeken" terug. Novapanel pauzeert nu een minuut en probeert daarna automatisch opnieuw.');
 			case 'NO_ACTIVE_DEVICE':
-				return 'Geen actief Spotify-apparaat. Kies eerst een apparaat in de "Spotify-apparaat"-lijst hierboven, of zet je Onkyo aan en schakel naar de Spotify-bron — dan verschijnt hij in de lijst.';
+				return _t('Geen actief Spotify-apparaat. Kies eerst een apparaat in de "Spotify-apparaat"-lijst hierboven, of zet je Onkyo aan en schakel naar de Spotify-bron — dan verschijnt hij in de lijst.');
 			case 'PREMIUM_REQUIRED':
-				return 'Voor afspelen via Spotify Connect heb je een Spotify Premium-abonnement nodig.';
+				return _t('Voor afspelen via Spotify Connect heb je een Spotify Premium-abonnement nodig.');
 			case 'DEVICE_NOT_CONTROLLABLE':
-				return 'Dit apparaat kan niet via Spotify Connect bediend worden.';
+				return _t('Dit apparaat kan niet via Spotify Connect bediend worden.');
 			case 'CONTEXT_DISALLOW':
-				return 'Deze actie is niet beschikbaar in de huidige afspeel-context.';
+				return _t('Deze actie is niet beschikbaar in de huidige afspeel-context.');
 			case 'ALREADY_PAUSED':
-				return 'Spotify staat al op pauze.';
+				return _t('Spotify staat al op pauze.');
 			case 'NOT_PAUSED':
-				return 'Spotify is al aan het afspelen.';
+				return _t('Spotify is al aan het afspelen.');
 			case 'UNKNOWN':
-				return 'Spotify gaf een onbekende fout terug. Probeer opnieuw of selecteer een ander apparaat.';
+				return _t('Spotify gaf een onbekende fout terug. Probeer opnieuw of selecteer een ander apparaat.');
 		}
 
 		// Status-codes
 		if (status === 401 || raw.includes('not_connected')) {
-			return 'Spotify-verbinding is verlopen. Open Settings en verbind opnieuw.';
+			return _t('Spotify-verbinding is verlopen. Open Settings en verbind opnieuw.');
 		}
 		if (status === 403) {
-			return 'Spotify heeft deze actie geweigerd. Mogelijk geen Premium of geen rechten op dit apparaat.';
+			return _t('Spotify heeft deze actie geweigerd. Mogelijk geen Premium of geen rechten op dit apparaat.');
 		}
 		if (status === 429) {
-			return 'Te veel verzoeken naar Spotify. Wacht een paar tellen en probeer opnieuw.';
+			return _t('Te veel verzoeken naar Spotify. Wacht een paar tellen en probeer opnieuw.');
 		}
 		if (status === 404 && /No active device/i.test(message)) {
-			return 'Geen actief Spotify-apparaat. Kies eerst een apparaat in de lijst hierboven.';
+			return _t('Geen actief Spotify-apparaat. Kies eerst een apparaat in de lijst hierboven.');
 		}
 
 		// Fallback: gebruik de message als die ergens leesbaar uit is gekomen
 		if (message) return `Spotify: ${message}`;
-		return 'Er ging iets mis bij Spotify. Probeer het opnieuw.';
+		return _t('Er ging iets mis bij Spotify. Probeer het opnieuw.');
 	}
 
 	async function spotifyCheckAuth() {
@@ -944,12 +944,12 @@
 		try {
 			const resp = await fetch(ingressPath('/api/spotify/auth/start'));
 			if (!resp.ok) {
-				spotifyError = `Spotify-auth start mislukte (${resp.status}).`;
+				spotifyError = `${_t('Spotify-auth start mislukte')} (${resp.status}).`;
 				return;
 			}
 			const data = await resp.json();
 			if (!data?.url) {
-				spotifyError = 'Geen auth-URL ontvangen.';
+				spotifyError = _t('Geen auth-URL ontvangen.');
 				return;
 			}
 			spotifyAuthWindow = window.open(data.url, '_blank', 'noopener=no');
@@ -1237,7 +1237,7 @@
 	async function activateBridge(bridge: OnkyoBridge): Promise<{ id: string } | null> {
 		const main = spotifyEntities[0];
 		if (!main) {
-			spotifyError = 'Geen Spotify-controller in Home Assistant gevonden om naar de Onkyo door te schakelen.';
+			spotifyError = _t('Geen Spotify-controller in Home Assistant gevonden om naar de Onkyo door te schakelen.');
 			return null;
 		}
 
@@ -1309,7 +1309,7 @@
 	 */
 	async function spotifyPlayUri(uri: string) {
 		if (!spotifyPlaybackTarget) {
-			spotifyError = 'Kies eerst een speelapparaat in de dropdown hierboven.';
+			spotifyError = _t('Kies eerst een speelapparaat in de dropdown hierboven.');
 			return;
 		}
 		try {
@@ -1384,7 +1384,7 @@
 					if (activated) onkyoDevice = { id: activated.id, name: 'Onkyo', type: '', isActive: true };
 				}
 				if (!onkyoDevice) {
-					spotifyError = 'Onkyo niet zichtbaar in Spotify Connect — speel eerst iets af om de bridge te activeren.';
+					spotifyError = _t('Onkyo niet zichtbaar in Spotify Connect — speel eerst iets af om de bridge te activeren.');
 					return;
 				}
 				await spJson('/api/spotify/queue', {
@@ -1551,14 +1551,14 @@
 				const payload = tuneInPlaybackTarget.slice('ma:'.length);
 				const [baseEntityId, maEntityId] = payload.split('|');
 				if (!baseEntityId || !maEntityId) {
-					tuneInError = 'Geen geldige MA-speler geselecteerd.';
+					tuneInError = _t('Geen geldige MA-speler geselecteerd.');
 					return;
 				}
 
 				// Vind de matching target uit onze derived (bevat zone-instructies voor Onkyo)
 				const target = maRadioHubs.find((h) => h.baseEntityId === baseEntityId && h.maEntityId === maEntityId);
 				if (!target) {
-					tuneInError = 'Geselecteerde speler niet meer beschikbaar.';
+					tuneInError = _t('Geselecteerde speler niet meer beschikbaar.');
 					return;
 				}
 
@@ -1622,7 +1622,7 @@
 			}
 
 			// === Geen target gekozen ===
-			tuneInError = 'Kies eerst een speler hierboven.';
+			tuneInError = _t('Kies eerst een speler hierboven.');
 		} catch (e) {
 			tuneInError = e instanceof Error ? e.message : String(e);
 		}
@@ -1826,7 +1826,7 @@
 		{:else}
 			<div class="now-empty">
 				<div class="now-empty-icon"><StatusIcon icon="mdi:speaker-off" size={48} /></div>
-				<div class="now-empty-text">Kies een speler in het tabblad Spelers</div>
+				<div class="now-empty-text">{_t('Kies een speler in het tabblad Spelers')}</div>
 			</div>
 		{/if}
 	</section>
@@ -1834,7 +1834,7 @@
 	<!-- =============== SECTION TABS =============== -->
 	<div class="section-tabs" role="tablist">
 		<button type="button" role="tab" class:active={activeSection === 'players'} onclick={() => (activeSection = 'players')}>
-			<StatusIcon icon="mdi:speaker-multiple" size={16} /> Spelers
+			<StatusIcon icon="mdi:speaker-multiple" size={16} /> {_t('Spelers')}
 		</button>
 		{#if spotifyConfigured}
 			<button type="button" role="tab" class:active={activeSection === 'spotify'} onclick={() => (activeSection = 'spotify')}>
@@ -1851,12 +1851,12 @@
 		<section class="hub-block spotify-block">
 			{#if !spotifyConnected}
 				<div class="block-empty">
-					<p>Verbind Novapanel met je Spotify-account om afspeellijsten en zoekresultaten te zien.</p>
+					<p>{_t('Verbind Novapanel met je Spotify-account om afspeellijsten en zoekresultaten te zien.')}</p>
 					<button type="button" class="spotify-connect-btn" onclick={spotifyConnectStart} disabled={spotifyAuthInProgress}>
-						{spotifyAuthInProgress ? 'Bezig met verbinden…' : 'Verbinden met Spotify'}
+						{spotifyAuthInProgress ? _t('Bezig met verbinden…') : _t('Verbinden met Spotify')}
 					</button>
 					{#if spotifyAuthInProgress}
-						<p class="block-hint">Voltooi de Spotify-koppeling in het nieuwe tabblad. Deze pagina pikt het automatisch op.</p>
+						<p class="block-hint">{_t('Voltooi de Spotify-koppeling in het nieuwe tabblad. Deze pagina pikt het automatisch op.')}</p>
 					{/if}
 				</div>
 			{:else}
@@ -1864,7 +1864,7 @@
 				     te realiseren zonder externe HA-integratie) -->
 				<div class="spotify-row">
 					<select class="spotify-target" value={spotifyPlaybackTarget} onchange={(e) => setSpotifyPlaybackTarget((e.currentTarget as HTMLSelectElement).value)}>
-						<option value="">Kies speelapparaat…</option>
+						<option value="">{_t('Kies speelapparaat…')}</option>
 						{#if onkyoBridges.length > 0}
 							<optgroup label="Onkyo zones">
 								{#each onkyoBridges as b (b.id)}
@@ -1892,7 +1892,7 @@
 					<div class="bridge-manager">
 						<div class="bridge-manager-title">Onkyo zones</div>
 						{#if onkyoBridges.length === 0}
-							<div class="bridge-empty">Nog geen zones. Voeg er hieronder een toe.</div>
+							<div class="bridge-empty">{_t('Nog geen zones. Voeg er hieronder een toe.')}</div>
 						{:else}
 							{#each onkyoBridges as b (b.id)}
 								<div class="bridge-row">
@@ -1906,17 +1906,16 @@
 												if (e.key === 'Enter') { e.preventDefault(); commitBridgeRename(); }
 												if (e.key === 'Escape') { e.preventDefault(); cancelBridgeRename(); }
 											}}
-											autofocus
 										/>
-										<button type="button" class="bridge-btn ok" onclick={commitBridgeRename} aria-label="Opslaan"><StatusIcon icon="mdi:check" size={14} /></button>
-										<button type="button" class="bridge-btn" onclick={cancelBridgeRename} aria-label="Annuleren"><StatusIcon icon="mdi:close" size={14} /></button>
+										<button type="button" class="bridge-btn ok" onclick={commitBridgeRename} aria-label={_t('save')}><StatusIcon icon="mdi:check" size={14} /></button>
+										<button type="button" class="bridge-btn" onclick={cancelBridgeRename} aria-label={_t('cancel')}><StatusIcon icon="mdi:close" size={14} /></button>
 									{:else}
 										<div class="bridge-info">
 											<div class="bridge-label">{b.label}</div>
 											<div class="bridge-sub">→ {b.zoneEntityId}</div>
 										</div>
-										<button type="button" class="bridge-btn ghost" onclick={() => startBridgeRename(b.id)} aria-label="Hernoemen" title="Hernoemen"><StatusIcon icon="mdi:pencil-outline" size={14} /></button>
-										<button type="button" class="bridge-btn ghost" onclick={() => removeBridge(b.id)} aria-label="Verwijderen" title="Verwijderen"><StatusIcon icon="mdi:trash-can-outline" size={14} /></button>
+										<button type="button" class="bridge-btn ghost" onclick={() => startBridgeRename(b.id)} aria-label={_t('Hernoemen')} title={_t('Hernoemen')}><StatusIcon icon="mdi:pencil-outline" size={14} /></button>
+										<button type="button" class="bridge-btn ghost" onclick={() => removeBridge(b.id)} aria-label={_t('Verwijderen')} title={_t('Verwijderen')}><StatusIcon icon="mdi:trash-can-outline" size={14} /></button>
 									{/if}
 								</div>
 							{/each}
@@ -1924,7 +1923,7 @@
 						{#if onkyoBridgeAddCandidates.length > 0}
 							<div class="bridge-add-row">
 								<select class="bridge-add-select" bind:value={bridgeAddCandidate}>
-									<option value="">+ Zone toevoegen…</option>
+									<option value="">{_t('+ Zone toevoegen…')}</option>
 									{#each onkyoBridgeAddCandidates as e (e.entityId)}
 										<option value={e.entityId}>{e.friendlyName ?? e.entityId}</option>
 									{/each}
@@ -1936,7 +1935,7 @@
 										addBridge(label, ent.entityId);
 									}
 									bridgeAddCandidate = '';
-								}}>Toevoegen</button>
+								}}>{_t('Toevoegen')}</button>
 							</div>
 						{/if}
 					</div>
@@ -2032,7 +2031,7 @@
 					<div class="sp-error">
 						<StatusIcon icon="mdi:information-outline" size={16} />
 						<span>{spotifyError}</span>
-						<button type="button" class="sp-error-close" onclick={() => (spotifyError = '')} aria-label="Sluiten">
+						<button type="button" class="sp-error-close" onclick={() => (spotifyError = '')} aria-label={_t('close')}>
 							<StatusIcon icon="mdi:close" size={14} />
 						</button>
 					</div>
@@ -2046,11 +2045,11 @@
 		<section class="hub-block">
 			<header class="block-head">
 				<StatusIcon icon="mdi:radio" size={18} />
-				<span>Radio favorieten</span>
-				<button type="button" class="block-add" onclick={() => (tuneInShowSearch = !tuneInShowSearch)} aria-label="Zoeken" title="Stations zoeken">
+				<span>{_t('Radio favorieten')}</span>
+				<button type="button" class="block-add" onclick={() => (tuneInShowSearch = !tuneInShowSearch)} aria-label={_t('Zoeken')} title={_t('Stations zoeken')}>
 					<StatusIcon icon={tuneInShowSearch ? 'mdi:close' : 'mdi:magnify'} size={14} />
 				</button>
-				<button type="button" class="block-add" onclick={openCustomRadioDialog} aria-label="Eigen URL" title="Eigen stream-URL toevoegen">
+				<button type="button" class="block-add" onclick={openCustomRadioDialog} aria-label={_t('Eigen URL')} title={_t('Eigen stream-URL toevoegen')}>
 					<StatusIcon icon="mdi:link-plus" size={14} />
 				</button>
 			</header>
@@ -2058,7 +2057,7 @@
 			{#if maAvailable}
 				<div class="spotify-row">
 					<select class="spotify-target" value={tuneInPlaybackTarget} onchange={(e) => setTuneInPlaybackTarget((e.currentTarget as HTMLSelectElement).value)}>
-						<option value="">Kies speelapparaat…</option>
+						<option value="">{_t('Kies speelapparaat…')}</option>
 						<optgroup label="Speakers (Music Assistant)">
 							{#each maRadioHubs as hub (hub.baseEntityId)}
 								<option value={`ma:${hub.baseEntityId}|${hub.maEntityId}`}>{hub.label}</option>
@@ -2107,7 +2106,7 @@
 									{#if isTuneInFavorite(r.url)}
 										<span class="tin-saved" title="Al in favorieten"><StatusIcon icon="mdi:star" size={14} /></span>
 									{:else}
-										<button type="button" class="tin-mini-btn" title="Aan favorieten toevoegen" onclick={() => addTuneInFavorite(r)}>
+										<button type="button" class="tin-mini-btn" title={_t('Aan favorieten toevoegen')} onclick={() => addTuneInFavorite(r)}>
 											<StatusIcon icon="mdi:star-plus" size={14} />
 										</button>
 									{/if}
@@ -2120,8 +2119,7 @@
 
 			{#if tuneInFavorites.length === 0}
 				<div class="block-empty">
-					Nog geen favorieten. Klik op het zoek-icon hierboven om stations te zoeken via TuneIn,
-					of op het link-icon om je eigen stream-URL toe te voegen.
+					{_t('Nog geen favorieten. Klik op het zoek-icon hierboven om stations te zoeken via TuneIn, of op het link-icon om je eigen stream-URL toe te voegen.')}
 				</div>
 			{:else}
 				<div class="sp-grid">
@@ -2141,7 +2139,7 @@
 							<div class="sp-art-meta">
 								<div class="sp-art-name" title={fav.text}>{fav.text}</div>
 							</div>
-							<button type="button" class="sp-art-remove" onclick={() => removeTuneInFavorite(fav.id)} aria-label="Verwijderen" title="Verwijderen uit favorieten">
+							<button type="button" class="sp-art-remove" onclick={() => removeTuneInFavorite(fav.id)} aria-label={_t('Verwijderen')} title={_t('Verwijderen uit favorieten')}>
 								<StatusIcon icon="mdi:close" size={12} />
 							</button>
 						</div>
@@ -2156,7 +2154,7 @@
 		<section class="hub-block">
 			<header class="block-head">
 				<StatusIcon icon="mdi:speaker-multiple" size={18} />
-				<span>Spelers</span>
+				<span>{_t('Spelers')}</span>
 			</header>
 			<div class="players-grid">
 				{#each sortedEntities as entity (entity.entityId)}
@@ -2181,10 +2179,11 @@
 							: readNowPlayingSummary(mediaEntity)}
 					{@const appName = (entity.attributes?.app_name as string | undefined) ?? ''}
 					{@const nowPlaying = (!baseSummary.primary && !baseSummary.secondary && on && appName)
-						? { primary: appName, secondary: 'Actief' }
+						? { primary: appName, secondary: _t('Actief') }
 						: baseSummary}
 					<div
 						class={`player-tile ${isActive ? 'active' : ''} ${!on ? 'off' : ''} ${isDragging ? 'dragging' : ''} ${isDragTarget ? 'drag-target' : ''} ${playing ? 'playing' : ''}`}
+						role="group"
 						ondragover={(e) => handleDragOver(e, entity.entityId)}
 						ondragleave={() => handleDragLeave(entity.entityId)}
 						ondrop={(e) => handleDrop(e, entity.entityId)}
@@ -2225,7 +2224,6 @@
 											if (e.key === 'Enter') { e.preventDefault(); commitRename(); }
 											if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
 										}}
-										autofocus
 									/>
 								{:else}
 									<div class="player-tile-name">
@@ -2238,9 +2236,9 @@
 											{#if nowPlaying.secondary}<div class="player-tile-now-secondary">{nowPlaying.secondary}</div>{/if}
 										</div>
 									{:else if on}
-										<div class="player-tile-status on">{readCurrentSource(entity) || 'Aan'}</div>
+										<div class="player-tile-status on">{readCurrentSource(entity) || _t('Aan')}</div>
 									{:else}
-										<div class="player-tile-status off">Uit</div>
+										<div class="player-tile-status off">{_t('Uit')}</div>
 									{/if}
 								{/if}
 							</div>
@@ -2249,26 +2247,26 @@
 						<!-- Quick controls — visible on hover or active -->
 						<div class="player-tile-controls">
 							{#if isRenaming}
-								<button type="button" class="ptile-btn ok" onclick={(__e) => { __e.stopPropagation(); commitRename(); }} aria-label="Opslaan"><StatusIcon icon="mdi:check" size={16} /></button>
-								<button type="button" class="ptile-btn" onclick={(__e) => { __e.stopPropagation(); cancelRename(); }} aria-label="Annuleren"><StatusIcon icon="mdi:close" size={16} /></button>
+								<button type="button" class="ptile-btn ok" onclick={(__e) => { __e.stopPropagation(); commitRename(); }} aria-label={_t('save')}><StatusIcon icon="mdi:check" size={16} /></button>
+								<button type="button" class="ptile-btn" onclick={(__e) => { __e.stopPropagation(); cancelRename(); }} aria-label={_t('cancel')}><StatusIcon icon="mdi:close" size={16} /></button>
 							{:else}
-								<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void prevTrack(entity))(__e); }} aria-label="Vorige"><StatusIcon icon="mdi:skip-previous" size={18} /></button>
-								<button type="button" class="ptile-btn ptile-btn-play" disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePlayPause(entity))(__e); }} aria-label={playing ? 'Pauzeren' : 'Afspelen'}><StatusIcon icon={!on ? 'mdi:power' : playing ? 'mdi:pause' : 'mdi:play'} size={20} /></button>
-								<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void nextTrack(entity))(__e); }} aria-label="Volgende"><StatusIcon icon="mdi:skip-next" size={18} /></button>
-								<button type="button" class={`ptile-btn small ${on ? 'on' : ''}`} disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePower(entity))(__e); }} aria-label="Aan/uit"><StatusIcon icon="mdi:power" size={14} /></button>
-								<button type="button" class="ptile-btn small ghost" onclick={(__e) => { __e.stopPropagation(); (() => startRename(entity))(__e); }} aria-label="Hernoemen" title="Naam wijzigen"><StatusIcon icon="mdi:pencil-outline" size={13} /></button>
-								<div
+								<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void prevTrack(entity))(__e); }} aria-label={_t('Vorige')}><StatusIcon icon="mdi:skip-previous" size={18} /></button>
+								<button type="button" class="ptile-btn ptile-btn-play" disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePlayPause(entity))(__e); }} aria-label={playing ? _t('Pauzeren') : _t('Afspelen')}><StatusIcon icon={!on ? 'mdi:power' : playing ? 'mdi:pause' : 'mdi:play'} size={20} /></button>
+								<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void nextTrack(entity))(__e); }} aria-label={_t('Volgende')}><StatusIcon icon="mdi:skip-next" size={18} /></button>
+								<button type="button" class={`ptile-btn small ${on ? 'on' : ''}`} disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePower(entity))(__e); }} aria-label={_t('Aan/uit')}><StatusIcon icon="mdi:power" size={14} /></button>
+								<button type="button" class="ptile-btn small ghost" onclick={(__e) => { __e.stopPropagation(); (() => startRename(entity))(__e); }} aria-label={_t('Hernoemen')} title={_t('Naam wijzigen')}><StatusIcon icon="mdi:pencil-outline" size={13} /></button>
+								<button
+									type="button"
 									class="ptile-drag"
-									role="button"
-									aria-label="Verslepen om te herordenen"
-									title="Sleep om volgorde te wijzigen"
+									aria-label={_t('Verslepen om te herordenen')}
+									title={_t('Sleep om volgorde te wijzigen')}
 									draggable="true"
 									ondragstart={(e) => handleDragStart(e, entity.entityId)}
 									ondragend={handleDragEnd}
 									onclick={(__e) => __e.stopPropagation()}
 								>
 									<StatusIcon icon="mdi:drag-horizontal-variant" size={14} />
-								</div>
+								</button>
 							{/if}
 						</div>
 					</div>
@@ -2280,20 +2278,20 @@
 
 <!-- =============== CUSTOM RADIO DIALOG =============== -->
 {#if customRadioOpen}
-	<button type="button" class="np-modal-overlay" onclick={() => (customRadioOpen = false)} aria-label="Sluiten"></button>
+	<button type="button" class="np-modal-overlay" onclick={() => (customRadioOpen = false)} aria-label={_t('close')}></button>
 	<div class="np-modal" role="dialog" aria-modal="true">
-		<h3>Eigen stream-URL toevoegen</h3>
+		<h3>{_t('Eigen stream-URL toevoegen')}</h3>
 		<label class="np-field">
-			<span>Naam</span>
+			<span>{_t('Naam')}</span>
 			<input type="text" value={customRadioName} oninput={(e) => (customRadioName = (e.currentTarget as HTMLInputElement).value)} placeholder="Bijv. NPO Radio 1" />
 		</label>
 		<label class="np-field">
-			<span>Stream-URL</span>
+			<span>{_t('Stream-URL')}</span>
 			<input type="url" value={customRadioUrl} oninput={(e) => (customRadioUrl = (e.currentTarget as HTMLInputElement).value)} placeholder="https://icecast.omroep.nl/radio1-bb-mp3" />
 		</label>
 		<div class="np-modal-actions">
-			<button type="button" class="np-btn-secondary" onclick={() => (customRadioOpen = false)}>Annuleren</button>
-			<button type="button" class="np-btn-primary" onclick={saveCustomRadio} disabled={!customRadioName.trim() || !customRadioUrl.trim()}>Opslaan</button>
+			<button type="button" class="np-btn-secondary" onclick={() => (customRadioOpen = false)}>{_t('cancel')}</button>
+			<button type="button" class="np-btn-primary" onclick={saveCustomRadio} disabled={!customRadioName.trim() || !customRadioUrl.trim()}>{_t('save')}</button>
 		</div>
 	</div>
 {/if}

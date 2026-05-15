@@ -5,6 +5,7 @@
 	import { callHaService } from '$lib/ha/service-call';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
+	import { selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
 	type Props = {
 		kind: EntityButtonKind;
@@ -89,9 +90,9 @@
 
 	function fallbackName(value: EntityButtonKind) {
 		if (value === 'climate') return 'Climate';
-		if (value === 'cover') return 'Gordijn';
-		if (value === 'vacuum') return 'Stofzuiger';
-		return 'Media player';
+		if (value === 'cover') return translate('Gordijn', $selectedLanguageStore);
+		if (value === 'vacuum') return translate('Stofzuiger', $selectedLanguageStore);
+		return translate('Media player', $selectedLanguageStore);
 	}
 
 	function fallbackIcon(value: EntityButtonKind) {
@@ -135,23 +136,11 @@
 	}
 
 	function readableState(value: string) {
-		if (value === 'off') return 'Uit';
-		if (value === 'on') return 'Aan';
-		if (value === 'open') return 'Open';
-		if (value === 'closed') return 'Dicht';
-		if (value === 'opening') return 'Opent';
-		if (value === 'closing') return 'Sluit';
-		if (value === 'playing') return 'Speelt';
-		if (value === 'paused') return 'Gepauzeerd';
-		if (value === 'idle') return 'Idle';
-		if (value === 'docked') return 'Docked';
-		if (value === 'cleaning') return 'Schoonmaken';
-		if (value === 'returning') return 'Terug naar dock';
-		return value || 'Onbekend';
+		return translateState(value, $selectedLanguageStore);
 	}
 
 	function summaryLabel() {
-		if (isUnavailable) return 'Niet beschikbaar';
+		if (isUnavailable) return translate('Niet beschikbaar', $selectedLanguageStore);
 		if (kind === 'climate') {
 			if (currentTemperature !== null) return `${readableState(state)} · ${currentTemperature}°`;
 			return readableState(state);
@@ -174,7 +163,7 @@
 		try {
 			await callHaService(domain, service, { entity_id: entityId, ...data });
 		} catch (err) {
-			error = err instanceof Error && err.message ? err.message : 'Actie mislukt';
+			error = err instanceof Error && err.message ? err.message : translate('Actie mislukt', $selectedLanguageStore);
 		} finally {
 			busy = false;
 		}
@@ -259,7 +248,7 @@
 	}
 </script>
 
-<button type="button" class="modal-overlay entity-modal-overlay" onclick={onClose} aria-label="Sluiten"></button>
+<button type="button" class="modal-overlay entity-modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
 <section
 	class="settings-modal app-popup entity-detail-modal np-detail"
 	role="dialog"
@@ -280,16 +269,16 @@
 		{#if !entity}
 			<div class="entity-empty">
 				<StatusIcon icon={cardIcon} size={46} />
-				<span>Geen entiteit gekoppeld</span>
+				<span>{translate('Geen entiteit gekoppeld', $selectedLanguageStore)}</span>
 			</div>
 		{:else if kind === 'climate'}
 			<div class="climate-temp-readout">
 				<span>{currentTemperature !== null ? `${currentTemperature}°` : '--°'}</span>
-				<small>Nu</small>
+				<small>{translate('Nu', $selectedLanguageStore)}</small>
 			</div>
 			<label class="entity-control">
 				<span class="control-head">
-					<span>Doeltemperatuur</span>
+					<span>{translate('Doeltemperatuur', $selectedLanguageStore)}</span>
 					<strong>{temperatureDraft}°</strong>
 				</span>
 				<input
@@ -307,7 +296,7 @@
 			</label>
 			{#if hvacModes.length > 0}
 				<label class="entity-control">
-					<span class="control-head"><span>Modus</span></span>
+					<span class="control-head"><span>{translate('Modus', $selectedLanguageStore)}</span></span>
 					<select
 						value={state}
 						onchange={(event) => void callService('climate', 'set_hvac_mode', { hvac_mode: (event.currentTarget as HTMLSelectElement).value })}
@@ -321,13 +310,13 @@
 			{/if}
 			{#if presetModes.length > 0}
 				<label class="entity-control">
-					<span class="control-head"><span>Preset</span></span>
+					<span class="control-head"><span>{translate('Preset', $selectedLanguageStore)}</span></span>
 					<select
 						value={stringAttribute(entity, 'preset_mode')}
 						onchange={(event) => void callService('climate', 'set_preset_mode', { preset_mode: (event.currentTarget as HTMLSelectElement).value })}
 						disabled={busy || isUnavailable}
 					>
-						<option value="">Geen preset</option>
+						<option value="">{translate('Geen preset', $selectedLanguageStore)}</option>
 						{#each presetModes as preset}
 							<option value={preset}>{preset}</option>
 						{/each}
@@ -335,8 +324,8 @@
 				</label>
 			{/if}
 			<div class="action-row">
-				<button type="button" class="np-btn ghost" onclick={() => void callService('climate', 'turn_off')} disabled={busy || isUnavailable}>Uit</button>
-				<button type="button" class="np-btn primary" onclick={() => void callService('climate', 'turn_on')} disabled={busy || isUnavailable}>Aan</button>
+				<button type="button" class="np-btn ghost" onclick={() => void callService('climate', 'turn_off')} disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button>
+				<button type="button" class="np-btn primary" onclick={() => void callService('climate', 'turn_on')} disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button>
 			</div>
 		{:else if kind === 'cover'}
 			<div class="cover-position-wrap">
@@ -344,7 +333,7 @@
 					type="button"
 					class="cover-position-pill"
 					class:is-empty={positionDraft <= 0}
-					aria-label={`Gordijn ${Math.round(positionDraft)} procent open`}
+					aria-label={`${translate('Gordijn', $selectedLanguageStore)} ${Math.round(positionDraft)} ${translate('procent', $selectedLanguageStore)} ${translate('Open', $selectedLanguageStore)}`}
 					style={`--cover-position-pct: ${Math.round(positionDraft)}%;`}
 					disabled={busy || isUnavailable}
 					onpointerdown={startPositionDrag}
@@ -364,7 +353,7 @@
 			<div class="action-grid">
 				<button type="button" class="control-action" onclick={() => void callService('cover', 'open_cover')} disabled={busy || isUnavailable}>
 					<TablerIcon name="arrow-up" size={16} />
-					Open
+					{translate('Open', $selectedLanguageStore)}
 				</button>
 				<button type="button" class="control-action" onclick={() => void callService('cover', 'stop_cover')} disabled={busy || isUnavailable}>
 					<TablerIcon name="player-stop" size={16} />
@@ -372,17 +361,17 @@
 				</button>
 				<button type="button" class="control-action" onclick={() => void callService('cover', 'close_cover')} disabled={busy || isUnavailable}>
 					<TablerIcon name="arrow-down" size={16} />
-					Dicht
+					{translate('Dicht', $selectedLanguageStore)}
 				</button>
 			</div>
 		{:else if kind === 'vacuum'}
 			<div class="vacuum-status">
 				<div>
-					<span>Status</span>
+					<span>{translate('Status', $selectedLanguageStore)}</span>
 					<strong>{readableState(state)}</strong>
 				</div>
 				<div>
-					<span>Batterij</span>
+					<span>{translate('Batterij', $selectedLanguageStore)}</span>
 					<strong>{batteryLevel !== null ? `${Math.round(batteryLevel)}%` : '--'}</strong>
 				</div>
 			</div>
@@ -393,7 +382,7 @@
 				</button>
 				<button type="button" class="control-action" onclick={() => void callService('vacuum', 'pause')} disabled={busy || isUnavailable}>
 					<TablerIcon name="player-pause" size={16} />
-					Pauze
+					{translate('Pauze', $selectedLanguageStore)}
 				</button>
 				<button type="button" class="control-action" onclick={() => void callService('vacuum', 'return_to_base')} disabled={busy || isUnavailable}>
 					<TablerIcon name="home" size={16} />
@@ -401,12 +390,12 @@
 				</button>
 				<button type="button" class="control-action" onclick={() => void callService('vacuum', 'locate')} disabled={busy || isUnavailable}>
 					<TablerIcon name="radar" size={16} />
-					Zoek
+					{translate('Zoek', $selectedLanguageStore)}
 				</button>
 			</div>
 			{#if fanSpeeds.length > 0}
 				<label class="entity-control">
-					<span class="control-head"><span>Zuigkracht</span></span>
+					<span class="control-head"><span>{translate('Zuigkracht', $selectedLanguageStore)}</span></span>
 					<select
 						value={currentFanSpeed}
 						onchange={(event) => void callService('vacuum', 'set_fan_speed', { fan_speed: (event.currentTarget as HTMLSelectElement).value })}
@@ -425,23 +414,23 @@
 				</div>
 				<div>
 					<strong>{mediaTitle || readableState(state)}</strong>
-					<span>{mediaArtist || currentSource || 'Media player'}</span>
+					<span>{mediaArtist || currentSource || translate('Media player', $selectedLanguageStore)}</span>
 				</div>
 			</div>
 			<div class="media-controls">
-				<button type="button" class="round-action" onclick={() => void callService('media_player', 'media_previous_track')} disabled={busy || isUnavailable} aria-label="Vorige">
+				<button type="button" class="round-action" onclick={() => void callService('media_player', 'media_previous_track')} disabled={busy || isUnavailable} aria-label={translate('Vorige', $selectedLanguageStore)}>
 					<TablerIcon name="player-skip-back" size={17} />
 				</button>
-				<button type="button" class="round-action primary" onclick={() => void callService('media_player', state === 'playing' ? 'media_pause' : 'media_play')} disabled={busy || isUnavailable} aria-label="Afspelen of pauzeren">
+				<button type="button" class="round-action primary" onclick={() => void callService('media_player', state === 'playing' ? 'media_pause' : 'media_play')} disabled={busy || isUnavailable} aria-label={translate('Afspelen of pauzeren', $selectedLanguageStore)}>
 					<TablerIcon name={state === 'playing' ? 'player-pause' : 'player-play'} size={20} />
 				</button>
-				<button type="button" class="round-action" onclick={() => void callService('media_player', 'media_next_track')} disabled={busy || isUnavailable} aria-label="Volgende">
+				<button type="button" class="round-action" onclick={() => void callService('media_player', 'media_next_track')} disabled={busy || isUnavailable} aria-label={translate('Volgende', $selectedLanguageStore)}>
 					<TablerIcon name="player-skip-forward" size={17} />
 				</button>
 			</div>
 			<label class="entity-control">
 				<span class="control-head">
-					<span>Volume</span>
+					<span>{translate('volume', $selectedLanguageStore)}</span>
 					<strong>{Math.round(volumeDraft)}%</strong>
 				</span>
 				<input
@@ -462,12 +451,12 @@
 					{isMuted ? 'Unmute' : 'Mute'}
 				</button>
 				<button type="button" class="np-btn ghost" onclick={() => void callService('media_player', state === 'off' ? 'turn_on' : 'turn_off')} disabled={busy || isUnavailable}>
-					{state === 'off' ? 'Aan' : 'Uit'}
+					{state === 'off' ? translate('Aan', $selectedLanguageStore) : translate('Uit', $selectedLanguageStore)}
 				</button>
 			</div>
 			{#if sources.length > 0}
 				<label class="entity-control">
-					<span class="control-head"><span>Bron</span></span>
+					<span class="control-head"><span>{translate('Bron', $selectedLanguageStore)}</span></span>
 					<select
 						value={currentSource}
 						onchange={(event) => void callService('media_player', 'select_source', { source: (event.currentTarget as HTMLSelectElement).value })}

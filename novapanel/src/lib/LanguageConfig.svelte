@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { languageOptions, translations, type LanguageCode } from '$lib/i18n';
+	import { isLanguageCode, languageOptions, loadStoredLanguage, setLanguage, type LanguageCode } from '$lib/i18n';
 
 	type Props = {
 		selectedLanguage?: LanguageCode;
@@ -20,13 +20,13 @@
 	function handleLanguageChange(event: Event) {
 		const target = event.currentTarget as HTMLSelectElement;
 		selectedLanguage = target.value as LanguageCode;
-		localStorage.setItem('novapanel.language', selectedLanguage);
+		setLanguage(selectedLanguage);
 		emitChange();
 	}
 
 	onMount(() => {
-		const savedLanguage = localStorage.getItem('novapanel.language') as LanguageCode | null;
-		if (savedLanguage && savedLanguage in translations) {
+		const savedLanguage = loadStoredLanguage(selectedLanguage);
+		if (isLanguageCode(savedLanguage)) {
 			selectedLanguage = savedLanguage;
 			emitChange();
 		}

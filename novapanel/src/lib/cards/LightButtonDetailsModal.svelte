@@ -3,6 +3,7 @@
 	import { entityStore } from '$lib/ha/entities-store';
 	import { callHaService } from '$lib/ha/service-call';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		title?: string;
@@ -31,7 +32,7 @@
 	const displayName = $derived(
 		(title && title.trim().length > 0)
 			? title.trim()
-			: entity?.friendlyName ?? entityId ?? 'Lamp'
+			: entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
 	);
 	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : 'mdi:lightbulb-outline');
 	const brightnessPct = $derived(
@@ -78,7 +79,13 @@
 			: Math.round((minKelvin + maxKelvin) / 2)
 	);
 	const stateLabel = $derived(
-		isUnavailable ? 'Niet beschikbaar' : supportsBrightness && isOn ? `${brightnessPct}%` : isOn ? 'Aan' : 'Uit'
+		isUnavailable
+			? translate('Niet beschikbaar', $selectedLanguageStore)
+			: supportsBrightness && isOn
+				? `${brightnessPct}%`
+				: isOn
+					? translate('Aan', $selectedLanguageStore)
+					: translate('Uit', $selectedLanguageStore)
 	);
 	const glowColor = $derived(isOn ? 'rgba(255,211,56,0.22)' : 'rgba(141,152,170,0.16)');
 	const sliderFill = $derived((isOn || draggingBrightness) ? brightnessDraft : 0);
@@ -116,7 +123,7 @@
 		try {
 			await callHaService(serviceDomain, service, serviceData(data));
 		} catch (err) {
-			error = err instanceof Error && err.message ? err.message : 'Actie mislukt';
+			error = err instanceof Error && err.message ? err.message : translate('Actie mislukt', $selectedLanguageStore);
 		} finally {
 			busy = false;
 		}
@@ -191,7 +198,7 @@
 	}
 </script>
 
-<button type="button" class="modal-overlay light-modal-overlay" onclick={onClose} aria-label="Sluiten"></button>
+<button type="button" class="modal-overlay light-modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
 <section
 	class="settings-modal app-popup light-detail-modal np-detail"
 	role="dialog"
@@ -212,7 +219,7 @@
 		{#if !entity}
 			<div class="light-empty">
 				<StatusIcon icon={cardIcon} size={46} />
-				<span>Geen lamp gekoppeld</span>
+				<span>{translate('Geen lamp gekoppeld', $selectedLanguageStore)}</span>
 			</div>
 		{:else}
 			{#if supportsBrightness}
@@ -220,7 +227,7 @@
 					type="button"
 					class="homekit-brightness"
 					class:is-off={!isOn || sliderFill <= 0}
-					aria-label={`Helderheid ${Math.round(brightnessDraft)} procent`}
+					aria-label={`${translate('Helderheid', $selectedLanguageStore)} ${Math.round(brightnessDraft)} ${translate('procent', $selectedLanguageStore)}`}
 					disabled={busy || isUnavailable}
 					onpointerdown={startBrightnessDrag}
 					onpointermove={moveBrightnessDrag}
@@ -238,7 +245,7 @@
 					class="homekit-brightness homekit-toggle"
 					class:is-on={isOn}
 					class:is-off={!isOn}
-					aria-label={`${displayName} ${isOn ? 'uitzetten' : 'aanzetten'}`}
+					aria-label={`${displayName} ${isOn ? translate('uitzetten', $selectedLanguageStore) : translate('aanzetten', $selectedLanguageStore)}`}
 					disabled={busy || isUnavailable}
 					onclick={togglePower}
 				>
@@ -250,14 +257,14 @@
 			{/if}
 
 			{#if supportsColor}
-				<div class="color-dock" aria-label="Kleuren">
+				<div class="color-dock" aria-label={translate('Kleuren', $selectedLanguageStore)}>
 					<div class="color-grid">
 						{#each swatches as swatch}
 							<button
 								type="button"
 								class="color-dot"
 								style={`--swatch: ${swatch.color};`}
-								aria-label={swatch.label}
+								aria-label={translate(swatch.label, $selectedLanguageStore)}
 								onclick={() => setColor(swatch.color)}
 								disabled={busy || isUnavailable}
 							></button>
@@ -265,7 +272,7 @@
 						<button
 							type="button"
 							class="color-dot color-wheel"
-							aria-label="Helder wit"
+							aria-label={translate('Helder wit', $selectedLanguageStore)}
 							onclick={() => setColor('#ffffff')}
 							disabled={busy || isUnavailable}
 						></button>
@@ -274,15 +281,15 @@
 			{/if}
 
 			{#if supportsTemperature}
-				<div class="temperature-dock" aria-label="Wittemperatuur">
+				<div class="temperature-dock" aria-label={translate('Wittemperatuur', $selectedLanguageStore)}>
 					<button type="button" onclick={() => setTemperature(minKelvin)} disabled={busy || isUnavailable}>
-						Warm
+						{translate('Warm', $selectedLanguageStore)}
 					</button>
 					<button type="button" onclick={() => setTemperature(Math.round((minKelvin + maxKelvin) / 2))} disabled={busy || isUnavailable}>
-						Neutraal
+						{translate('Neutraal', $selectedLanguageStore)}
 					</button>
 					<button type="button" onclick={() => setTemperature(maxKelvin)} disabled={busy || isUnavailable}>
-						Koel
+						{translate('Koel', $selectedLanguageStore)}
 					</button>
 				</div>
 			{/if}

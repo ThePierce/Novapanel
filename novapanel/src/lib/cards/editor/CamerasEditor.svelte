@@ -4,6 +4,7 @@
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { filteredEntities } from '$lib/ha/entities-store';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		cameras?: CameraConfig[];
@@ -60,9 +61,9 @@
 	}
 
 	const status = $derived((() => {
-		if (cameras.length === 0) return { status: 'required' as const, label: "geen camera's" };
+		if (cameras.length === 0) return { status: 'required' as const, label: translate("geen camera's", $selectedLanguageStore) };
 		const large = cameras.filter((c) => c.isLarge).length;
-		return { status: 'filled' as const, label: `${cameras.length} camera${cameras.length === 1 ? '' : "'s"} · ${large} groot` };
+		return { status: 'filled' as const, label: `${cameras.length} ${translate("Camera's", $selectedLanguageStore).toLowerCase()} · ${large} ${translate('groot', $selectedLanguageStore)}` };
 	})());
 
 	const availableEntities = $derived(
@@ -78,12 +79,12 @@
 	});
 </script>
 
-<EditorSection title="Camera's" icon="device-cctv" tone="blue" status={status.status} statusLabel={status.label} open>
+<EditorSection title={translate("Camera's", $selectedLanguageStore)} icon="device-cctv" tone="blue" status={status.status} statusLabel={status.label} open>
 	<div class="camera-editor-scroll" bind:this={cameraScrollEl}>
-		<div class="np-help">Voeg camera-entiteiten toe en bepaal welke groot worden weergegeven (Apple Home stijl). Zet Advanced Camera Card aan voor de HA custom-card; extra YAML is optioneel.</div>
+		<div class="np-help">{translate("Voeg camera-entiteiten toe en bepaal welke groot worden weergegeven (Apple Home stijl). Zet Advanced Camera Card aan voor de HA custom-card; extra YAML is optioneel.", $selectedLanguageStore)}</div>
 
 		{#if cameras.length === 0}
-			<div class="cameras-empty">Nog geen camera's geselecteerd.</div>
+			<div class="cameras-empty">{translate("Nog geen camera's geselecteerd.", $selectedLanguageStore)}</div>
 		{:else}
 			<div class="cameras-list">
 				{#each cameras as cam, idx (cam.entityId)}
@@ -98,20 +99,20 @@
 								</div>
 							</div>
 							<div class="camera-item-order">
-								<button type="button" class="np-mini-btn ghost" disabled={idx === 0} onclick={() => moveCamera(idx, -1)} aria-label="Omhoog">
+								<button type="button" class="np-mini-btn ghost" disabled={idx === 0} onclick={() => moveCamera(idx, -1)} aria-label={translate('Omhoog', $selectedLanguageStore)}>
 									<TablerIcon name="arrow-up" size={13} />
 								</button>
-								<button type="button" class="np-mini-btn ghost" disabled={idx === cameras.length - 1} onclick={() => moveCamera(idx, 1)} aria-label="Omlaag">
+								<button type="button" class="np-mini-btn ghost" disabled={idx === cameras.length - 1} onclick={() => moveCamera(idx, 1)} aria-label={translate('Omlaag', $selectedLanguageStore)}>
 									<TablerIcon name="arrow-down" size={13} />
 								</button>
-								<button type="button" class="np-mini-btn ghost danger" onclick={() => removeCamera(idx)} aria-label="Verwijderen">
+								<button type="button" class="np-mini-btn ghost danger" onclick={() => removeCamera(idx)} aria-label={translate('Verwijderen', $selectedLanguageStore)}>
 									<TablerIcon name="trash" size={13} />
 								</button>
 							</div>
 						</div>
 						<div class="camera-item-fields">
 							<label class="np-field">
-								<span class="np-label">Naam <span class="np-hint">(optioneel)</span></span>
+								<span class="np-label">{translate('Naam', $selectedLanguageStore)} <span class="np-hint">({translate('optioneel', $selectedLanguageStore)})</span></span>
 								<input
 									type="text"
 									class="np-input"
@@ -129,7 +130,7 @@
 									/>
 									<span class="camera-toggle-label">
 										<TablerIcon name="layout-grid" size={13} />
-										Groot weergeven
+										{translate('Groot weergeven', $selectedLanguageStore)}
 									</span>
 								</label>
 								<label class="camera-toggle">
@@ -165,7 +166,7 @@
 		<div class="cameras-add">
 			<button type="button" class="np-mini-btn primary" onclick={() => (pickerOpen = !pickerOpen)} disabled={availableEntities.length === 0}>
 				<TablerIcon name="plus" size={13} />
-				Camera toevoegen ({availableEntities.length})
+				{translate('Camera toevoegen', $selectedLanguageStore)} ({availableEntities.length})
 			</button>
 			{#if pickerOpen}
 				<div class="cameras-picker">
@@ -173,13 +174,13 @@
 						<TablerIcon name="search" size={14} />
 						<input
 							type="text"
-							placeholder="Zoek in entiteiten..."
+							placeholder={translate('Zoek in entiteiten...', $selectedLanguageStore)}
 							bind:value={cameraSearchQuery}
 						/>
 						{#if cameraSearchQuery}
 							<button
 								type="button"
-								aria-label="Zoekterm wissen"
+								aria-label={translate('Zoekterm wissen', $selectedLanguageStore)}
 								onclick={() => (cameraSearchQuery = '')}
 							>
 								<TablerIcon name="x" size={12} />
@@ -187,9 +188,9 @@
 						{/if}
 					</div>
 					{#if availableEntities.length === 0}
-						<div class="cameras-empty-small">Alle camera-entiteiten zijn al toegevoegd.</div>
+						<div class="cameras-empty-small">{translate('Alle camera-entiteiten zijn al toegevoegd.', $selectedLanguageStore)}</div>
 					{:else if filteredAvailableEntities.length === 0}
-						<div class="cameras-empty-small">Geen camera-entiteiten gevonden.</div>
+						<div class="cameras-empty-small">{translate('Geen camera-entiteiten gevonden.', $selectedLanguageStore)}</div>
 					{:else}
 						{#each filteredAvailableEntities as ent (ent.entityId)}
 							<button

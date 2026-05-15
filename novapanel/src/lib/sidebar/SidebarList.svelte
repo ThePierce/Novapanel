@@ -37,6 +37,7 @@
 
 <section
 	class="sidebar-list"
+	role="list"
 	ondragover={(event) => editable && onDragOverValid?.(event)}
 	ondrop={(event) => {
 		event.stopPropagation();
@@ -46,6 +47,7 @@
 	{#each visibleItems as item (item.id)}
 		<div
 			class="sidebar-drop-wrap"
+			role="listitem"
 			class:drop-before={activeDropTargetId === item.id && activeDropPlacement === 'before'}
 			class:drop-after={activeDropTargetId === item.id && activeDropPlacement === 'after'}
 			ondragover={(event) => {

@@ -124,7 +124,7 @@
 							alt=""
 							width="34"
 							height="34"
-							on:error={() => (iconFailed = { ...iconFailed, [idx]: true })}
+							onerror={() => (iconFailed = { ...iconFailed, [idx]: true })}
 						/>
 					{:else}
 						<WeatherIcon condition={cond} night={belowHorizon} size={34} />

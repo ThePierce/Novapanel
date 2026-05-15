@@ -7,6 +7,7 @@
 		type StatusCardKind
 	} from '$lib/cards/status/status-engine';
 	import type { LightGroup } from '$lib/cards/light-groups';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		kind: StatusCardKind;
@@ -76,19 +77,19 @@
 		return result.relevant.length;
 	});
 
-	const summary = $derived(buildStatusSummary({ kind, activeCount, activeEntities: result.active }));
+	const summary = $derived(buildStatusSummary({ kind, activeCount, activeEntities: result.active, language: $selectedLanguageStore }));
 	const displayName = $derived(
 		name && name.trim().length > 0
 			? name
 			: kind === 'lights_status'
-				? 'Lampen'
+				? translate('Lampen', $selectedLanguageStore)
 				: kind === 'openings_status'
-					? 'Deuren & Ramen'
+					? translate('cardTypeOpeningsStatus', $selectedLanguageStore)
 					: kind === 'devices_status'
-						? 'Apparaten'
+						? translate('Apparaten', $selectedLanguageStore)
 						: kind === 'media_players_status'
-							? 'Media spelers'
-							: 'Bereikbaarheid'
+							? translate('Media Spelers', $selectedLanguageStore)
+							: translate('cardTypeAvailabilityStatus', $selectedLanguageStore)
 	);
 	const iconTone = $derived(
 		kind === 'lights_status'

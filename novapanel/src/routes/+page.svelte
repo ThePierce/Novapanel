@@ -6,7 +6,7 @@
 		createEditHistory,
 		type EditHistoryState
 	} from '$lib/edit-mode/history';
-	import { translations, type LanguageCode, type TranslationKey } from '$lib/i18n';
+	import { isLanguageCode, setLanguage, translate, type LanguageCode, type TranslationKey } from '$lib/i18n';
 	import {
 		clearPersistedPanelStateForResync,
 		loadConfiguration,
@@ -27,31 +27,15 @@
 	import { cardCatalog } from '$lib/cards/store';
 	import { getLocalizedCardLabel as getLocalizedCardLabelHelper } from '$lib/cards/label';
 	import ClockCard from '$lib/cards/ClockCard.svelte';
-	import CardLibraryModal from '$lib/cards/library/CardLibraryModal.svelte';
-	import CardEditorModal from '$lib/cards/editor/CardEditorModal.svelte';
-	import WeatherDetailsModal from '$lib/cards/WeatherDetailsModal.svelte';
-	import WeatherForecastDetailsModal from '$lib/cards/WeatherForecastDetailsModal.svelte';
-	import AlarmPanelDetailsModal from '$lib/cards/AlarmPanelDetailsModal.svelte';
-	import EnergyDetailsModal from '$lib/cards/EnergyDetailsModal.svelte';
-	import CamerasStripCard from '$lib/cards/CamerasStripCard.svelte';
-	import CameraDetailsModal from '$lib/cards/CameraDetailsModal.svelte';
-	import WeekCalendarCard from '$lib/cards/WeekCalendarCard.svelte';
 	import WelcomeCard from '$lib/cards/WelcomeCard.svelte';
 	import LightButtonCard from '$lib/cards/LightButtonCard.svelte';
-	import LightButtonDetailsModal from '$lib/cards/LightButtonDetailsModal.svelte';
 	import EntityButtonCard from '$lib/cards/EntityButtonCard.svelte';
-	import EntityButtonDetailsModal from '$lib/cards/EntityButtonDetailsModal.svelte';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import EnergyAnchorEditor from '$lib/cards/EnergyAnchorEditor.svelte';
-	import LightGroupPickerOverlay from '$lib/cards/LightGroupPickerOverlay.svelte';
-	import StatusDetailsModal from '$lib/cards/status/StatusDetailsModal.svelte';
 	import { filterEntitiesForStatusCard, type StatusCardKind } from '$lib/cards/status/status-engine';
 	import TopDrawer from '$lib/layout/TopDrawer.svelte';
-	import SectionEditorModal from '$lib/sections/SectionEditorModal.svelte';
-	import SectionCardsModal from '$lib/sections/SectionCardsModal.svelte';
-	import SettingsModal from '$lib/settings/SettingsModal.svelte';
 	import SidebarShell from '$lib/sidebar/SidebarShell.svelte';
+	import LazyComponent from '$lib/lazy/LazyComponent.svelte';
 	import { entityStore } from '$lib/ha/entities-store';
 	import { openHASidebar } from '$lib/ha/sidebar-toggle';
 	import {
@@ -81,6 +65,31 @@
 	import { cloneForPersistence, safeCompareJson } from '$lib/panel/page-state-utils';
 	import { countViewCards, createDebugLogger, PAGE_DEBUG_BUILD, setupGlobalDebug } from '$lib/panel/page-debug';
 	import './+page.css';
+
+	function cachedImport<T>(loader: () => Promise<T>): () => Promise<T> {
+		let promise: Promise<T> | null = null;
+		return () => (promise ??= loader());
+	}
+
+	const loadCardLibraryModal = cachedImport(() => import('$lib/cards/library/CardLibraryModal.svelte'));
+	const loadCardEditorModal = cachedImport(() => import('$lib/cards/editor/CardEditorModal.svelte'));
+	const loadWeatherDetailsModal = cachedImport(() => import('$lib/cards/WeatherDetailsModal.svelte'));
+	const loadWeatherForecastDetailsModal = cachedImport(() =>
+		import('$lib/cards/WeatherForecastDetailsModal.svelte')
+	);
+	const loadAlarmPanelDetailsModal = cachedImport(() => import('$lib/cards/AlarmPanelDetailsModal.svelte'));
+	const loadEnergyDetailsModal = cachedImport(() => import('$lib/cards/EnergyDetailsModal.svelte'));
+	const loadCamerasStripCard = cachedImport(() => import('$lib/cards/CamerasStripCard.svelte'));
+	const loadCameraDetailsModal = cachedImport(() => import('$lib/cards/CameraDetailsModal.svelte'));
+	const loadWeekCalendarCard = cachedImport(() => import('$lib/cards/WeekCalendarCard.svelte'));
+	const loadLightButtonDetailsModal = cachedImport(() => import('$lib/cards/LightButtonDetailsModal.svelte'));
+	const loadEntityButtonDetailsModal = cachedImport(() => import('$lib/cards/EntityButtonDetailsModal.svelte'));
+	const loadEnergyAnchorEditor = cachedImport(() => import('$lib/cards/EnergyAnchorEditor.svelte'));
+	const loadLightGroupPickerOverlay = cachedImport(() => import('$lib/cards/LightGroupPickerOverlay.svelte'));
+	const loadStatusDetailsModal = cachedImport(() => import('$lib/cards/status/StatusDetailsModal.svelte'));
+	const loadSectionEditorModal = cachedImport(() => import('$lib/sections/SectionEditorModal.svelte'));
+	const loadSectionCardsModal = cachedImport(() => import('$lib/sections/SectionCardsModal.svelte'));
+	const loadSettingsModal = cachedImport(() => import('$lib/settings/SettingsModal.svelte'));
 
 	type SettingsTab = 'general' | 'layout' | 'theme';
 	type CardLibraryTab = 'sidebar' | 'view';
@@ -416,7 +425,7 @@ if (browser) {
 }
 
 	function t(key: TranslationKey) {
-		return translations[selectedLanguage][key];
+		return translate(key, selectedLanguage);
 	}
 
 	/** Sidebar: geen detail-popup voor Lampen / Deuren & Ramen / Apparaten als er niets “actief” is. */
@@ -792,7 +801,7 @@ const {
 	localizeAndSanitizeSections: (input) => localizeLegacyTitles(sanitizeViewSectionsInput(input)),
 	sanitizeSidebarCards: sanitizeSidebarCardsInput,
 	isRemovedLegacySidebarSeed,
-	isValidLanguage: (value): value is LanguageCode => value in translations,
+	isValidLanguage: isLanguageCode,
 	cloneForPersistence,
 	saveDashboard,
 	persistDashboardState,
@@ -1708,7 +1717,7 @@ function applyLocalBootstrapNow(skipDashboardFromStorage: boolean) {
 		sanitizeSidebarCards: sanitizeSidebarCardsInput,
 		isRemovedLegacySidebarSeed,
 		cloneForPersistence,
-		isValidLanguage: (value): value is LanguageCode => value in translations,
+	isValidLanguage: isLanguageCode,
 		skipDashboardFromStorage
 	});
 	selectedLanguage = next.selectedLanguage;
@@ -2122,8 +2131,8 @@ if (browser) {
 
 	function formatSectionMetricState(entity: { state: string; unit?: string }) {
 		const state = entity.state?.trim();
-		if (!state || state === 'unknown') return 'Geen data';
-		if (state === 'unavailable') return 'Niet beschikbaar';
+		if (!state || state === 'unknown') return translate('Geen data', selectedLanguage);
+		if (state === 'unavailable') return translate('Niet beschikbaar', selectedLanguage);
 		const unit = entity.unit?.trim() ?? '';
 		if (!unit || state.endsWith(unit)) return state;
 		const separator = unit === '%' || unit.startsWith('°') ? '' : ' ';
@@ -2220,6 +2229,11 @@ if (browser) {
 		lightButtonDetailOpen = true;
 	}
 
+	function openCameraDetails(cam: import('$lib/persistence/panel-state-types').CameraConfig) {
+		cameraDetailCamera = cam;
+		cameraDetailOpen = true;
+	}
+
 	function entityButtonKindForCard(cardType: string): EntityButtonKind | null {
 		if (cardType === 'climate_button') return 'climate';
 		if (cardType === 'cover_button') return 'cover';
@@ -2286,7 +2300,7 @@ if (browser) {
 
 	$effect(() => {
 		if (browser) {
-			document.documentElement.lang = selectedLanguage;
+			setLanguage(selectedLanguage);
 			document.title = `Nova Panel - ${t('home')}`;
 		}
 	});
@@ -2361,6 +2375,7 @@ if (browser) {
 								{#each Array.from({ length: effectiveColumns }, (_, index) => index + 1) as column (column)}
 									<div
 										class="sections-column-drop"
+										role="presentation"
 										ondragover={(event) => {
 											if (!draggingSectionId) return;
 											allowValidDrop(event);
@@ -2382,6 +2397,7 @@ if (browser) {
 								class:week-calendar-expanded-section={sectionHasVisibleWeekCalendarCard(section, expandedWeekCalendarCardId) && isExpandedWeekCalendarCard(expandedWeekCalendarCardId)}
 								class:drop-before={draggingSectionId === section.id ? false : sectionDropTargetId === section.id && sectionDropPlacement === 'before'}
 								class:drop-after={draggingSectionId === section.id ? false : sectionDropTargetId === section.id && sectionDropPlacement === 'after'}
+								role="group"
 								draggable={editMode}
 								use:measureSectionMasonry={section.id}
 								style:grid-column={`${section.displayColumn} / span ${section.displaySpan}`}
@@ -2417,12 +2433,23 @@ if (browser) {
 							>
 								{#if sectionHasHeader(section)}
 									{@const metrics = sectionHeaderMetrics(section)}
-									<div class="view-section-head" class:editable={editMode} onclick={() => openSectionCards(section)}>
+									<div
+										class="view-section-head"
+										class:editable={editMode}
+										role="button"
+										tabindex="0"
+										onclick={() => openSectionCards(section)}
+										onkeydown={(event) => {
+											if (event.key !== 'Enter' && event.key !== ' ') return;
+											event.preventDefault();
+											openSectionCards(section);
+										}}
+									>
 										{#if section.title && section.title.trim().length > 0}
 											<h3>{section.title.trim()}</h3>
 										{/if}
 										{#if metrics.length > 0}
-											<div class="view-section-metrics" aria-label="Sectie waarden">
+											<div class="view-section-metrics" aria-label={translate('Sectie waarden', selectedLanguage)}>
 												{#each metrics as metric (metric.label)}
 													<span class="view-section-metric" title={`${metric.label}: ${formatSectionMetricState(metric.entity)}`}>
 														<TablerIcon name={metric.icon} size={14} />
@@ -2435,6 +2462,7 @@ if (browser) {
 								{/if}
 								<div
 									class={`cards-grid ${section.cardColumns === 2 ? 'two' : 'one'}`}
+									role="list"
 									ondragover={(event) => {
 										if (!editMode || !draggingViewCardId) return;
 										allowValidDrop(event);
@@ -2443,7 +2471,7 @@ if (browser) {
 								>
 									{#each section.cards.filter((card) => card.hiddenInSection !== true) as card (card.id)}
 										{@const entityButtonKind = entityButtonKindForCard(card.cardType)}
-										<article
+										<div
 											class="card-item"
 											class:editable={editMode}
 											class:has-title={!!(card.title && card.title.trim().length > 0 && card.cardType !== 'light_button' && card.cardType !== 'week_calendar' && !entityButtonKind)}
@@ -2451,10 +2479,10 @@ if (browser) {
 											class:week-calendar-card-item={card.cardType === 'week_calendar'}
 											class:week-calendar-expanded={card.cardType === 'week_calendar' && isExpandedWeekCalendarCard(card.id)}
 											class:light-button-card-item={card.cardType === 'light_button' || !!entityButtonKind}
-											role={card.cardType === 'week_calendar' && !editMode ? 'button' : undefined}
-											tabindex={card.cardType === 'week_calendar' && !editMode ? 0 : undefined}
+											role="button"
+											tabindex="0"
 											aria-label={card.cardType === 'week_calendar' && !editMode
-													? `${isExpandedWeekCalendarCard(card.id) ? 'Maak kleiner' : 'Maak groter'}: ${card.title?.trim() || 'Weekkalender'}`
+												? `${isExpandedWeekCalendarCard(card.id) ? translate('Maak kleiner', selectedLanguage) : translate('Maak groter', selectedLanguage)}: ${card.title?.trim() || translate('Weekkalender', selectedLanguage)}`
 													: undefined}
 											draggable={editMode}
 											onclick={() => handleViewCardClick(card)}
@@ -2487,19 +2515,22 @@ if (browser) {
 											{:else if card.cardType === 'welcome'}
 												<WelcomeCard />
 											{:else if card.cardType === 'cameras_strip'}
-												<CamerasStripCard
-													cameras={card.cameras}
-													title={card.title}
-													onCameraClick={(cam) => {
-														cameraDetailCamera = cam;
-														cameraDetailOpen = true;
+												<LazyComponent
+													loader={loadCamerasStripCard}
+													props={{
+														cameras: card.cameras,
+														title: card.title,
+														onCameraClick: openCameraDetails
 													}}
 												/>
 											{:else if card.cardType === 'week_calendar'}
-												<WeekCalendarCard
-													title={card.title}
-													sources={card.cameras}
-													expanded={isExpandedWeekCalendarCard(card.id)}
+												<LazyComponent
+													loader={loadWeekCalendarCard}
+													props={{
+														title: card.title,
+														sources: card.cameras,
+														expanded: isExpandedWeekCalendarCard(card.id)
+													}}
 												/>
 											{:else if card.cardType === 'light_button'}
 												<LightButtonCard
@@ -2519,7 +2550,7 @@ if (browser) {
 													onOpen={() => openEntityButtonDetails(card)}
 												/>
 											{/if}
-										</article>
+										</div>
 									{/each}
 								</div>
 							</section>
@@ -2529,49 +2560,57 @@ if (browser) {
 		</main>
 
 		{#if settingsOpen}
-			<SettingsModal
-				{t}
-				{activeSettingsTab}
-				{selectedColumns}
-				{selectedLanguage}
-				spotifyClientId={oauthSpotifyClientId}
-				spotifyClientSecret={oauthSpotifyClientSecret}
-				spotifyRedirectUri={oauthSpotifyRedirectUri}
-				onClose={closeSettings}
-				onSetSettingsTab={setSettingsTab}
-				onSetColumns={setColumns}
-				onSetLanguage={(value) => (selectedLanguage = value)}
-				onSetSpotifyClientId={(v) => (oauthSpotifyClientId = v)}
-				onSetSpotifyClientSecret={(v) => (oauthSpotifyClientSecret = v)}
-				onSetSpotifyRedirectUri={(v) => (oauthSpotifyRedirectUri = v)}
-				onExportPanelState={exportNovaPanelJsonBundle}
-				onImportPanelState={importNovaPanelJsonBundle}
-				onSave={saveSettingsState}
-			/>
+			{#await loadSettingsModal() then module}
+				{@const SettingsModal = module.default}
+				<SettingsModal
+					{t}
+					{activeSettingsTab}
+					{selectedColumns}
+					{selectedLanguage}
+					spotifyClientId={oauthSpotifyClientId}
+					spotifyClientSecret={oauthSpotifyClientSecret}
+					spotifyRedirectUri={oauthSpotifyRedirectUri}
+					onClose={closeSettings}
+					onSetSettingsTab={setSettingsTab}
+					onSetColumns={setColumns}
+					onSetLanguage={(value) => (selectedLanguage = value)}
+					onSetSpotifyClientId={(v) => (oauthSpotifyClientId = v)}
+					onSetSpotifyClientSecret={(v) => (oauthSpotifyClientSecret = v)}
+					onSetSpotifyRedirectUri={(v) => (oauthSpotifyRedirectUri = v)}
+					onExportPanelState={exportNovaPanelJsonBundle}
+					onImportPanelState={importNovaPanelJsonBundle}
+					onSave={saveSettingsState}
+				/>
+			{/await}
 		{/if}
 
 		{#if cardLibraryOpen}
-			<CardLibraryModal
-				{t}
-				title={getTitleValue('cardLibrary', 'cardLibrary')}
-				{editMode}
-				activeTab={activeCardLibraryTab}
-				activeViewSectionId={activeViewSectionId}
-				sections={renderedViewSections.map((section) => ({ id: section.id, title: section.title }))}
-				cards={cardCatalog}
-				{getLocalizedCardLabel}
-				onClose={closeCardLibrary}
-				onTitleBlur={(value) => setCustomTitle('cardLibrary', value)}
-				onSetTab={setCardLibraryTab}
-				onAddSection={addSection}
-				onSetActiveSection={(id) => (activeViewSectionId = id)}
-				onRenameSection={renameViewSectionFromLibrary}
-				onAddCard={addCardFromCatalog}
-			/>
+			{#await loadCardLibraryModal() then module}
+				{@const CardLibraryModal = module.default}
+				<CardLibraryModal
+					{t}
+					title={getTitleValue('cardLibrary', 'cardLibrary')}
+					{editMode}
+					activeTab={activeCardLibraryTab}
+					activeViewSectionId={activeViewSectionId}
+					sections={renderedViewSections.map((section) => ({ id: section.id, title: section.title }))}
+					cards={cardCatalog}
+					{getLocalizedCardLabel}
+					onClose={closeCardLibrary}
+					onTitleBlur={(value) => setCustomTitle('cardLibrary', value)}
+					onSetTab={setCardLibraryTab}
+					onAddSection={addSection}
+					onSetActiveSection={(id) => (activeViewSectionId = id)}
+					onRenameSection={renameViewSectionFromLibrary}
+					onAddCard={addCardFromCatalog}
+				/>
+			{/await}
 		{/if}
 
 		{#if cardEditorOpen}
-			<CardEditorModal
+			{#await loadCardEditorModal() then module}
+				{@const CardEditorModal = module.default}
+				<CardEditorModal
 				cardEditorId={cardEditor?.id}
 				{t}
 				{cardCatalog}
@@ -2681,216 +2720,255 @@ if (browser) {
 					lgPickerOpen = true;
 				}}
 				lgGroupsVersion={lgGroupsVersion}
-			/>
+				/>
+			{/await}
 		{/if}
 
 		{#if cardEditorAnchorOverlayVariant !== null}
-			<EnergyAnchorEditor
-				bgUrl={getBgUrlForVariant(cardEditorAnchorOverlayVariant)}
-				variantLabel={VARIANT_LABELS[cardEditorAnchorOverlayVariant] ?? cardEditorAnchorOverlayVariant}
-				initialAnchors={getCurrentAnchorsForVariant(cardEditorAnchorOverlayVariant)}
-				onCancel={() => (cardEditorAnchorOverlayVariant = null)}
-				onSave={(a) => {
-					if (cardEditorAnchorOverlayVariant) setAnchorsForVariant(cardEditorAnchorOverlayVariant, a);
-					cardEditorAnchorOverlayVariant = null;
-				}}
-			/>
+			{#await loadEnergyAnchorEditor() then module}
+				{@const EnergyAnchorEditor = module.default}
+				<EnergyAnchorEditor
+					bgUrl={getBgUrlForVariant(cardEditorAnchorOverlayVariant)}
+					variantLabel={VARIANT_LABELS[cardEditorAnchorOverlayVariant] ?? cardEditorAnchorOverlayVariant}
+					initialAnchors={getCurrentAnchorsForVariant(cardEditorAnchorOverlayVariant)}
+					onCancel={() => (cardEditorAnchorOverlayVariant = null)}
+					onSave={(a) => {
+						if (cardEditorAnchorOverlayVariant) setAnchorsForVariant(cardEditorAnchorOverlayVariant, a);
+						cardEditorAnchorOverlayVariant = null;
+					}}
+				/>
+			{/await}
 		{/if}
 
-		<LightGroupPickerOverlay
-			open={lgPickerOpen}
-			editingId={lgPickerEditingId}
-			draftName={lgPickerDraftName}
-			draftEntityIds={lgPickerDraftEntityIds}
-			statusEntityIds={cardEditorStatusEntityIds ?? []}
-			groups={lgPickerGroups}
-			getFriendlyName={lgPickerGetFriendlyName}
-			onDraftNameChange={(name) => (lgPickerDraftName = name)}
-			onToggleEntity={lgPickerToggle}
-			onSave={lgPickerSave}
-			onDelete={lgPickerDelete}
-		/>
+		{#if lgPickerOpen}
+			{#await loadLightGroupPickerOverlay() then module}
+				{@const LightGroupPickerOverlay = module.default}
+				<LightGroupPickerOverlay
+					open={lgPickerOpen}
+					editingId={lgPickerEditingId}
+					draftName={lgPickerDraftName}
+					draftEntityIds={lgPickerDraftEntityIds}
+					statusEntityIds={cardEditorStatusEntityIds ?? []}
+					groups={lgPickerGroups}
+					getFriendlyName={lgPickerGetFriendlyName}
+					onDraftNameChange={(name) => (lgPickerDraftName = name)}
+					onToggleEntity={lgPickerToggle}
+					onSave={lgPickerSave}
+					onDelete={lgPickerDelete}
+				/>
+			{/await}
+		{/if}
 
 		{#if weatherDetailOpen}
-			<WeatherDetailsModal
-				{t}
-				entityId={weatherDetailEntityId}
-				locale={selectedLanguage}
-				onClose={() => (weatherDetailOpen = false)}
-			/>
+			{#await loadWeatherDetailsModal() then module}
+				{@const WeatherDetailsModal = module.default}
+				<WeatherDetailsModal
+					{t}
+					entityId={weatherDetailEntityId}
+					locale={selectedLanguage}
+					onClose={() => (weatherDetailOpen = false)}
+				/>
+			{/await}
 		{/if}
 
 		{#if weatherForecastDetailOpen}
-			<WeatherForecastDetailsModal
-				{t}
-				entityId={weatherForecastEntityId}
-				locale={selectedLanguage}
-				forecastType={weatherForecastType}
-				daysToShow={weatherForecastDaysToShow}
-				onClose={() => (weatherForecastDetailOpen = false)}
-			/>
+			{#await loadWeatherForecastDetailsModal() then module}
+				{@const WeatherForecastDetailsModal = module.default}
+				<WeatherForecastDetailsModal
+					{t}
+					entityId={weatherForecastEntityId}
+					locale={selectedLanguage}
+					forecastType={weatherForecastType}
+					daysToShow={weatherForecastDaysToShow}
+					onClose={() => (weatherForecastDetailOpen = false)}
+				/>
+			{/await}
 		{/if}
 		{#if alarmDetailOpen}
-			<AlarmPanelDetailsModal
-				{t}
-				entityId={alarmDetailEntityId}
-				onClose={() => (alarmDetailOpen = false)}
-			/>
+			{#await loadAlarmPanelDetailsModal() then module}
+				{@const AlarmPanelDetailsModal = module.default}
+				<AlarmPanelDetailsModal
+					{t}
+					entityId={alarmDetailEntityId}
+					onClose={() => (alarmDetailOpen = false)}
+				/>
+			{/await}
 		{/if}
 		{#if energyDetailOpen}
-			<EnergyDetailsModal
-				netEntityId={energyDetailCard.netEntityId}
-				solarEntityId={energyDetailCard.solarEntityId}
-				batteryEntityId={energyDetailCard.batteryEntityId}
-				gridEntityId={energyDetailCard.gridEntityId}
-				batteryChargeEntityId={energyDetailCard.batteryChargeEntityId}
-				importTodayEntityId={energyDetailCard.importTodayEntityId}
-				exportTodayEntityId={energyDetailCard.exportTodayEntityId}
-				solarTodayEntityId={energyDetailCard.solarTodayEntityId}
-				homeTodayEntityId={energyDetailCard.homeTodayEntityId}
-				costTodayEntityId={energyDetailCard.costTodayEntityId}
-				compensationTodayEntityId={energyDetailCard.compensationTodayEntityId}
-				selfSufficiencyEntityId={energyDetailCard.selfSufficiencyEntityId}
-				carChargingEntityId={energyDetailCard.carChargingEntityId}
-				carCableEntityId={energyDetailCard.carCableEntityId}
-				carChargingPowerEntityId={energyDetailCard.carChargingPowerEntityId}
-				energyDeviceEntityIds={energyDetailCard.energyDeviceEntityIds}
-				energyDeviceTodayEntityIds={energyDetailCard.energyDeviceTodayEntityIds}
-				energyDeviceAliases={energyDetailCard.energyDeviceAliases}
-				energyDeviceSnapshot={energyDetailCard.energyDeviceSnapshot}
-				onEntityAliasChange={(entityId, alias) => updateEnergyDetailEntityAlias(energyDetailCard.id, entityId, alias)}
-				onSnapshotChange={(snapshot) => updateEnergyDeviceSnapshot(energyDetailCard.id, snapshot)}
-				cardId={energyDetailCard.id}
-				hasCustomDayNoCar={energyDetailCard.hasCustomDayNoCar}
-				hasCustomDayWithCar={energyDetailCard.hasCustomDayWithCar}
-				hasCustomNightNoCar={energyDetailCard.hasCustomNightNoCar}
-				hasCustomNightWithCar={energyDetailCard.hasCustomNightWithCar}
-				anchorsDayNoCar={energyDetailCard.anchorsDayNoCar}
-				anchorsDayWithCar={energyDetailCard.anchorsDayWithCar}
-				anchorsNightNoCar={energyDetailCard.anchorsNightNoCar}
-				anchorsNightWithCar={energyDetailCard.anchorsNightWithCar}
-				onClose={() => (energyDetailOpen = false)}
-			/>
+			{#await loadEnergyDetailsModal() then module}
+				{@const EnergyDetailsModal = module.default}
+				<EnergyDetailsModal
+					netEntityId={energyDetailCard.netEntityId}
+					solarEntityId={energyDetailCard.solarEntityId}
+					batteryEntityId={energyDetailCard.batteryEntityId}
+					gridEntityId={energyDetailCard.gridEntityId}
+					batteryChargeEntityId={energyDetailCard.batteryChargeEntityId}
+					importTodayEntityId={energyDetailCard.importTodayEntityId}
+					exportTodayEntityId={energyDetailCard.exportTodayEntityId}
+					solarTodayEntityId={energyDetailCard.solarTodayEntityId}
+					homeTodayEntityId={energyDetailCard.homeTodayEntityId}
+					costTodayEntityId={energyDetailCard.costTodayEntityId}
+					compensationTodayEntityId={energyDetailCard.compensationTodayEntityId}
+					selfSufficiencyEntityId={energyDetailCard.selfSufficiencyEntityId}
+					carChargingEntityId={energyDetailCard.carChargingEntityId}
+					carCableEntityId={energyDetailCard.carCableEntityId}
+					carChargingPowerEntityId={energyDetailCard.carChargingPowerEntityId}
+					energyDeviceEntityIds={energyDetailCard.energyDeviceEntityIds}
+					energyDeviceTodayEntityIds={energyDetailCard.energyDeviceTodayEntityIds}
+					energyDeviceAliases={energyDetailCard.energyDeviceAliases}
+					energyDeviceSnapshot={energyDetailCard.energyDeviceSnapshot}
+					onEntityAliasChange={(entityId, alias) => updateEnergyDetailEntityAlias(energyDetailCard.id, entityId, alias)}
+					onSnapshotChange={(snapshot) => updateEnergyDeviceSnapshot(energyDetailCard.id, snapshot)}
+					cardId={energyDetailCard.id}
+					hasCustomDayNoCar={energyDetailCard.hasCustomDayNoCar}
+					hasCustomDayWithCar={energyDetailCard.hasCustomDayWithCar}
+					hasCustomNightNoCar={energyDetailCard.hasCustomNightNoCar}
+					hasCustomNightWithCar={energyDetailCard.hasCustomNightWithCar}
+					anchorsDayNoCar={energyDetailCard.anchorsDayNoCar}
+					anchorsDayWithCar={energyDetailCard.anchorsDayWithCar}
+					anchorsNightNoCar={energyDetailCard.anchorsNightNoCar}
+					anchorsNightWithCar={energyDetailCard.anchorsNightWithCar}
+					onClose={() => (energyDetailOpen = false)}
+				/>
+			{/await}
 		{/if}
 		{#if cameraDetailOpen && cameraDetailCamera}
-			<CameraDetailsModal
-				camera={cameraDetailCamera}
-				onClose={() => {
-					cameraDetailOpen = false;
-					cameraDetailCamera = null;
-				}}
-			/>
+			{#await loadCameraDetailsModal() then module}
+				{@const CameraDetailsModal = module.default}
+				<CameraDetailsModal
+					camera={cameraDetailCamera}
+					onClose={() => {
+						cameraDetailOpen = false;
+						cameraDetailCamera = null;
+					}}
+				/>
+			{/await}
 		{/if}
 		{#if lightButtonDetailOpen}
-			<LightButtonDetailsModal
-				title={lightButtonDetailCard.title}
-				entityId={lightButtonDetailCard.entityId}
-				icon={lightButtonDetailCard.icon}
-				onClose={() => {
-					lightButtonDetailOpen = false;
-					lightButtonDetailCard = {};
-				}}
-			/>
+			{#await loadLightButtonDetailsModal() then module}
+				{@const LightButtonDetailsModal = module.default}
+				<LightButtonDetailsModal
+					title={lightButtonDetailCard.title}
+					entityId={lightButtonDetailCard.entityId}
+					icon={lightButtonDetailCard.icon}
+					onClose={() => {
+						lightButtonDetailOpen = false;
+						lightButtonDetailCard = {};
+					}}
+				/>
+			{/await}
 		{/if}
 		{#if entityButtonDetailOpen && entityButtonDetailCard.kind}
-			<EntityButtonDetailsModal
-				kind={entityButtonDetailCard.kind}
-				title={entityButtonDetailCard.title}
-				entityId={entityButtonDetailCard.entityId}
-				icon={entityButtonDetailCard.icon}
-				onClose={() => {
-					entityButtonDetailOpen = false;
-					entityButtonDetailCard = {};
-				}}
-			/>
+			{#await loadEntityButtonDetailsModal() then module}
+				{@const EntityButtonDetailsModal = module.default}
+				<EntityButtonDetailsModal
+					kind={entityButtonDetailCard.kind}
+					title={entityButtonDetailCard.title}
+					entityId={entityButtonDetailCard.entityId}
+					icon={entityButtonDetailCard.icon}
+					onClose={() => {
+						entityButtonDetailOpen = false;
+						entityButtonDetailCard = {};
+					}}
+				/>
+			{/await}
 		{/if}
 		{#if statusDetailOpen}
-			<StatusDetailsModal
-				{t}
-				{editMode}
-				title={statusDetailTitle}
-				kind={statusDetailKind}
-				cardId={statusDetailCardId}
-				domains={statusDetailDomains}
-				deviceClasses={statusDetailDeviceClasses}
-				statusEntityIds={statusDetailEntityIds}
-				statusEntityAliases={statusDetailEntityAliases}
-				statusEntityIconOverrides={statusDetailEntityIconOverrides}
-				ignoredEntityIds={statusDetailIgnoredEntityIds}
-				spotifyConfigured={Boolean(oauthSpotifyClientId && oauthSpotifyClientSecret)}
-				mediaHubOnkyoBridges={mediaHubOnkyoBridges}
-				mediaHubPlayerOrder={mediaHubPlayerOrder}
-				mediaHubPlayerAliases={mediaHubPlayerAliases}
-				onMediaHubBridgesChange={(value) => {
-					mediaHubOnkyoBridges = value;
-					void persistDashboardState();
-				}}
-				onMediaHubPlayerOrderChange={(value) => {
-					mediaHubPlayerOrder = value;
-					void persistDashboardState();
-				}}
-				onMediaHubPlayerAliasesChange={(value) => {
-					mediaHubPlayerAliases = value;
-					void persistDashboardState();
-				}}
-				onClose={() => (statusDetailOpen = false)}
-				onIgnore={(entityId) => void updateIgnoredEntities(statusDetailCardId, entityId, true)}
-				onUnignore={(entityId) => void updateIgnoredEntities(statusDetailCardId, entityId, false)}
-				onEntityAliasChange={(entityId, alias) =>
-					void updateStatusDetailEntityAlias(statusDetailCardId, entityId, alias)
-				}
-				onEntityIconChange={(entityId, icon) =>
-					void updateStatusDetailEntityIcon(statusDetailCardId, entityId, icon)
-				}
-			/>
+			{#await loadStatusDetailsModal() then module}
+				{@const StatusDetailsModal = module.default}
+				<StatusDetailsModal
+					{t}
+					{editMode}
+					title={statusDetailTitle}
+					kind={statusDetailKind}
+					cardId={statusDetailCardId}
+					domains={statusDetailDomains}
+					deviceClasses={statusDetailDeviceClasses}
+					statusEntityIds={statusDetailEntityIds}
+					statusEntityAliases={statusDetailEntityAliases}
+					statusEntityIconOverrides={statusDetailEntityIconOverrides}
+					ignoredEntityIds={statusDetailIgnoredEntityIds}
+					spotifyConfigured={Boolean(oauthSpotifyClientId && oauthSpotifyClientSecret)}
+					mediaHubOnkyoBridges={mediaHubOnkyoBridges}
+					mediaHubPlayerOrder={mediaHubPlayerOrder}
+					mediaHubPlayerAliases={mediaHubPlayerAliases}
+					onMediaHubBridgesChange={(value) => {
+						mediaHubOnkyoBridges = value;
+						void persistDashboardState();
+					}}
+					onMediaHubPlayerOrderChange={(value) => {
+						mediaHubPlayerOrder = value;
+						void persistDashboardState();
+					}}
+					onMediaHubPlayerAliasesChange={(value) => {
+						mediaHubPlayerAliases = value;
+						void persistDashboardState();
+					}}
+					onClose={() => (statusDetailOpen = false)}
+					onIgnore={(entityId) => void updateIgnoredEntities(statusDetailCardId, entityId, true)}
+					onUnignore={(entityId) => void updateIgnoredEntities(statusDetailCardId, entityId, false)}
+					onEntityAliasChange={(entityId, alias) =>
+						void updateStatusDetailEntityAlias(statusDetailCardId, entityId, alias)
+					}
+					onEntityIconChange={(entityId, icon) =>
+						void updateStatusDetailEntityIcon(statusDetailCardId, entityId, icon)
+					}
+				/>
+			{/await}
 		{/if}
 
 		{#if sectionEditorOpen}
-			<SectionEditorModal
-				{t}
-				{selectedColumns}
-				{sectionEditorTitle}
-				{sectionEditorIcon}
-				{sectionEditorHeaderTemperatureEntityId}
-				{sectionEditorHeaderHumidityEntityId}
-				{sectionEditorHeaderPressureEntityId}
-				{sectionEditorColumn}
-				{sectionEditorSpan}
-				{sectionEditorCardColumns}
-				sectionCards={sectionEditorCards}
-				{getLocalizedCardLabel}
-				{sectionEditorHasChanges}
-				onClose={closeSectionEditor}
-				onDelete={deleteSectionFromEditor}
-				onSave={saveSectionEditor}
-				onMoveOrder={moveSectionOrder}
-				onSetTitle={(value) => (sectionEditorTitle = value)}
-				onSetIcon={(value) => (sectionEditorIcon = value)}
-				onSetHeaderTemperatureEntityId={(value) =>
-					(sectionEditorHeaderTemperatureEntityId = value)
-				}
-				onSetHeaderHumidityEntityId={(value) => (sectionEditorHeaderHumidityEntityId = value)}
-				onSetHeaderPressureEntityId={(value) => (sectionEditorHeaderPressureEntityId = value)}
-				onSetColumn={(value) => (sectionEditorColumn = value)}
-				onSetSpan={(value) => (sectionEditorSpan = value)}
-				onSetCardColumns={(value) => (sectionEditorCardColumns = value)}
-				onSetCardVisible={(cardId, visible) =>
-					setSectionCardVisible(sectionEditorId, cardId, visible)
-				}
-			/>
+			{#await loadSectionEditorModal() then module}
+				{@const SectionEditorModal = module.default}
+				<SectionEditorModal
+					{t}
+					{selectedColumns}
+					{sectionEditorTitle}
+					{sectionEditorIcon}
+					{sectionEditorHeaderTemperatureEntityId}
+					{sectionEditorHeaderHumidityEntityId}
+					{sectionEditorHeaderPressureEntityId}
+					{sectionEditorColumn}
+					{sectionEditorSpan}
+					{sectionEditorCardColumns}
+					sectionCards={sectionEditorCards}
+					{getLocalizedCardLabel}
+					{sectionEditorHasChanges}
+					onClose={closeSectionEditor}
+					onDelete={deleteSectionFromEditor}
+					onSave={saveSectionEditor}
+					onMoveOrder={moveSectionOrder}
+					onSetTitle={(value) => (sectionEditorTitle = value)}
+					onSetIcon={(value) => (sectionEditorIcon = value)}
+					onSetHeaderTemperatureEntityId={(value) =>
+						(sectionEditorHeaderTemperatureEntityId = value)
+					}
+					onSetHeaderHumidityEntityId={(value) => (sectionEditorHeaderHumidityEntityId = value)}
+					onSetHeaderPressureEntityId={(value) => (sectionEditorHeaderPressureEntityId = value)}
+					onSetColumn={(value) => (sectionEditorColumn = value)}
+					onSetSpan={(value) => (sectionEditorSpan = value)}
+					onSetCardColumns={(value) => (sectionEditorCardColumns = value)}
+					onSetCardVisible={(cardId, visible) =>
+						setSectionCardVisible(sectionEditorId, cardId, visible)
+					}
+				/>
+			{/await}
 		{/if}
 		{#if sectionCardsOpen && sectionCardsSection}
-			<SectionCardsModal
-				title={sectionCardsSection.title?.trim() || 'Sectie'}
-				icon={sectionCardsSection.icon}
-				cardColumns={sectionCardsSection.cardColumns}
-				cards={sectionCardsSection.cards}
-				{getLocalizedCardLabel}
-				onClose={() => {
-					sectionCardsOpen = false;
-					sectionCardsSection = null;
-				}}
-			/>
+			{#await loadSectionCardsModal() then module}
+				{@const SectionCardsModal = module.default}
+				<SectionCardsModal
+					title={sectionCardsSection.title?.trim() || t('section')}
+					icon={sectionCardsSection.icon}
+					cardColumns={sectionCardsSection.cardColumns}
+					cards={sectionCardsSection.cards}
+					{getLocalizedCardLabel}
+					onClose={() => {
+						sectionCardsOpen = false;
+						sectionCardsSection = null;
+					}}
+				/>
+			{/await}
 		{/if}
 	</div>
 	{#if dragIndicatorActive}

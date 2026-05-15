@@ -5,6 +5,7 @@
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import EntitySelectPicker from '$lib/cards/editor/EntitySelectPicker.svelte';
+	import { localeFor, selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
 	type Props = {
 		entityId?: string;
@@ -52,12 +53,12 @@
 				const bAreaId = areaMap[b.entityId] ?? areaMap[b.entityId.toLowerCase()] ?? null;
 				const aAreaName = aAreaId ? ($areaById[aAreaId]?.name ?? aAreaId) : 'zzz';
 				const bAreaName = bAreaId ? ($areaById[bAreaId]?.name ?? bAreaId) : 'zzz';
-				const areaCompare = aAreaName.localeCompare(bAreaName, 'nl');
+				const areaCompare = aAreaName.localeCompare(bAreaName, localeFor($selectedLanguageStore));
 				if (areaCompare !== 0) return areaCompare;
 			}
 			const aName = a.friendlyName || a.entityId;
 			const bName = b.friendlyName || b.entityId;
-			return aName.localeCompare(bName, 'nl', { numeric: true, sensitivity: 'base' });
+			return aName.localeCompare(bName, localeFor($selectedLanguageStore), { numeric: true, sensitivity: 'base' });
 		});
 	}
 
@@ -84,10 +85,10 @@
 
 <div class="light-button-editor">
 	<EntitySelectPicker
-		label="Lamp entiteit"
+		label={translate('Lamp entiteit', $selectedLanguageStore)}
 		value={entityId ?? ''}
 		options={lightEntities}
-		placeholder="Kies een lamp"
+		placeholder={translate('Kies een lamp', $selectedLanguageStore)}
 		onChange={onEntityIdChange}
 	/>
 
@@ -98,13 +99,13 @@
 			</div>
 			<div>
 				<strong>{selectedEntity.friendlyName}</strong>
-				<span>{selectedEntity.state === 'on' ? 'Aan' : selectedEntity.state === 'off' ? 'Uit' : selectedEntity.state}</span>
+				<span>{translateState(selectedEntity.state, $selectedLanguageStore)}</span>
 			</div>
 		</div>
 	{/if}
 
 	<label class="np-field">
-		<span class="np-label">MDI icoon</span>
+		<span class="np-label">{translate('MDI icoon', $selectedLanguageStore)}</span>
 		<div class="icon-input-row">
 			<input
 				type="text"
@@ -140,7 +141,7 @@
 			{iconValidationMessage}
 		</span>
 		<span class="icon-help">
-			Gebruik een Material Design Icon naam, bijvoorbeeld <code>mdi:sofa-outline</code>. Sla de kaart daarna op.
+			{translate('Gebruik een Material Design Icon naam, bijvoorbeeld', $selectedLanguageStore)} <code>mdi:sofa-outline</code>. {translate('Sla de kaart daarna op.', $selectedLanguageStore)}
 		</span>
 	</label>
 </div>
