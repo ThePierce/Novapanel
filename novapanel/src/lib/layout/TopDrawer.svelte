@@ -15,7 +15,7 @@
 		onRedo: () => void;
 		onOpenCardLibrary: () => void;
 		onOpenSettings: () => void;
-		onOpenHASidebar: () => void;
+		onOpenHASidebar: (event?: MouseEvent) => void;
 		onToggleControls: () => void;
 		showDrawerHint?: boolean;
 	};
@@ -85,7 +85,13 @@
 				<button type="button" class="settings-inline" onclick={onOpenSettings}>
 					{t('settings')}
 				</button>
-				<button type="button" class="ha-hamburger" onclick={onOpenHASidebar} aria-label={t('openHaSidebar')}>
+				<button
+					type="button"
+					class="ha-hamburger"
+					data-np-ha-sidebar-toggle="true"
+					onclick={onOpenHASidebar}
+					aria-label={t('openHaSidebar')}
+				>
 					<svg viewBox="0 0 24 24" aria-hidden="true">
 						<path d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
 					</svg>

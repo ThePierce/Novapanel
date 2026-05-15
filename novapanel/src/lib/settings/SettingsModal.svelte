@@ -335,7 +335,7 @@
 					</span>
 				</button>
 				{#if spotifyExpanded}
-					<div class="integration-fields">
+					<form class="integration-fields" onsubmit={(event) => event.preventDefault()}>
 						<label for="np-spotify-client-id">Client ID</label>
 						<input
 							id="np-spotify-client-id"
@@ -438,7 +438,7 @@
 								<span>{spotifyAuthError}</span>
 							</div>
 						{/if}
-					</div>
+					</form>
 				{/if}
 			</div>
 

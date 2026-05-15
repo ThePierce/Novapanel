@@ -1816,6 +1816,7 @@ if (browser) {
 			// Home Assistant logs this known transition abort as an app error.
 			// Preventing default keeps console/system log noise down.
 			event.preventDefault();
+			event.stopImmediatePropagation();
 		};
 		window.addEventListener('unhandledrejection', onUnhandledRejection);
 		const win = window as Window & {

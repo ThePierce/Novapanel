@@ -68,6 +68,7 @@
 				window.addEventListener('unhandledrejection', function (event) {
 					if (isIgnoredTransitionAbort(event.reason)) {
 						try { event.preventDefault(); } catch (e) {}
+						try { event.stopImmediatePropagation(); } catch (e) {}
 						return;
 					}
 					if (!isStaleBuildError(event.reason)) return;
