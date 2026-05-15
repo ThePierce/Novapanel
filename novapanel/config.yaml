@@ -19,10 +19,8 @@ map:
 options:
   hass_url: ""
   token: ""
-  panel_state_authority_url: ""
 schema:
   hass_url: "str?"
   token: "str?"
-  panel_state_authority_url: "str?"
 init: false
 hassio_api: true

@@ -5,6 +5,7 @@ Nova Panel is a Home Assistant kiosk dashboard built with Svelte 5 and SvelteKit
 ## Table Of Contents
 
 - [Install As A Home Assistant Add-on](#install-as-a-home-assistant-add-on)
+- [Add-on Configuration](#add-on-configuration)
 - [Optional Integrations](#optional-integrations)
 - [Dashboard Model](#dashboard-model)
 - [Using Edit Mode](#using-edit-mode)
@@ -22,6 +23,25 @@ Nova Panel is a Home Assistant kiosk dashboard built with Svelte 5 and SvelteKit
 6. Open edit mode and add cards to the main area or sidebar.
 
 Nova Panel uses the Home Assistant API through ingress when it runs as an add-on.
+
+## Add-on Configuration
+
+After installing Nova Panel, open the add-on **Configuration** tab in Home Assistant.
+
+Set these options:
+
+- `hass_url`: use `http://supervisor/core` when Nova Panel runs as a Home Assistant add-on.
+- `token`: paste a Home Assistant long-lived access token.
+
+Create the token from your Home Assistant user profile:
+
+1. Open your Home Assistant profile.
+2. Scroll to **Long-Lived Access Tokens**.
+3. Create a new token.
+4. Paste that token into the Nova Panel add-on `token` field.
+5. Save the add-on configuration and restart Nova Panel.
+
+These settings are required for entity data, service calls, cameras, calendars, media controls, and other Home Assistant-backed cards. A fresh install can open without them, but most cards will not be able to load data or control devices until both fields are set.
 
 ## Optional Integrations
 

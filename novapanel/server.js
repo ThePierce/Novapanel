@@ -236,29 +236,11 @@ async function handlePanelSyncConfig(req, res) {
     res.setHeader('Pragma', 'no-cache');
     try {
         const options = await readAddonOptions();
-        const raw =
-            typeof options.panel_state_authority_url === 'string' ? options.panel_state_authority_url.trim() : '';
         let authorityBaseUrl = null;
-        if (raw) {
-            try {
-                const u = new URL(raw.includes('://') ? raw : `https://${raw}`);
-                // Preserve ingress path if present
-                if (u.pathname && u.pathname.length > 1) {
-                    authorityBaseUrl = `${u.protocol}//${u.host}${u.pathname}`.replace(/\/+$/, '');
-                } else {
-                    authorityBaseUrl = `${u.protocol}//${u.host}`;
-                }
-            } catch {
-                log(`panel-sync-config invalid panel_state_authority_url: ${raw}`);
-            }
-        }
-        // Auto-detect from ingress path when no explicit option is set
-        if (!authorityBaseUrl) {
-            const detectedBase = extractRequestApiBase(req);
-            if (detectedBase) {
-                authorityBaseUrl = detectedBase;
-                log(`panel-sync-config auto-detected authority=${authorityBaseUrl}`);
-            }
+        const detectedBase = extractRequestApiBase(req);
+        if (detectedBase) {
+            authorityBaseUrl = detectedBase;
+            log(`panel-sync-config auto-detected authority=${authorityBaseUrl}`);
         }
         // Fallback to hass_url option (origin only) when ingress header is absent
         if (!authorityBaseUrl) {
