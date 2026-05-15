@@ -370,6 +370,41 @@ function buildHaTargetUrl(hassUrl, forwardPath) {
     return new URL(relativePath, base);
 }
 
+function getConfiguredHaToken(options) {
+    return (
+        asTrimmedString(process.env.HASS_TOKEN) ||
+        asTrimmedString(process.env.HA_TOKEN) ||
+        asTrimmedString(options?.token)
+    );
+}
+
+function getConfiguredHaTokenSource(options) {
+    if (asTrimmedString(process.env.HASS_TOKEN)) return 'HASS_TOKEN';
+    if (asTrimmedString(process.env.HA_TOKEN)) return 'HA_TOKEN';
+    if (asTrimmedString(options?.token)) return 'options.token';
+    return 'none';
+}
+
+function isSupervisorCoreUrl(value) {
+    const raw = asTrimmedString(value).replace(/\/+$/, '');
+    if (!raw) return false;
+    try {
+        const url = new URL(raw);
+        return url.hostname === 'supervisor' && url.pathname.replace(/\/+$/, '') === '/core';
+    } catch {
+        return /^https?:\/\/supervisor(?::\d+)?\/core(?:\/|$)/i.test(raw);
+    }
+}
+
+function selectHaProxyToken(hassUrl, options) {
+    const supervisorToken = asTrimmedString(process.env.SUPERVISOR_TOKEN);
+    if (isSupervisorCoreUrl(hassUrl) && supervisorToken) {
+        return { token: supervisorToken, source: 'SUPERVISOR_TOKEN' };
+    }
+    const configuredToken = getConfiguredHaToken(options);
+    return { token: configuredToken, source: getConfiguredHaTokenSource(options) };
+}
+
 function getSpotifyRedirectUriForRequest(req, config) {
     if (config.redirectUri) return normalizeSpotifyRedirectUri(config.redirectUri);
     const ingressPath = asTrimmedString(req.headers['x-ingress-path']).replace(/\/+$/, '');
@@ -475,22 +510,16 @@ const handleHaConnection = async (req, res) => {
 	res.setHeader('x-novapanel-ha', '1');
 	try {
         const options = await readAddonOptions();
-        const optionToken = typeof options.token === 'string' ? options.token.trim() : '';
         const envHassUrl = typeof process.env.HASS_URL === 'string' ? process.env.HASS_URL.trim() : '';
-        const envToken =
-            typeof process.env.HASS_TOKEN === 'string' && process.env.HASS_TOKEN.trim()
-                ? process.env.HASS_TOKEN.trim()
-                : typeof process.env.HA_TOKEN === 'string'
-                    ? process.env.HA_TOKEN.trim()
-                    : '';
         const proxyTarget = typeof req.headers['x-proxy-target'] === 'string' ? req.headers['x-proxy-target'].trim() : '';
         const forwardedProto = typeof req.headers['x-forwarded-proto'] === 'string' ? req.headers['x-forwarded-proto'].trim() : '';
         const host = typeof req.headers.host === 'string' ? req.headers.host.trim() : '';
         const fallbackOrigin = host ? `${forwardedProto || 'http'}://${host}` : '';
         const internalHassUrl = envHassUrl || proxyTarget || (IS_DEVELOPMENT ? '' : 'http://supervisor/core');
         const hassUrl = envHassUrl || proxyTarget || fallbackOrigin || internalHassUrl;
-        const token = envToken || optionToken;
-        log(`ha connection requested: hassUrl=${hassUrl || '-'} internal=${internalHassUrl || '-'} token=${token ? 'present' : 'missing'} envHassUrl=${envHassUrl ? 'present' : 'missing'} proxyTarget=${proxyTarget || '-'}`);
+        const token = getConfiguredHaToken(options);
+        const proxyAuth = selectHaProxyToken(internalHassUrl, options);
+        log(`ha connection requested: hassUrl=${hassUrl || '-'} internal=${internalHassUrl || '-'} browserToken=${token ? 'present' : 'missing'} proxyToken=${proxyAuth.token ? proxyAuth.source : 'missing'} envHassUrl=${envHassUrl ? 'present' : 'missing'} proxyTarget=${proxyTarget || '-'}`);
         res.status(200).json({
             hassUrl,
             token
@@ -508,18 +537,14 @@ app.get(
 
 async function getHaProxyConfig(req) {
 	const options = await readAddonOptions();
-	const optionToken = typeof options.token === 'string' ? options.token.trim() : '';
 	const envHassUrl = typeof process.env.HASS_URL === 'string' ? process.env.HASS_URL.trim() : '';
-	const envToken =
-		typeof process.env.HASS_TOKEN === 'string' && process.env.HASS_TOKEN.trim()
-			? process.env.HASS_TOKEN.trim()
-			: typeof process.env.HA_TOKEN === 'string'
-				? process.env.HA_TOKEN.trim()
-				: '';
 	const proxyTarget = typeof req.headers['x-proxy-target'] === 'string' ? req.headers['x-proxy-target'].trim() : '';
+	const hassUrl = (envHassUrl || proxyTarget || (IS_DEVELOPMENT ? '' : 'http://supervisor/core')).replace(/\/+$/, '');
+	const auth = selectHaProxyToken(hassUrl, options);
 	return {
-		hassUrl: (envHassUrl || proxyTarget || (IS_DEVELOPMENT ? '' : 'http://supervisor/core')).replace(/\/+$/, ''),
-		token: envToken || optionToken
+		hassUrl,
+		token: auth.token,
+		tokenSource: auth.source
 	};
 }
 
@@ -879,7 +904,7 @@ app.get(
 
 async function proxyHaRequest(req, res) {
 	try {
-		const { hassUrl, token } = await getHaProxyConfig(req);
+		const { hassUrl, token, tokenSource } = await getHaProxyConfig(req);
 		if (!hassUrl) {
 			res.status(502).send('hass_url_unavailable');
 			return;
@@ -905,7 +930,7 @@ async function proxyHaRequest(req, res) {
 		const upstream = await fetch(target, init);
 		if (!upstream.ok) {
 			const cleanForwardPath = forwardUrl.split('?')[0] || '/';
-			log(`ha api proxy ${method} ${cleanForwardPath} -> ${upstream.status} target=${target.origin}${target.pathname}`);
+			log(`ha api proxy ${method} ${cleanForwardPath} -> ${upstream.status} target=${target.origin}${target.pathname} auth=${token ? tokenSource : 'none'}`);
 		}
 		res.status(upstream.status);
 		for (const header of ['content-type', 'cache-control']) {

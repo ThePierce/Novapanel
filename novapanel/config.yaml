@@ -22,3 +22,4 @@ schema:
   token: "str?"
 init: false
 hassio_api: true
+homeassistant_api: true
