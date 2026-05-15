@@ -23,6 +23,7 @@ export type CardEditorOpenState = {
 	statusDeviceClasses?: CardDraft['statusDeviceClasses'];
 	statusEntityIds?: CardDraft['statusEntityIds'];
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
+	statusEntityAliases?: CardDraft['statusEntityAliases'];
 	statusIcon?: CardDraft['statusIcon'];
 	netEntityId?: string;
 	solarEntityId?: string;
@@ -41,6 +42,7 @@ export type CardEditorOpenState = {
 	carChargingPowerEntityId?: string;
 	energyDeviceEntityIds?: string[];
 	energyDeviceTodayEntityIds?: string[];
+	energyDeviceAliases?: CardDraft['energyDeviceAliases'];
 	hasCustomDayNoCar?: boolean;
 	hasCustomDayWithCar?: boolean;
 	hasCustomNightNoCar?: boolean;
@@ -95,7 +97,9 @@ export type CardEditorOpenState = {
 	initialStatusDeviceClasses?: CardDraft['statusDeviceClasses'];
 	initialStatusEntityIds?: CardDraft['statusEntityIds'];
 	initialStatusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
+	initialStatusEntityAliases?: CardDraft['statusEntityAliases'];
 	initialStatusIcon?: CardDraft['statusIcon'];
+	initialEnergyDeviceAliases?: CardDraft['energyDeviceAliases'];
 };
 
 export function resolveCardForEditor(
@@ -148,6 +152,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		statusDeviceClasses: card.statusDeviceClasses,
 		statusEntityIds: card.statusEntityIds,
 		statusDiscoveredEntityIds: card.statusDiscoveredEntityIds,
+		statusEntityAliases: card.statusEntityAliases,
 		statusIcon,
 		netEntityId: card.netEntityId,
 		solarEntityId: card.solarEntityId,
@@ -166,6 +171,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		carChargingPowerEntityId: card.carChargingPowerEntityId,
 		energyDeviceEntityIds: card.energyDeviceEntityIds,
 		energyDeviceTodayEntityIds: card.energyDeviceTodayEntityIds,
+		energyDeviceAliases: card.energyDeviceAliases,
 		hasCustomDayNoCar: card.hasCustomDayNoCar,
 		hasCustomDayWithCar: card.hasCustomDayWithCar,
 		hasCustomNightNoCar: card.hasCustomNightNoCar,
@@ -196,6 +202,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		initialStatusDeviceClasses: card.statusDeviceClasses,
 		initialStatusEntityIds: card.statusEntityIds,
 		initialStatusDiscoveredEntityIds: card.statusDiscoveredEntityIds,
+		initialStatusEntityAliases: card.statusEntityAliases,
 		initialStatusIcon: statusIcon,
 		initialNetEntityId: card.netEntityId,
 		initialSolarEntityId: card.solarEntityId,
@@ -214,6 +221,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		initialCarChargingPowerEntityId: card.carChargingPowerEntityId,
 		initialEnergyDeviceEntityIds: card.energyDeviceEntityIds,
 		initialEnergyDeviceTodayEntityIds: card.energyDeviceTodayEntityIds,
+		initialEnergyDeviceAliases: card.energyDeviceAliases,
 		initialHasCustomDayNoCar: card.hasCustomDayNoCar,
 		initialHasCustomDayWithCar: card.hasCustomDayWithCar,
 		initialHasCustomNightNoCar: card.hasCustomNightNoCar,

@@ -47,6 +47,7 @@ type EditorUiState = {
 	cardEditorStatusDeviceClasses?: CardDraft['statusDeviceClasses'];
 	cardEditorStatusEntityIds?: CardDraft['statusEntityIds'];
 	cardEditorStatusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
+	cardEditorStatusEntityAliases?: CardDraft['statusEntityAliases'];
 	cardEditorStatusIcon?: CardDraft['statusIcon'];
 	cardEditorNetEntityId?: string;
 	cardEditorSolarEntityId?: string;
@@ -63,6 +64,10 @@ type EditorUiState = {
 	cardEditorCarChargingEntityId?: string;
 	cardEditorCarCableEntityId?: string;
 	cardEditorCarChargingPowerEntityId?: string;
+	cardEditorEnergyDeviceEntityIds?: string[];
+	cardEditorEnergyDeviceTodayEntityIds?: string[];
+	cardEditorEnergyDeviceAliases?: CardDraft['energyDeviceAliases'];
+	cardEditorCameras?: import('../persistence/panel-state-types').CameraConfig[];
 	cardEditorHasCustomDayNoCar?: boolean;
 	cardEditorHasCustomDayWithCar?: boolean;
 	cardEditorHasCustomNightNoCar?: boolean;
@@ -115,7 +120,12 @@ type EditorUiState = {
 	cardEditorInitialStatusDeviceClasses?: CardDraft['statusDeviceClasses'];
 	cardEditorInitialStatusEntityIds?: CardDraft['statusEntityIds'];
 	cardEditorInitialStatusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
+	cardEditorInitialStatusEntityAliases?: CardDraft['statusEntityAliases'];
 	cardEditorInitialStatusIcon?: CardDraft['statusIcon'];
+	cardEditorInitialEnergyDeviceEntityIds?: string[];
+	cardEditorInitialEnergyDeviceTodayEntityIds?: string[];
+	cardEditorInitialEnergyDeviceAliases?: CardDraft['energyDeviceAliases'];
+	cardEditorInitialCameras?: import('../persistence/panel-state-types').CameraConfig[];
 	sectionEditorOpen: boolean;
 	sectionEditorId: string;
 	sectionEditorTitle: string;
@@ -216,6 +226,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorStatusDeviceClasses: next.statusDeviceClasses,
 			cardEditorStatusEntityIds: next.statusEntityIds,
 			cardEditorStatusDiscoveredEntityIds: next.statusDiscoveredEntityIds,
+			cardEditorStatusEntityAliases: next.statusEntityAliases ?? {},
 			cardEditorStatusIcon: next.statusIcon,
 				cardEditorNetEntityId: next.netEntityId ?? '',
 				cardEditorSolarEntityId: next.solarEntityId ?? '',
@@ -234,6 +245,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 				cardEditorCarChargingPowerEntityId: next.carChargingPowerEntityId ?? '',
 				cardEditorEnergyDeviceEntityIds: next.energyDeviceEntityIds ?? [],
 				cardEditorEnergyDeviceTodayEntityIds: next.energyDeviceTodayEntityIds ?? [],
+				cardEditorEnergyDeviceAliases: next.energyDeviceAliases ?? {},
 				cardEditorHasCustomDayNoCar: next.hasCustomDayNoCar ?? false,
 				cardEditorHasCustomDayWithCar: next.hasCustomDayWithCar ?? false,
 				cardEditorHasCustomNightNoCar: next.hasCustomNightNoCar ?? false,
@@ -290,7 +302,9 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorInitialStatusDeviceClasses: next.initialStatusDeviceClasses,
 			cardEditorInitialStatusEntityIds: next.initialStatusEntityIds,
 			cardEditorInitialStatusDiscoveredEntityIds: next.initialStatusDiscoveredEntityIds,
+			cardEditorInitialStatusEntityAliases: next.initialStatusEntityAliases ?? {},
 			cardEditorInitialStatusIcon: next.initialStatusIcon,
+				cardEditorInitialEnergyDeviceAliases: next.initialEnergyDeviceAliases ?? {},
 			cardEditorOpen: true,
 			settingsOpen: false,
 			cardLibraryOpen: false,
@@ -400,6 +414,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			statusEntityIds: state.cardEditorStatusEntityIds,
 			statusDiscoveredEntityIds:
 				state.cardEditorStatusDiscoveredEntityIds ?? existing?.statusDiscoveredEntityIds,
+			statusEntityAliases: state.cardEditorStatusEntityAliases,
 			statusIcon: state.cardEditorStatusIcon,
 			netEntityId: state.cardEditorNetEntityId,
 			solarEntityId: state.cardEditorSolarEntityId,
@@ -418,6 +433,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			carChargingPowerEntityId: state.cardEditorCarChargingPowerEntityId,
 			energyDeviceEntityIds: state.cardEditorEnergyDeviceEntityIds,
 			energyDeviceTodayEntityIds: state.cardEditorEnergyDeviceTodayEntityIds,
+			energyDeviceAliases: state.cardEditorEnergyDeviceAliases,
 			hasCustomDayNoCar: state.cardEditorHasCustomDayNoCar,
 			hasCustomDayWithCar: state.cardEditorHasCustomDayWithCar,
 			hasCustomNightNoCar: state.cardEditorHasCustomNightNoCar,

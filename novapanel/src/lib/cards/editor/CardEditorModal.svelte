@@ -19,7 +19,6 @@
 	import LightGroupsEditor from '$lib/cards/editor/LightGroupsEditor.svelte';
 	import LightButtonEditor from '$lib/cards/editor/LightButtonEditor.svelte';
 	import EntityButtonEditor from '$lib/cards/editor/EntityButtonEditor.svelte';
-	import { readStoredValue, writeStoredValue } from '$lib/persistence/storage';
 	import { browser } from '$app/environment';
 	import { loadLightGroups, saveLightGroups, createLightGroup, type LightGroup } from '$lib/cards/light-groups';
 	import { entityStore } from '$lib/ha/entities-store';
@@ -28,47 +27,6 @@
 	function getFriendlyName(entityId: string): string {
 		const entity = $entityStore.entities.find(e => e.entityId === entityId);
 		return entity?.friendlyName?.trim() || entityId;
-	}
-
-	// Player-alias helpers (was MA target aliases — naam neutraal, key blijft compat).
-	const PLAYER_ALIASES_KEY = 'np_ma_target_aliases';
-const AVAIL_TARGET_ALIASES_KEY = 'np_availability_target_aliases';
-	const DEVICES_TARGET_ALIASES_KEY = 'np_devices_target_aliases';
-	function loadPlayerAliases(): Record<string, string> {
-		try { const r = readStoredValue(PLAYER_ALIASES_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; }
-	}
-	function savePlayerAlias(id: string, name: string) {
-		try { const a = loadPlayerAliases(); a[id] = name; writeStoredValue(PLAYER_ALIASES_KEY, JSON.stringify(a)); } catch {}
-	}
-	function getPlayerDisplayName(id: string, originalName: string): string {
-		return loadPlayerAliases()[id] || originalName;
-	}
-function loadAvailabilityTargetAliases(): Record<string, string> {
-	try { const r = readStoredValue(AVAIL_TARGET_ALIASES_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; }
-}
-function saveAvailabilityTargetAlias(id: string, name: string) {
-	try { const a = loadAvailabilityTargetAliases(); a[id] = name; writeStoredValue(AVAIL_TARGET_ALIASES_KEY, JSON.stringify(a)); } catch {}
-}
-function getAvailabilityTargetDisplayName(id: string, originalName: string): string {
-	return loadAvailabilityTargetAliases()[id] || originalName;
-}
-	function loadDevicesTargetAliases(): Record<string, string> {
-		try {
-			const r = readStoredValue(DEVICES_TARGET_ALIASES_KEY);
-			return r ? JSON.parse(r) : {};
-		} catch {
-			return {};
-		}
-	}
-	function saveDevicesTargetAlias(id: string, name: string) {
-		try {
-			const a = loadDevicesTargetAliases();
-			a[id] = name;
-			writeStoredValue(DEVICES_TARGET_ALIASES_KEY, JSON.stringify(a));
-		} catch {}
-	}
-	function getDevicesTargetDisplayName(id: string, originalName: string): string {
-		return loadDevicesTargetAliases()[id] || originalName;
 	}
 
 	// Light groups state — use reactive $state array, not $derived from localStorage
@@ -141,8 +99,6 @@ function getAvailabilityTargetDisplayName(id: string, originalName: string): str
 			lgDraftEntityIds = [...lgDraftEntityIds, entityId];
 		}
 	}
-let availabilityTargetRenamingId = $state('');
-let availabilityTargetRenamingName = $state('');
 let availabilityIgnoredOpen = $state(false);
 
 	type Props = {
@@ -170,6 +126,8 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorStatusDomains?: string[];
 		cardEditorStatusDeviceClasses?: string[];
 		cardEditorStatusEntityIds?: string[];
+		cardEditorStatusEntityAliases?: Record<string, string>;
+		mediaHubPlayerAliases?: Record<string, string>;
 		lightButtonEntityIds?: string[];
 		cardEditorStatusDiscoveredEntityIds?: string[];
 		cardEditorStatusIcon?: string;
@@ -196,6 +154,8 @@ let availabilityIgnoredOpen = $state(false);
 		onStatusDomainsChange: (value: string[]) => void;
 		onStatusDeviceClassesChange: (value: string[]) => void;
 		onStatusEntityIdsChange: (value: string[]) => void;
+		onStatusEntityAliasesChange: (value: Record<string, string>) => void;
+		onMediaHubPlayerAliasesChange?: (value: Record<string, string>) => void;
 		onStatusDiscoveredEntityIdsChange: (value: string[]) => void;
 		onStatusIconChange: (value: string) => void;
 		cardEditorNetEntityId?: string;
@@ -215,6 +175,7 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorCarChargingPowerEntityId?: string;
 		cardEditorEnergyDeviceEntityIds?: string[];
 		cardEditorEnergyDeviceTodayEntityIds?: string[];
+		cardEditorEnergyDeviceAliases?: Record<string, string>;
 		cardEditorCameras?: import('$lib/persistence/panel-state-types').CameraConfig[];
 		cardEditorHasCustomDayNoCar?: boolean;
 		cardEditorHasCustomDayWithCar?: boolean;
@@ -241,6 +202,7 @@ let availabilityIgnoredOpen = $state(false);
 		onCarChargingPowerEntityIdChange: (value: string) => void;
 		onEnergyDeviceEntityIdsChange: (value: string[]) => void;
 		onEnergyDeviceTodayEntityIdsChange: (value: string[]) => void;
+		onEnergyDeviceAliasesChange: (value: Record<string, string>) => void;
 		onCamerasChange: (value: import('$lib/persistence/panel-state-types').CameraConfig[]) => void;
 		onEnergyUploadClick: (variant: string) => void;
 		onEnergyResetClick: (variant: string) => void;
@@ -274,6 +236,8 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorStatusDomains,
 		cardEditorStatusDeviceClasses,
 		cardEditorStatusEntityIds,
+		cardEditorStatusEntityAliases = {},
+		mediaHubPlayerAliases = {},
 		lightButtonEntityIds = [],
 		cardEditorStatusDiscoveredEntityIds,
 		cardEditorStatusIcon,
@@ -300,6 +264,8 @@ let availabilityIgnoredOpen = $state(false);
 		onStatusDomainsChange,
 		onStatusDeviceClassesChange,
 		onStatusEntityIdsChange,
+		onStatusEntityAliasesChange,
+		onMediaHubPlayerAliasesChange,
 		onStatusDiscoveredEntityIdsChange,
 		onStatusIconChange,
 		cardEditorNetEntityId = '',
@@ -319,6 +285,7 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorCarChargingPowerEntityId = '',
 		cardEditorEnergyDeviceEntityIds = [],
 		cardEditorEnergyDeviceTodayEntityIds = [],
+		cardEditorEnergyDeviceAliases = {},
 		cardEditorCameras = [],
 		cardEditorHasCustomDayNoCar = false,
 		cardEditorHasCustomDayWithCar = false,
@@ -345,6 +312,7 @@ let availabilityIgnoredOpen = $state(false);
 		onCarChargingPowerEntityIdChange,
 		onEnergyDeviceEntityIdsChange,
 		onEnergyDeviceTodayEntityIdsChange,
+		onEnergyDeviceAliasesChange,
 		onCamerasChange,
 		onEnergyUploadClick,
 		onEnergyResetClick,
@@ -437,12 +405,10 @@ let availabilityIgnoredOpen = $state(false);
 	const scopedPickerRows = $derived(
 		usesScopedEntityPicker
 			? statusCandidates.map((entity) => {
+					const aliases = cardEditorType === 'media_players_status' ? mediaHubPlayerAliases : cardEditorStatusEntityAliases;
+					const alias = aliases?.[entity.entityId];
 					const displayName =
-						cardEditorType === 'availability_status'
-							? getAvailabilityTargetDisplayName(entity.entityId, entity.friendlyName)
-							: cardEditorType === 'devices_status'
-								? getDevicesTargetDisplayName(entity.entityId, entity.friendlyName)
-								: entity.friendlyName;
+						typeof alias === 'string' && alias.trim().length > 0 ? alias.trim() : entity.friendlyName;
 					return {
 						id: entity.entityId,
 						key: entity.entityId.trim().toLowerCase(),
@@ -702,13 +668,6 @@ let availabilityIgnoredOpen = $state(false);
 		onStatusEntityIdsChange(next);
 	}
 
-	function saveScopedPickerAlias(entityId: string, name: string) {
-		const trimmed = name.trim();
-		if (!trimmed) return;
-		if (cardEditorType === 'availability_status') saveAvailabilityTargetAlias(entityId, trimmed);
-		else if (cardEditorType === 'devices_status') saveDevicesTargetAlias(entityId, trimmed);
-	}
-
 	function clearScopedPickerSelectionOnce() {
 		const nextSeen = statusCandidates
 			.map((entity) => entity.entityId.trim().toLowerCase())
@@ -787,6 +746,7 @@ let availabilityIgnoredOpen = $state(false);
 				carChargingPowerEntityId={cardEditorCarChargingPowerEntityId}
 				energyDeviceEntityIds={cardEditorEnergyDeviceEntityIds}
 				energyDeviceTodayEntityIds={cardEditorEnergyDeviceTodayEntityIds}
+				energyDeviceAliases={cardEditorEnergyDeviceAliases}
 				hasCustomDayNoCar={cardEditorHasCustomDayNoCar}
 				hasCustomDayWithCar={cardEditorHasCustomDayWithCar}
 				hasCustomNightNoCar={cardEditorHasCustomNightNoCar}
@@ -812,6 +772,7 @@ let availabilityIgnoredOpen = $state(false);
 				{onCarChargingPowerEntityIdChange}
 				{onEnergyDeviceEntityIdsChange}
 				{onEnergyDeviceTodayEntityIdsChange}
+				{onEnergyDeviceAliasesChange}
 				energyPowerSelectedRows={energyPowerSelectedRows}
 				energyPowerIgnoredRows={energyPowerIgnoredRows}
 				energyEnergySelectedRows={energyEnergySelectedRows}
@@ -869,6 +830,8 @@ let availabilityIgnoredOpen = $state(false);
 				cardType={cardEditorType}
 				statusDomains={cardEditorStatusDomains}
 				statusEntityIds={cardEditorStatusEntityIds}
+				statusEntityAliases={cardEditorStatusEntityAliases}
+				mediaHubPlayerAliases={mediaHubPlayerAliases}
 				statusDeviceClasses={cardEditorStatusDeviceClasses}
 				statusIcon={cardEditorStatusIcon}
 				{usesScopedEntityPicker}
@@ -881,6 +844,8 @@ let availabilityIgnoredOpen = $state(false);
 				{onStatusDomainsChange}
 				{onStatusDeviceClassesChange}
 				{onStatusIconChange}
+				{onStatusEntityAliasesChange}
+				{onMediaHubPlayerAliasesChange}
 				{toggleStatusEntityId}
 				{selectAllScopedPickerEntities}
 				{clearScopedPickerSelectionOnce}

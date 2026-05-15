@@ -36,6 +36,14 @@ function isEntityButtonType(cardType: string): boolean {
 	);
 }
 
+function cleanAliasMap(value?: Record<string, string>): Record<string, string> | undefined {
+	if (!value || typeof value !== 'object') return undefined;
+	const entries = Object.entries(value)
+		.map(([key, label]) => [key.trim(), label.trim()] as const)
+		.filter(([key, label]) => key.length > 0 && label.length > 0);
+	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 export function addCatalogCardToSidebar(
 	cards: CardDraft[],
 	selected: CardDefinition,
@@ -206,6 +214,7 @@ export function saveCardEdits(
 	statusDeviceClasses?: CardDraft['statusDeviceClasses'],
 	statusEntityIds?: CardDraft['statusEntityIds'],
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'],
+	statusEntityAliases?: CardDraft['statusEntityAliases'],
 	statusIcon?: CardDraft['statusIcon'],
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'],
 	netEntityId?: string,
@@ -225,6 +234,7 @@ export function saveCardEdits(
 	carChargingPowerEntityId?: string,
 	energyDeviceEntityIds?: string[],
 	energyDeviceTodayEntityIds?: string[],
+	energyDeviceAliases?: CardDraft['energyDeviceAliases'],
 	hasCustomDayNoCar?: boolean,
 	hasCustomDayWithCar?: boolean,
 	hasCustomNightNoCar?: boolean,
@@ -274,6 +284,14 @@ export function saveCardEdits(
 			cardType === 'availability_status' ||
 			cardType === 'media_players_status'
 				? statusEntityIds
+				: undefined,
+		statusEntityAliases:
+			cardType === 'lights_status' ||
+			cardType === 'openings_status' ||
+			cardType === 'devices_status' ||
+			cardType === 'availability_status' ||
+			cardType === 'media_players_status'
+				? cleanAliasMap(statusEntityAliases)
 				: undefined,
 		statusDiscoveredEntityIds:
 			cardType === 'lights_status' ||
@@ -370,6 +388,7 @@ export function saveCardEdits(
 			cardType === 'energy' && Array.isArray(energyDeviceTodayEntityIds) && energyDeviceTodayEntityIds.length > 0
 				? energyDeviceTodayEntityIds.map((v) => v.trim()).filter((v) => v.length > 0)
 				: undefined,
+		energyDeviceAliases: cardType === 'energy' ? cleanAliasMap(energyDeviceAliases) : undefined,
 		hasCustomDayNoCar: cardType === 'energy' && hasCustomDayNoCar === true ? true : undefined,
 		hasCustomDayWithCar: cardType === 'energy' && hasCustomDayWithCar === true ? true : undefined,
 		hasCustomNightNoCar: cardType === 'energy' && hasCustomNightNoCar === true ? true : undefined,
@@ -411,6 +430,7 @@ export function saveCardInSidebar(
 	statusDeviceClasses?: CardDraft['statusDeviceClasses'],
 	statusEntityIds?: CardDraft['statusEntityIds'],
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'],
+	statusEntityAliases?: CardDraft['statusEntityAliases'],
 	statusIcon?: CardDraft['statusIcon'],
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'],
 	netEntityId?: string,
@@ -430,6 +450,7 @@ export function saveCardInSidebar(
 	carChargingPowerEntityId?: string,
 	energyDeviceEntityIds?: string[],
 	energyDeviceTodayEntityIds?: string[],
+	energyDeviceAliases?: CardDraft['energyDeviceAliases'],
 	hasCustomDayNoCar?: boolean,
 	hasCustomDayWithCar?: boolean,
 	hasCustomNightNoCar?: boolean,
@@ -465,6 +486,7 @@ export function saveCardInSidebar(
 					statusDeviceClasses,
 					statusEntityIds,
 					statusDiscoveredEntityIds,
+					statusEntityAliases,
 					statusIcon,
 					ignoredEntityIds,
 					netEntityId,
@@ -484,6 +506,7 @@ export function saveCardInSidebar(
 					carChargingPowerEntityId,
 					energyDeviceEntityIds,
 					energyDeviceTodayEntityIds,
+					energyDeviceAliases,
 					hasCustomDayNoCar,
 					hasCustomDayWithCar,
 					hasCustomNightNoCar,
@@ -522,6 +545,7 @@ export function saveCardInSections(
 	statusDeviceClasses?: CardDraft['statusDeviceClasses'],
 	statusEntityIds?: CardDraft['statusEntityIds'],
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'],
+	statusEntityAliases?: CardDraft['statusEntityAliases'],
 	statusIcon?: CardDraft['statusIcon'],
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'],
 	netEntityId?: string,
@@ -541,6 +565,7 @@ export function saveCardInSections(
 	carChargingPowerEntityId?: string,
 	energyDeviceEntityIds?: string[],
 	energyDeviceTodayEntityIds?: string[],
+	energyDeviceAliases?: CardDraft['energyDeviceAliases'],
 	hasCustomDayNoCar?: boolean,
 	hasCustomDayWithCar?: boolean,
 	hasCustomNightNoCar?: boolean,
@@ -578,6 +603,7 @@ export function saveCardInSections(
 						statusDeviceClasses,
 						statusEntityIds,
 						statusDiscoveredEntityIds,
+						statusEntityAliases,
 						statusIcon,
 						ignoredEntityIds,
 						netEntityId,
@@ -597,6 +623,7 @@ export function saveCardInSections(
 						carChargingPowerEntityId,
 						energyDeviceEntityIds,
 						energyDeviceTodayEntityIds,
+						energyDeviceAliases,
 						hasCustomDayNoCar,
 						hasCustomDayWithCar,
 						hasCustomNightNoCar,

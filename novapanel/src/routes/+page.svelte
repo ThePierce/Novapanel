@@ -237,6 +237,7 @@
 	let cardEditorStatusDomains = $state<string[]>([]);
 	let cardEditorStatusDeviceClasses = $state<string[]>([]);
 	let cardEditorStatusEntityIds = $state<string[]>([]);
+	let cardEditorStatusEntityAliases = $state<Record<string, string>>({});
 	// Light group picker state — lifted to page.svelte so it renders outside the transformed modal
 	let lgPickerOpen = $state(false);
 	let lgPickerEditingId = $state<string | null>(null);
@@ -296,6 +297,7 @@
 	let cardEditorCarChargingPowerEntityId = $state('');
 	let cardEditorEnergyDeviceEntityIds = $state<string[]>([]);
 	let cardEditorEnergyDeviceTodayEntityIds = $state<string[]>([]);
+	let cardEditorEnergyDeviceAliases = $state<Record<string, string>>({});
 	let cardEditorCameras = $state<import('$lib/persistence/panel-state-types').CameraConfig[]>([]);
 	let cardEditorHasCustomDayNoCar = $state(false);
 	let cardEditorHasCustomDayWithCar = $state(false);
@@ -327,6 +329,7 @@
 	let cardEditorInitialStatusDeviceClasses = $state<string[]>([]);
 	let cardEditorInitialStatusEntityIds = $state<string[]>([]);
 	let cardEditorInitialStatusDiscoveredEntityIds = $state<string[] | undefined>(undefined);
+	let cardEditorInitialStatusEntityAliases = $state<Record<string, string>>({});
 	let cardEditorInitialStatusIcon = $state('lightbulb');
 	let cardEditorInitialNetEntityId = $state('');
 	let cardEditorInitialSolarEntityId = $state('');
@@ -345,6 +348,7 @@
 	let cardEditorInitialCarChargingPowerEntityId = $state('');
 	let cardEditorInitialEnergyDeviceEntityIds = $state<string[]>([]);
 	let cardEditorInitialEnergyDeviceTodayEntityIds = $state<string[]>([]);
+	let cardEditorInitialEnergyDeviceAliases = $state<Record<string, string>>({});
 	let cardEditorInitialCameras = $state<import('$lib/persistence/panel-state-types').CameraConfig[]>([]);
 	let cardEditorInitialHasCustomDayNoCar = $state(false);
 	let cardEditorInitialHasCustomDayWithCar = $state(false);
@@ -612,64 +616,6 @@ if (browser) {
 		await persistDashboardState();
 	}
 
-	async function updateStatusDetailEntityAlias(cardId: string | undefined, entityId: string, alias: string) {
-		if (!cardId) return;
-		const trimmed = alias.trim();
-		if (!trimmed) return;
-		const nextSidebarCards = savedSidebarCards.map((card) => {
-			if (card.id !== cardId) return card;
-			return {
-				...card,
-				statusEntityAliases: {
-					...(card.statusEntityAliases ?? {}),
-					[entityId]: trimmed
-				}
-			};
-		});
-		savedSidebarCards = nextSidebarCards;
-		statusDetailEntityAliases = nextSidebarCards.find((card) => card.id === cardId)?.statusEntityAliases ?? {};
-		await persistDashboardState();
-	}
-
-	async function updateEnergyDetailEntityAlias(cardId: string | undefined, entityId: string, alias: string) {
-		if (!cardId) return;
-		const trimmed = alias.trim();
-		if (!trimmed) return;
-		// Update zowel sidebar als view-sections (een energy-kaart kan in beide zitten)
-		const updateCard = (card: import('$lib/persistence/panel-state-types').CardDraft) => {
-			if (card.id !== cardId) return card;
-			return {
-				...card,
-				energyDeviceAliases: {
-					...(card.energyDeviceAliases ?? {}),
-					[entityId]: trimmed
-				}
-			};
-		};
-		const nextSidebarCards = savedSidebarCards.map(updateCard);
-		const nextViewSections = savedViewSections.map((section) => ({
-			...section,
-			cards: section.cards.map(updateCard)
-		}));
-		savedSidebarCards = nextSidebarCards;
-		savedViewSections = nextViewSections;
-		// Update de open modal state
-		const findCard = (id: string) => {
-			const inSidebar = nextSidebarCards.find((c) => c.id === id);
-			if (inSidebar) return inSidebar;
-			for (const s of nextViewSections) {
-				const found = s.cards.find((c) => c.id === id);
-				if (found) return found;
-			}
-			return null;
-		};
-		const updated = findCard(cardId);
-		if (updated) {
-			energyDetailCard = { ...energyDetailCard, energyDeviceAliases: updated.energyDeviceAliases ?? {} };
-		}
-		await persistDashboardState();
-	}
-
 	async function updateEnergyDeviceSnapshot(
 		cardId: string | undefined,
 		snapshot: { date: string; values: Record<string, number> }
@@ -846,6 +792,7 @@ function getEditorUiState() {
 			cardEditorStatusDeviceClasses,
 			cardEditorStatusEntityIds,
 			cardEditorStatusDiscoveredEntityIds,
+			cardEditorStatusEntityAliases,
 			cardEditorStatusIcon,
 			cardEditorNetEntityId,
 			cardEditorSolarEntityId,
@@ -864,6 +811,7 @@ function getEditorUiState() {
 			cardEditorCarChargingPowerEntityId,
 			cardEditorEnergyDeviceEntityIds,
 			cardEditorEnergyDeviceTodayEntityIds,
+			cardEditorEnergyDeviceAliases,
 			cardEditorCameras,
 			cardEditorHasCustomDayNoCar,
 			cardEditorHasCustomDayWithCar,
@@ -890,6 +838,7 @@ function getEditorUiState() {
 			cardEditorInitialCarChargingPowerEntityId,
 			cardEditorInitialEnergyDeviceEntityIds,
 			cardEditorInitialEnergyDeviceTodayEntityIds,
+			cardEditorInitialEnergyDeviceAliases,
 			cardEditorInitialCameras,
 			cardEditorInitialHasCustomDayNoCar,
 			cardEditorInitialHasCustomDayWithCar,
@@ -920,6 +869,7 @@ function getEditorUiState() {
 			cardEditorInitialStatusDeviceClasses,
 			cardEditorInitialStatusEntityIds,
 			cardEditorInitialStatusDiscoveredEntityIds,
+			cardEditorInitialStatusEntityAliases,
 			cardEditorInitialStatusIcon,
 		sectionEditorOpen,
 		sectionEditorId,
@@ -976,6 +926,7 @@ function setEditorUiState(
 		if (patch.cardEditorStatusEntityIds !== undefined) cardEditorStatusEntityIds = patch.cardEditorStatusEntityIds;
 		if ('cardEditorStatusDiscoveredEntityIds' in patch)
 			cardEditorStatusDiscoveredEntityIds = patch.cardEditorStatusDiscoveredEntityIds;
+		if (patch.cardEditorStatusEntityAliases !== undefined) cardEditorStatusEntityAliases = patch.cardEditorStatusEntityAliases;
 		if (patch.cardEditorStatusIcon !== undefined) cardEditorStatusIcon = patch.cardEditorStatusIcon;
 		if (patch.cardEditorNetEntityId !== undefined) cardEditorNetEntityId = patch.cardEditorNetEntityId;
 		if (patch.cardEditorSolarEntityId !== undefined) cardEditorSolarEntityId = patch.cardEditorSolarEntityId;
@@ -994,6 +945,7 @@ function setEditorUiState(
 		if (patch.cardEditorCarChargingPowerEntityId !== undefined) cardEditorCarChargingPowerEntityId = patch.cardEditorCarChargingPowerEntityId;
 		if (patch.cardEditorEnergyDeviceEntityIds !== undefined) cardEditorEnergyDeviceEntityIds = patch.cardEditorEnergyDeviceEntityIds;
 		if (patch.cardEditorEnergyDeviceTodayEntityIds !== undefined) cardEditorEnergyDeviceTodayEntityIds = patch.cardEditorEnergyDeviceTodayEntityIds;
+		if (patch.cardEditorEnergyDeviceAliases !== undefined) cardEditorEnergyDeviceAliases = patch.cardEditorEnergyDeviceAliases;
 		if (patch.cardEditorCameras !== undefined) cardEditorCameras = patch.cardEditorCameras;
 		if (patch.cardEditorHasCustomDayNoCar !== undefined) cardEditorHasCustomDayNoCar = patch.cardEditorHasCustomDayNoCar;
 		if (patch.cardEditorHasCustomDayWithCar !== undefined) cardEditorHasCustomDayWithCar = patch.cardEditorHasCustomDayWithCar;
@@ -1027,6 +979,8 @@ function setEditorUiState(
 		if (patch.cardEditorInitialStatusEntityIds !== undefined) cardEditorInitialStatusEntityIds = patch.cardEditorInitialStatusEntityIds;
 		if ('cardEditorInitialStatusDiscoveredEntityIds' in patch)
 			cardEditorInitialStatusDiscoveredEntityIds = patch.cardEditorInitialStatusDiscoveredEntityIds;
+		if (patch.cardEditorInitialStatusEntityAliases !== undefined)
+			cardEditorInitialStatusEntityAliases = patch.cardEditorInitialStatusEntityAliases;
 		if (patch.cardEditorInitialStatusIcon !== undefined) cardEditorInitialStatusIcon = patch.cardEditorInitialStatusIcon;
 		if (patch.cardEditorInitialNetEntityId !== undefined) cardEditorInitialNetEntityId = patch.cardEditorInitialNetEntityId;
 		if (patch.cardEditorInitialSolarEntityId !== undefined) cardEditorInitialSolarEntityId = patch.cardEditorInitialSolarEntityId;
@@ -1045,6 +999,7 @@ function setEditorUiState(
 		if (patch.cardEditorInitialCarChargingPowerEntityId !== undefined) cardEditorInitialCarChargingPowerEntityId = patch.cardEditorInitialCarChargingPowerEntityId;
 		if (patch.cardEditorInitialEnergyDeviceEntityIds !== undefined) cardEditorInitialEnergyDeviceEntityIds = patch.cardEditorInitialEnergyDeviceEntityIds;
 		if (patch.cardEditorInitialEnergyDeviceTodayEntityIds !== undefined) cardEditorInitialEnergyDeviceTodayEntityIds = patch.cardEditorInitialEnergyDeviceTodayEntityIds;
+		if (patch.cardEditorInitialEnergyDeviceAliases !== undefined) cardEditorInitialEnergyDeviceAliases = patch.cardEditorInitialEnergyDeviceAliases;
 		if (patch.cardEditorInitialHasCustomDayNoCar !== undefined) cardEditorInitialHasCustomDayNoCar = patch.cardEditorInitialHasCustomDayNoCar;
 		if (patch.cardEditorInitialHasCustomDayWithCar !== undefined) cardEditorInitialHasCustomDayWithCar = patch.cardEditorInitialHasCustomDayWithCar;
 		if (patch.cardEditorInitialHasCustomNightNoCar !== undefined) cardEditorInitialHasCustomNightNoCar = patch.cardEditorInitialHasCustomNightNoCar;
@@ -2066,6 +2021,7 @@ if (browser) {
 				JSON.stringify(cardEditorStatusEntityIds ?? []) !== JSON.stringify(cardEditorInitialStatusEntityIds ?? []) ||
 				JSON.stringify([...(cardEditorStatusDiscoveredEntityIds ?? [])].sort()) !==
 					JSON.stringify([...(cardEditorInitialStatusDiscoveredEntityIds ?? [])].sort()) ||
+				JSON.stringify(cardEditorStatusEntityAliases ?? {}) !== JSON.stringify(cardEditorInitialStatusEntityAliases ?? {}) ||
 				cardEditorStatusIcon !== cardEditorInitialStatusIcon ||
 			cardEditorNetEntityId !== (cardEditorInitialNetEntityId ?? '') ||
 			cardEditorSolarEntityId !== (cardEditorInitialSolarEntityId ?? '') ||
@@ -2084,6 +2040,7 @@ if (browser) {
 			cardEditorCarChargingPowerEntityId !== (cardEditorInitialCarChargingPowerEntityId ?? '') ||
 			JSON.stringify(cardEditorEnergyDeviceEntityIds ?? []) !== JSON.stringify(cardEditorInitialEnergyDeviceEntityIds ?? []) ||
 			JSON.stringify(cardEditorEnergyDeviceTodayEntityIds ?? []) !== JSON.stringify(cardEditorInitialEnergyDeviceTodayEntityIds ?? []) ||
+			JSON.stringify(cardEditorEnergyDeviceAliases ?? {}) !== JSON.stringify(cardEditorInitialEnergyDeviceAliases ?? {}) ||
 			cardEditorHasCustomDayNoCar !== (cardEditorInitialHasCustomDayNoCar ?? false) ||
 			cardEditorHasCustomDayWithCar !== (cardEditorInitialHasCustomDayWithCar ?? false) ||
 			cardEditorHasCustomNightNoCar !== (cardEditorInitialHasCustomNightNoCar ?? false) ||
@@ -2664,6 +2621,8 @@ if (browser) {
 				{cardEditorStatusDomains}
 				{cardEditorStatusDeviceClasses}
 				{cardEditorStatusEntityIds}
+				{cardEditorStatusEntityAliases}
+				mediaHubPlayerAliases={mediaHubPlayerAliases}
 				lightButtonEntityIds={sidebarLightEntityIds}
 				cardEditorStatusDiscoveredEntityIds={cardEditorStatusDiscoveredEntityIds}
 				{cardEditorStatusIcon}
@@ -2690,6 +2649,11 @@ if (browser) {
 				onStatusDomainsChange={(value) => (cardEditorStatusDomains = value)}
 				onStatusDeviceClassesChange={(value) => (cardEditorStatusDeviceClasses = value)}
 				onStatusEntityIdsChange={(value) => (cardEditorStatusEntityIds = value)}
+				onStatusEntityAliasesChange={(value) => (cardEditorStatusEntityAliases = value)}
+				onMediaHubPlayerAliasesChange={(value) => {
+					mediaHubPlayerAliases = value;
+					void persistDashboardState();
+				}}
 				onStatusDiscoveredEntityIdsChange={(value) =>
 					(cardEditorStatusDiscoveredEntityIds = [...value])}
 				onStatusIconChange={(value) => (cardEditorStatusIcon = value)}
@@ -2710,6 +2674,7 @@ if (browser) {
 				cardEditorCarChargingPowerEntityId={cardEditorCarChargingPowerEntityId}
 				cardEditorEnergyDeviceEntityIds={cardEditorEnergyDeviceEntityIds}
 				cardEditorEnergyDeviceTodayEntityIds={cardEditorEnergyDeviceTodayEntityIds}
+				cardEditorEnergyDeviceAliases={cardEditorEnergyDeviceAliases}
 				cardEditorHasCustomDayNoCar={cardEditorHasCustomDayNoCar}
 				cardEditorHasCustomDayWithCar={cardEditorHasCustomDayWithCar}
 				cardEditorHasCustomNightNoCar={cardEditorHasCustomNightNoCar}
@@ -2735,6 +2700,7 @@ if (browser) {
 				onCarChargingPowerEntityIdChange={(value) => (cardEditorCarChargingPowerEntityId = value)}
 				onEnergyDeviceEntityIdsChange={(value) => (cardEditorEnergyDeviceEntityIds = [...value])}
 				onEnergyDeviceTodayEntityIdsChange={(value) => (cardEditorEnergyDeviceTodayEntityIds = [...value])}
+				onEnergyDeviceAliasesChange={(value) => (cardEditorEnergyDeviceAliases = value)}
 				cardEditorCameras={cardEditorCameras}
 				onCamerasChange={(value) => (cardEditorCameras = [...value])}
 				onEnergyUploadClick={onEnergyUploadClick}
@@ -2846,7 +2812,6 @@ if (browser) {
 					energyDeviceTodayEntityIds={energyDetailCard.energyDeviceTodayEntityIds}
 					energyDeviceAliases={energyDetailCard.energyDeviceAliases}
 					energyDeviceSnapshot={energyDetailCard.energyDeviceSnapshot}
-					onEntityAliasChange={(entityId, alias) => updateEnergyDetailEntityAlias(energyDetailCard.id, entityId, alias)}
 					onSnapshotChange={(snapshot) => updateEnergyDeviceSnapshot(energyDetailCard.id, snapshot)}
 					cardId={energyDetailCard.id}
 					hasCustomDayNoCar={energyDetailCard.hasCustomDayNoCar}
@@ -2929,16 +2894,9 @@ if (browser) {
 						mediaHubPlayerOrder = value;
 						void persistDashboardState();
 					}}
-					onMediaHubPlayerAliasesChange={(value) => {
-						mediaHubPlayerAliases = value;
-						void persistDashboardState();
-					}}
 					onClose={() => (statusDetailOpen = false)}
 					onIgnore={(entityId) => void updateIgnoredEntities(statusDetailCardId, entityId, true)}
 					onUnignore={(entityId) => void updateIgnoredEntities(statusDetailCardId, entityId, false)}
-					onEntityAliasChange={(entityId, alias) =>
-						void updateStatusDetailEntityAlias(statusDetailCardId, entityId, alias)
-					}
 					onEntityIconChange={(entityId, icon) =>
 						void updateStatusDetailEntityIcon(statusDetailCardId, entityId, icon)
 					}

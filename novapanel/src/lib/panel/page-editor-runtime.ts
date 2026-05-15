@@ -87,6 +87,7 @@ export function saveCardEditorRuntime(input: {
 	statusDeviceClasses?: CardDraft['statusDeviceClasses'];
 	statusEntityIds?: CardDraft['statusEntityIds'];
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
+	statusEntityAliases?: CardDraft['statusEntityAliases'];
 	statusIcon?: CardDraft['statusIcon'];
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'];
 	netEntityId?: string;
@@ -106,6 +107,7 @@ export function saveCardEditorRuntime(input: {
 	carChargingPowerEntityId?: string;
 	energyDeviceEntityIds?: string[];
 	energyDeviceTodayEntityIds?: string[];
+	energyDeviceAliases?: CardDraft['energyDeviceAliases'];
 	hasCustomDayNoCar?: boolean;
 	hasCustomDayWithCar?: boolean;
 	hasCustomNightNoCar?: boolean;
@@ -142,6 +144,7 @@ export function saveCardEditorRuntime(input: {
 				input.statusDeviceClasses,
 				input.statusEntityIds,
 				input.statusDiscoveredEntityIds,
+				input.statusEntityAliases,
 				input.statusIcon,
 				input.ignoredEntityIds,
 				input.netEntityId,
@@ -161,6 +164,7 @@ export function saveCardEditorRuntime(input: {
 				input.carChargingPowerEntityId,
 				input.energyDeviceEntityIds,
 				input.energyDeviceTodayEntityIds,
+				input.energyDeviceAliases,
 				input.hasCustomDayNoCar,
 				input.hasCustomDayWithCar,
 				input.hasCustomNightNoCar,
@@ -200,6 +204,7 @@ export function saveCardEditorRuntime(input: {
 			input.statusDeviceClasses,
 			input.statusEntityIds,
 			input.statusDiscoveredEntityIds,
+			input.statusEntityAliases,
 			input.statusIcon,
 			input.ignoredEntityIds,
 			input.netEntityId,
@@ -219,6 +224,7 @@ export function saveCardEditorRuntime(input: {
 			input.carChargingPowerEntityId,
 			input.energyDeviceEntityIds,
 			input.energyDeviceTodayEntityIds,
+			input.energyDeviceAliases,
 			input.hasCustomDayNoCar,
 			input.hasCustomDayWithCar,
 			input.hasCustomNightNoCar,

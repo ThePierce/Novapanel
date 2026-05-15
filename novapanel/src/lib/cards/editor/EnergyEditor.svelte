@@ -3,6 +3,7 @@
 	import AreaPicker from '$lib/cards/editor/AreaPicker.svelte';
 	import type { EnergyAnchors } from '$lib/persistence/panel-state-types';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import { filteredEntities } from '$lib/ha/entities-store';
 
 	type Row = { id: string; label: string; displayName: string };
 
@@ -24,6 +25,7 @@
 		carChargingPowerEntityId?: string;
 		energyDeviceEntityIds?: string[];
 		energyDeviceTodayEntityIds?: string[];
+		energyDeviceAliases?: Record<string, string>;
 		hasCustomDayNoCar?: boolean;
 		hasCustomDayWithCar?: boolean;
 		hasCustomNightNoCar?: boolean;
@@ -60,6 +62,7 @@
 		onCarChargingPowerEntityIdChange: (value: string) => void;
 		onEnergyDeviceEntityIdsChange: (value: string[]) => void;
 		onEnergyDeviceTodayEntityIdsChange: (value: string[]) => void;
+		onEnergyDeviceAliasesChange: (value: Record<string, string>) => void;
 		onEnergyUploadClick: (variant: string) => void;
 		onEnergyResetClick: (variant: string) => void;
 		onEnergyAnchorsClick: (variant: string) => void;
@@ -118,6 +121,38 @@
 		{ key: 'night-no-car', label: "'s Avonds, geen auto", has: p.hasCustomNightNoCar, anchors: p.anchorsNightNoCar },
 		{ key: 'night-with-car', label: "'s Avonds, met auto", has: p.hasCustomNightWithCar, anchors: p.anchorsNightWithCar }
 	]);
+
+	const deviceAliasRows = $derived.by(() => {
+		const ids = (p.energyDeviceEntityIds ?? [])
+			.map((id) => id.trim())
+			.filter((id) => id.length > 0);
+		const seen = new Set<string>();
+		return ids
+			.filter((id) => {
+				const key = id.toLowerCase();
+				if (seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			})
+			.map((id) => {
+				const entity = $filteredEntities.find((entry) => entry.entityId.toLowerCase() === id.toLowerCase());
+				const originalName = entity?.friendlyName?.trim() || id;
+				const canonicalId = entity?.entityId ?? id;
+				const alias = p.energyDeviceAliases?.[canonicalId] ?? p.energyDeviceAliases?.[id] ?? '';
+				return {
+					id: canonicalId,
+					originalName,
+					alias: typeof alias === 'string' ? alias : ''
+				};
+			});
+	});
+
+	function updateDeviceAlias(entityId: string, value: string) {
+		const next = { ...(p.energyDeviceAliases ?? {}) };
+		if (value.trim().length > 0) next[entityId] = value;
+		else delete next[entityId];
+		p.onEnergyDeviceAliasesChange(next);
+	}
 </script>
 
 <EditorSection title={translate('Live vermogen', $selectedLanguageStore)} icon="bolt" tone="amber" status={liveStatus.status} statusLabel={liveStatus.label}>
@@ -256,6 +291,38 @@
 	/>
 </EditorSection>
 
+{#if deviceAliasRows.length > 0}
+	<EditorSection
+		title={translate('Namen per apparaat', $selectedLanguageStore)}
+		icon="pencil"
+		tone="amber"
+		status={deviceAliasRows.some((row) => row.alias.trim().length > 0) ? 'partial' : 'empty'}
+		statusLabel={`${deviceAliasRows.length} ${translate(deviceAliasRows.length === 1 ? 'apparaat' : 'apparaten', $selectedLanguageStore)}`}
+	>
+		<div class="np-help">{translate('Pas hier de namen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.', $selectedLanguageStore)}</div>
+		<div class="alias-editor-list">
+			{#each deviceAliasRows as row (row.id)}
+				<div class="alias-editor-row">
+					<div class="alias-editor-meta">
+						<span class="alias-editor-name">
+							{row.alias.trim().length > 0 ? row.alias.trim() : row.originalName}
+							<span class="np-hint">({row.originalName})</span>
+						</span>
+						<span class="alias-editor-id">{row.id}</span>
+					</div>
+					<input
+						type="text"
+						class="np-input"
+						value={row.alias}
+						placeholder={row.originalName}
+						oninput={(event) => updateDeviceAlias(row.id, (event.currentTarget as HTMLInputElement).value)}
+					/>
+				</div>
+			{/each}
+		</div>
+	</EditorSection>
+{/if}
+
 <EditorSection title={translate("Eigen foto's en ankerpunten", $selectedLanguageStore)} icon="photo" tone="purple" status={assetsStatus.status} statusLabel={assetsStatus.label}>
 	<div class="np-help">{translate('Per scenario een eigen foto en ankerpunten voor de flow-lijnen.', $selectedLanguageStore)}</div>
 	<div class="np-variant-grid">
@@ -283,3 +350,47 @@
 		{/each}
 	</div>
 </EditorSection>
+
+<style>
+	.alias-editor-list {
+		display: grid;
+		gap: 0.5rem;
+	}
+	.alias-editor-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(180px, 0.9fr);
+		gap: 0.5rem;
+		align-items: center;
+		padding: 0.55rem;
+		border: 1px solid rgba(255,255,255,0.08);
+		border-radius: 0.45rem;
+		background: rgba(255,255,255,0.035);
+		min-width: 0;
+	}
+	.alias-editor-meta {
+		display: grid;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+	.alias-editor-name,
+	.alias-editor-id {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		min-width: 0;
+	}
+	.alias-editor-name {
+		font-size: 0.86rem;
+		color: rgba(255,255,255,0.92);
+	}
+	.alias-editor-id {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+		font-size: 0.68rem;
+		color: rgba(255,255,255,0.42);
+	}
+	@media (max-width: 640px) {
+		.alias-editor-row {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

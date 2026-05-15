@@ -31,7 +31,6 @@
 		/** Sync naar server-state. */
 		onBridgesChange?: (value: OnkyoBridge[]) => void;
 		onPlayerOrderChange?: (value: string[]) => void;
-		onPlayerAliasesChange?: (value: Record<string, string>) => void;
 	};
 
 	let {
@@ -46,8 +45,7 @@
 		playerOrder = [],
 		playerAliases = {},
 		onBridgesChange,
-		onPlayerOrderChange,
-		onPlayerAliasesChange
+		onPlayerOrderChange
 	}: Props = $props();
 
 	// ----- Persistente state ------------------------------------------------
@@ -62,17 +60,6 @@
 
 	function getPlayerName(id: string, fallback: string): string {
 		return playerAliases[id] || labelFor(id, fallback);
-	}
-
-	function setPlayerAlias(id: string, name: string) {
-		const trimmed = name.trim();
-		const next = { ...playerAliases };
-		if (!trimmed) {
-			delete next[id];
-		} else {
-			next[id] = trimmed;
-		}
-		onPlayerAliasesChange?.(next);
 	}
 
 	function setOnkyoBridges(value: OnkyoBridge[]) {
@@ -121,10 +108,6 @@
 			if (baseEntityId) setActivePlayer(baseEntityId);
 		}
 	}
-
-	// Inline rename
-	let renamingPlayerId = $state('');
-	let renameDraft = $state('');
 
 	// Drag-and-drop herordening van spelers
 	let dragSourceEntityId = $state('');
@@ -726,24 +709,6 @@
 	async function selectSource(entity: HomeAssistantEntity, source: string) {
 		await callService('media_player', 'select_source', entity.entityId, { source });
 		sourcePickerOpen = false;
-	}
-
-	// ----- Inline rename ----------------------------------------------------
-	function startRename(entity: HomeAssistantEntity) {
-		renamingPlayerId = entity.entityId;
-		renameDraft = getPlayerName(entity.entityId, entity.friendlyName ?? entity.entityId);
-	}
-	function commitRename() {
-		const id = renamingPlayerId;
-		const name = renameDraft.trim();
-		if (!id) return;
-		setPlayerAlias(id, name);
-		renamingPlayerId = '';
-		renameDraft = '';
-	}
-	function cancelRename() {
-		renamingPlayerId = '';
-		renameDraft = '';
 	}
 
 	// ----- Drag and drop herordening -----------------------------------------
@@ -2160,7 +2125,6 @@
 				{#each sortedEntities as entity (entity.entityId)}
 					{@const on = isOn(entity)}
 					{@const isActive = entity.entityId === activePlayerId}
-					{@const isRenaming = renamingPlayerId === entity.entityId}
 					{@const isDragging = dragSourceEntityId === entity.entityId}
 					{@const isDragTarget = dragOverEntityId === entity.entityId}
 					{@const isOnkyoZone = onkyoBridges.some((b) => b.zoneEntityId === entity.entityId)}
@@ -2213,61 +2177,41 @@
 								{/if}
 							</div>
 							<div class="player-tile-info">
-								{#if isRenaming}
-									<input
-										class="player-rename-input"
-										type="text"
-										value={renameDraft}
-										onclick={(e) => e.stopPropagation()}
-										oninput={(e) => (renameDraft = (e.currentTarget as HTMLInputElement).value)}
-										onkeydown={(e) => {
-											if (e.key === 'Enter') { e.preventDefault(); commitRename(); }
-											if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
-										}}
-									/>
-								{:else}
-									<div class="player-tile-name">
-										{#if isActive}<span class="player-tile-active-dot" aria-hidden="true"></span>{/if}
-										{getPlayerName(entity.entityId, entity.friendlyName ?? entity.entityId)}
+								<div class="player-tile-name">
+									{#if isActive}<span class="player-tile-active-dot" aria-hidden="true"></span>{/if}
+									{getPlayerName(entity.entityId, entity.friendlyName ?? entity.entityId)}
+								</div>
+								{#if on && nowPlaying.primary}
+									<div class="player-tile-now">
+										<div class="player-tile-now-primary">{nowPlaying.primary}</div>
+										{#if nowPlaying.secondary}<div class="player-tile-now-secondary">{nowPlaying.secondary}</div>{/if}
 									</div>
-									{#if on && nowPlaying.primary}
-										<div class="player-tile-now">
-											<div class="player-tile-now-primary">{nowPlaying.primary}</div>
-											{#if nowPlaying.secondary}<div class="player-tile-now-secondary">{nowPlaying.secondary}</div>{/if}
-										</div>
-									{:else if on}
-										<div class="player-tile-status on">{readCurrentSource(entity) || _t('Aan')}</div>
-									{:else}
-										<div class="player-tile-status off">{_t('Uit')}</div>
-									{/if}
+								{:else if on}
+									<div class="player-tile-status on">{readCurrentSource(entity) || _t('Aan')}</div>
+								{:else}
+									<div class="player-tile-status off">{_t('Uit')}</div>
 								{/if}
 							</div>
 						</button>
 
 						<!-- Quick controls — visible on hover or active -->
 						<div class="player-tile-controls">
-							{#if isRenaming}
-								<button type="button" class="ptile-btn ok" onclick={(__e) => { __e.stopPropagation(); commitRename(); }} aria-label={_t('save')}><StatusIcon icon="mdi:check" size={16} /></button>
-								<button type="button" class="ptile-btn" onclick={(__e) => { __e.stopPropagation(); cancelRename(); }} aria-label={_t('cancel')}><StatusIcon icon="mdi:close" size={16} /></button>
-							{:else}
-								<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void prevTrack(entity))(__e); }} aria-label={_t('Vorige')}><StatusIcon icon="mdi:skip-previous" size={18} /></button>
-								<button type="button" class="ptile-btn ptile-btn-play" disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePlayPause(entity))(__e); }} aria-label={playing ? _t('Pauzeren') : _t('Afspelen')}><StatusIcon icon={!on ? 'mdi:power' : playing ? 'mdi:pause' : 'mdi:play'} size={20} /></button>
-								<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void nextTrack(entity))(__e); }} aria-label={_t('Volgende')}><StatusIcon icon="mdi:skip-next" size={18} /></button>
-								<button type="button" class={`ptile-btn small ${on ? 'on' : ''}`} disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePower(entity))(__e); }} aria-label={_t('Aan/uit')}><StatusIcon icon="mdi:power" size={14} /></button>
-								<button type="button" class="ptile-btn small ghost" onclick={(__e) => { __e.stopPropagation(); (() => startRename(entity))(__e); }} aria-label={_t('Hernoemen')} title={_t('Naam wijzigen')}><StatusIcon icon="mdi:pencil-outline" size={13} /></button>
-								<button
-									type="button"
-									class="ptile-drag"
-									aria-label={_t('Verslepen om te herordenen')}
-									title={_t('Sleep om volgorde te wijzigen')}
-									draggable="true"
-									ondragstart={(e) => handleDragStart(e, entity.entityId)}
-									ondragend={handleDragEnd}
-									onclick={(__e) => __e.stopPropagation()}
-								>
-									<StatusIcon icon="mdi:drag-horizontal-variant" size={14} />
-								</button>
-							{/if}
+							<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void prevTrack(entity))(__e); }} aria-label={_t('Vorige')}><StatusIcon icon="mdi:skip-previous" size={18} /></button>
+							<button type="button" class="ptile-btn ptile-btn-play" disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePlayPause(entity))(__e); }} aria-label={playing ? _t('Pauzeren') : _t('Afspelen')}><StatusIcon icon={!on ? 'mdi:power' : playing ? 'mdi:pause' : 'mdi:play'} size={20} /></button>
+							<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void nextTrack(entity))(__e); }} aria-label={_t('Volgende')}><StatusIcon icon="mdi:skip-next" size={18} /></button>
+							<button type="button" class={`ptile-btn small ${on ? 'on' : ''}`} disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePower(entity))(__e); }} aria-label={_t('Aan/uit')}><StatusIcon icon="mdi:power" size={14} /></button>
+							<button
+								type="button"
+								class="ptile-drag"
+								aria-label={_t('Verslepen om te herordenen')}
+								title={_t('Sleep om volgorde te wijzigen')}
+								draggable="true"
+								ondragstart={(e) => handleDragStart(e, entity.entityId)}
+								ondragend={handleDragEnd}
+								onclick={(__e) => __e.stopPropagation()}
+							>
+								<StatusIcon icon="mdi:drag-horizontal-variant" size={14} />
+							</button>
 						</div>
 					</div>
 				{/each}
@@ -3338,22 +3282,6 @@
 		font-size: 10.5px;
 	}
 
-	.player-rename-input {
-		background: rgba(0,0,0,0.5);
-		border: 0.5px solid rgba(96,165,250,0.40);
-		color: #fff;
-		border-radius: 9px;
-		padding: 7px 10px;
-		font-size: 13px;
-		width: 100%;
-		font-family: inherit;
-	}
-	.player-rename-input:focus {
-		outline: none;
-		border-color: #93c5fd;
-		box-shadow: 0 0 0 3px rgba(96,165,250,0.15);
-	}
-
 	/* Controls bar at bottom of tile */
 	.player-tile-controls {
 		position: relative;
@@ -3408,20 +3336,6 @@
 		color: #4ade80;
 		border-color: rgba(74,222,128,0.32);
 	}
-	.ptile-btn.ok {
-		background: linear-gradient(135deg, #6ec464, #4eae5b);
-		color: #0a1f12;
-		border-color: rgba(74,222,128,0.40);
-	}
-	.ptile-btn.ghost {
-		background: transparent;
-		opacity: 0;
-		transition: opacity 0.12s;
-		border: 0;
-	}
-	.player-tile:hover .ptile-btn.ghost { opacity: 0.7; }
-	.ptile-btn.ghost:hover { opacity: 1; background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.13); }
-
 	.ptile-drag {
 		display: inline-flex;
 		align-items: center;

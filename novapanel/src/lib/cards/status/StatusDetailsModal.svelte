@@ -17,33 +17,6 @@
 	import { areaStore, areaById } from '$lib/ha/area-store';
 	import { browser } from '$app/environment';
 
-
-	// Player-alias helpers: laten gebruikers spelers hernoemen vanuit de modal.
-	// Storage-key blijft ongewijzigd zodat bestaande aliases bewaard blijven na deze refactor.
-	const PLAYER_ALIASES_KEY = 'np_ma_target_aliases';
-
-	function loadPlayerAliases(): Record<string, string> {
-		try {
-			const raw = readStoredValue(PLAYER_ALIASES_KEY);
-			if (!raw) return {};
-			const parsed = JSON.parse(raw);
-			return parsed && typeof parsed === 'object' ? parsed : {};
-		} catch { return {}; }
-	}
-
-	function savePlayerAlias(id: string, name: string) {
-		try {
-			const aliases = loadPlayerAliases();
-			aliases[id] = name;
-			writeStoredValue(PLAYER_ALIASES_KEY, JSON.stringify(aliases));
-		} catch {}
-	}
-
-	function getPlayerDisplayName(id: string, originalName: string): string {
-		const aliases = loadPlayerAliases();
-		return aliases[id] || originalName;
-	}
-
 const EMPTY_RECORD: Record<string, string> = {};
 
 	type Props = {
@@ -64,11 +37,9 @@ const EMPTY_RECORD: Record<string, string> = {};
 		mediaHubPlayerAliases?: Record<string, string>;
 		onMediaHubBridgesChange?: (value: Array<{ id: string; label: string; zoneEntityId: string; spotifySource?: string }>) => void;
 		onMediaHubPlayerOrderChange?: (value: string[]) => void;
-		onMediaHubPlayerAliasesChange?: (value: Record<string, string>) => void;
 		onClose: () => void;
 		onIgnore: (entityId: string) => void;
 		onUnignore: (entityId: string) => void;
-	onEntityAliasChange?: (entityId: string, alias: string) => void;
 	onEntityIconChange?: (entityId: string, icon: string | null) => void;
 		/** When true, entity rows do not trigger HA toggle on click (editor / arrange mode). */
 		editMode?: boolean;
@@ -92,9 +63,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 	mediaHubPlayerAliases = {},
 	onMediaHubBridgesChange,
 	onMediaHubPlayerOrderChange,
-	onMediaHubPlayerAliasesChange,
 	onClose,
-	onEntityAliasChange,
 	onEntityIconChange
 	}: Props = $props();
 
@@ -129,9 +98,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 		typeof title === 'string' && title.trim().length > 0 ? title.trim() : cardTypeMeta.title
 	);
 
-	let popupAliasTick = $state(0);
-	let popupRenameEntityId = $state('');
-	let popupRenameDraft = $state('');
 	let iconOverrideTick = $state(0);
 	let iconEditorEntityId = $state('');
 	let iconEditorDraft = $state('');
@@ -140,7 +106,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 	type StatusDetailEntity = (typeof result.relevant)[number];
 
 	function popupLabelForEntity(entityId: string, friendlyName: string): string {
-		void popupAliasTick;
 		if (
 			kind === 'lights_status' ||
 			kind === 'availability_status' ||
@@ -150,37 +115,11 @@ const EMPTY_RECORD: Record<string, string> = {};
 			const value = statusEntityAliases?.[entityId];
 			if (typeof value === 'string' && value.trim().length > 0) return value.trim();
 		}
-		if (kind === 'media_players_status') return getPlayerDisplayName(entityId, friendlyName);
-		return friendlyName;
-	}
-
-	function savePopupAlias(entityId: string, rawName: string) {
-		const name = rawName.trim();
-		if (!name) return;
 		if (kind === 'media_players_status') {
-			savePlayerAlias(entityId, name);
-		} else {
-			onEntityAliasChange?.(entityId, name);
+			const value = mediaHubPlayerAliases?.[entityId];
+			if (typeof value === 'string' && value.trim().length > 0) return value.trim();
 		}
-		popupAliasTick++;
-	}
-
-	function openPopupRename(entityId: string, friendlyName: string) {
-		popupRenameEntityId = entityId;
-		popupRenameDraft = popupLabelForEntity(entityId, friendlyName);
-	}
-
-	function commitPopupRename() {
-		const id = popupRenameEntityId.trim();
-		if (!id) return;
-		const name = popupRenameDraft.trim();
-		if (!name) return;
-		savePopupAlias(id, name);
-		popupRenameEntityId = '';
-	}
-
-	function cancelPopupRename() {
-		popupRenameEntityId = '';
+		return friendlyName;
 	}
 
 	function supportsCustomIconEditor(kindValue: StatusCardKind): boolean {
@@ -726,7 +665,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 				playerAliases={mediaHubPlayerAliases}
 				onBridgesChange={(value) => onMediaHubBridgesChange?.(value)}
 				onPlayerOrderChange={(value) => onMediaHubPlayerOrderChange?.(value)}
-				onPlayerAliasesChange={(value) => onMediaHubPlayerAliasesChange?.(value)}
 			/>
 		{:else if showScopedBatteryPane}
 			<div class="entity-list availability-grid">
@@ -742,37 +680,9 @@ const EMPTY_RECORD: Record<string, string> = {};
 								<StatusIcon icon={getBatteryIcon(entity.batteryLevel)} size={20} />
 							</div>
 							<div class="entity-main availability-main">
-								{#if popupRenameEntityId === entity.entityId}
-									<div class="popup-inline-rename">
-										<input
-											class="popup-rename-input"
-											type="text"
-											value={popupRenameDraft}
-											oninput={(e) => (popupRenameDraft = (e.currentTarget as HTMLInputElement).value)}
-											onkeydown={(e) => {
-												if (e.key === 'Enter') commitPopupRename();
-												if (e.key === 'Escape') cancelPopupRename();
-											}}
-										/>
-										<button type="button" class="popup-rename-action popup-rename-save" onclick={commitPopupRename} aria-label={t('save')}><StatusIcon icon="mdi:check" size={14} /></button>
-										<button type="button" class="popup-rename-action popup-rename-cancel" onclick={cancelPopupRename} aria-label={t('cancel')}><StatusIcon icon="mdi:close" size={14} /></button>
-									</div>
-								{:else}
-									<span>{popupLabelForEntity(entity.entityId, entity.friendlyName)}</span>
-								{/if}
+								<span>{popupLabelForEntity(entity.entityId, entity.friendlyName)}</span>
 								<div class="availability-sub">{entity.batteryLevel}% batterij</div>
 							</div>
-							{#if popupRenameEntityId !== entity.entityId}
-								<button
-									type="button"
-									class="popup-card-rename-btn"
-									title={t('renameDisplayName')}
-									aria-label={t('renameDisplayName')}
-									onclick={() => openPopupRename(entity.entityId, entity.friendlyName)}
-								>
-									<StatusIcon icon="mdi:pencil-outline" size={15} />
-								</button>
-							{/if}
 						</div>
 					{/each}
 				{/if}
@@ -880,24 +790,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 									{/if}
 								</div>
 								<div class="entity-main availability-main">
-									{#if popupRenameEntityId === entity.entityId}
-										<div class="popup-inline-rename">
-											<input
-												class="popup-rename-input"
-												type="text"
-												value={popupRenameDraft}
-												oninput={(e) => (popupRenameDraft = (e.currentTarget as HTMLInputElement).value)}
-												onkeydown={(e) => {
-													if (e.key === 'Enter') commitPopupRename();
-													if (e.key === 'Escape') cancelPopupRename();
-												}}
-											/>
-											<button type="button" class="popup-rename-action popup-rename-save" onclick={commitPopupRename} aria-label={t('save')}><StatusIcon icon="mdi:check" size={14} /></button>
-											<button type="button" class="popup-rename-action popup-rename-cancel" onclick={cancelPopupRename} aria-label={t('cancel')}><StatusIcon icon="mdi:close" size={14} /></button>
-										</div>
-									{:else}
-										<span>{popupLabelForEntity(entity.entityId, entity.friendlyName)}</span>
-									{/if}
+									<span>{popupLabelForEntity(entity.entityId, entity.friendlyName)}</span>
 									{#if kind === 'availability_status'}
 										<div class="availability-sub">{entity.state === 'unavailable' ? 'Niet bereikbaar' : (entity.state || 'Onbekend')}</div>
 									{:else if kind === 'openings_status'}
@@ -906,17 +799,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 										<div class="availability-sub">{formatDeviceState(entity.state)}</div>
 									{/if}
 								</div>
-								{#if popupRenameEntityId !== entity.entityId}
-									<button
-										type="button"
-										class="popup-card-rename-btn"
-										title={t('renameDisplayName')}
-										aria-label={t('renameDisplayName')}
-										onclick={() => openPopupRename(entity.entityId, entity.friendlyName)}
-									>
-										<StatusIcon icon="mdi:pencil-outline" size={15} />
-									</button>
-								{/if}
 							</div>
 						{/each}
 					{/if}
@@ -1236,8 +1118,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 		box-sizing: border-box;
 		transition: border-color 0.2s, background 0.2s, transform 0.2s;
 	}
-	.popup-card-editable { position: relative; }
-	.popup-card-editable .availability-main { padding-right: 1.75rem; }
 	.entity-row.availability-card.entity-row-toggleable {
 		cursor: pointer;
 	}
@@ -1250,67 +1130,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 		background: linear-gradient(135deg, rgba(96,165,250,0.05), transparent 60%), rgba(255,255,255,0.035);
 		border-color: rgba(96,165,250,0.20);
 	}
-	.popup-card-rename-btn {
-		position: absolute;
-		top: 0.42rem;
-		right: 0.42rem;
-		z-index: 3;
-		width: 1.65rem;
-		height: 1.65rem;
-		border: 0;
-		border-radius: 0.35rem;
-		background: rgba(255,255,255,0.1);
-		color: rgba(255,255,255,0.65);
-		cursor: pointer;
-		display: grid;
-		place-items: center;
-		opacity: 0;
-		transition: opacity 0.15s ease;
-		padding: 0;
-		line-height: 0;
-		box-sizing: border-box;
-	}
-	.popup-card-editable:hover .popup-card-rename-btn,
-	.popup-card-rename-btn:focus-visible {
-		opacity: 1;
-	}
-	@media (hover: none) {
-		.popup-card-rename-btn { opacity: 0.55; }
-	}
-	.popup-inline-rename {
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-		width: 100%;
-		min-width: 0;
-	}
-	.popup-rename-input {
-		flex: 1;
-		min-width: 0;
-		height: 1.75rem;
-		border-radius: 0.35rem;
-		border: 0;
-		background: rgba(255,255,255,0.1);
-		color: #f5f5f5;
-		padding: 0 0.45rem;
-		font-size: 0.82rem;
-		box-sizing: border-box;
-	}
-	.popup-rename-action {
-		flex-shrink: 0;
-		width: 1.55rem;
-		height: 1.55rem;
-		border-radius: 0.32rem;
-		border: 0;
-		cursor: pointer;
-		display: grid;
-		place-items: center;
-		padding: 0;
-		line-height: 0;
-		box-sizing: border-box;
-	}
-	.popup-rename-save { background: #c89d1b; color: #fff; }
-	.popup-rename-cancel { background: rgba(255,255,255,0.1); color: #f5f5f5; }
 	.availability-cover {
 		width: 3rem;
 		height: 3rem;

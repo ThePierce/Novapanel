@@ -34,7 +34,6 @@
 		energyDeviceTodayEntityIds?: string[];
 		energyDeviceAliases?: Record<string, string>;
 		energyDeviceSnapshot?: { date: string; values: Record<string, number> };
-		onEntityAliasChange?: (entityId: string, alias: string) => void;
 		onSnapshotChange?: (snapshot: { date: string; values: Record<string, number> }) => void;
 		// Per-scenario flags voor eigen geüploade foto's
 		hasCustomDayNoCar?: boolean;
@@ -70,7 +69,6 @@
 		energyDeviceTodayEntityIds = [],
 		energyDeviceAliases = {},
 		energyDeviceSnapshot,
-		onEntityAliasChange,
 		onSnapshotChange,
 		hasCustomDayNoCar = false,
 		hasCustomDayWithCar = false,
@@ -391,27 +389,6 @@
 	}
 	const hasDevices = $derived((energyDeviceEntityIds ?? []).filter((id) => id && id.trim().length > 0).length > 0);
 	const canOpenDevices = $derived(hasDevices);
-
-	// Rename UI state
-	let renameEntityId = $state('');
-	let renameDraft = $state('');
-	function openRename(entityId: string, currentName: string) {
-		renameEntityId = entityId;
-		renameDraft = currentName;
-	}
-	function cancelRename() {
-		renameEntityId = '';
-		renameDraft = '';
-	}
-	function commitRename() {
-		const id = renameEntityId.trim();
-		const name = renameDraft.trim();
-		if (id && name && onEntityAliasChange) {
-			onEntityAliasChange(id, name);
-		}
-		renameEntityId = '';
-		renameDraft = '';
-	}
 
 	// === Snapshot-mechanisme voor kWh vandaag ===
 	// Snapshot wordt server-side opgeslagen via panel-state (zelfde flow als aliases),
@@ -840,56 +817,20 @@
 					{@const isHidden = hiddenEntities.has(row.entityId)}
 					{@const isActive = (row.powerW ?? 0) > 50}
 					<div class="legend-item" class:hidden={isHidden}>
-						{#if renameEntityId === row.entityId}
-							<div class="legend-btn legend-btn-static" role="group" aria-label={translate('Hernoemen', $selectedLanguageStore)}>
-								<span class="legend-dot" style="background: {colorFor(row.entityId)}"></span>
-								<div class="device-rename" onclick={(e) => e.stopPropagation()} role="presentation">
-									<input
-										class="device-rename-input"
-										type="text"
-										value={renameDraft}
-										oninput={(e) => (renameDraft = (e.currentTarget as HTMLInputElement).value)}
-										onkeydown={(e) => {
-											if (e.key === 'Enter') commitRename();
-											if (e.key === 'Escape') cancelRename();
-										}}
-										aria-label={translate('Naam', $selectedLanguageStore)}
-									/>
-									<button type="button" class="device-rename-btn save" onclick={(e) => { e.stopPropagation(); commitRename(); }} aria-label={translate('save', $selectedLanguageStore)}>
-										<TablerIcon name="check" size={12} />
-									</button>
-									<button type="button" class="device-rename-btn cancel" onclick={(e) => { e.stopPropagation(); cancelRename(); }} aria-label={translate('cancel', $selectedLanguageStore)}>
-										<TablerIcon name="x" size={12} />
-									</button>
-								</div>
-							</div>
-						{:else}
-							<button
-								type="button"
-								class="legend-btn"
-								onclick={() => toggleEntityVisibility(row.entityId)}
-								aria-pressed={!isHidden}
-								title={isHidden ? translate('Tonen', $selectedLanguageStore) : translate('Verbergen', $selectedLanguageStore)}
-							>
-								<span class="legend-dot" style="background: {colorFor(row.entityId)}"></span>
-								<span class="legend-name">{row.name}</span>
-								{#if isActive && !isHidden}
-									<span class="legend-live-dot"></span>
-								{/if}
-								<span class="legend-value">{fmtValue(valueFor(row))}</span>
-							</button>
-						{/if}
-						{#if renameEntityId !== row.entityId && onEntityAliasChange}
-							<button
-								type="button"
-								class="legend-rename"
-								onclick={(e) => { e.stopPropagation(); openRename(row.entityId, row.name); }}
-								aria-label={translate('Hernoemen', $selectedLanguageStore)}
-								title={translate('Hernoemen', $selectedLanguageStore)}
-							>
-								<TablerIcon name="pencil" size={11} />
-							</button>
-						{/if}
+						<button
+							type="button"
+							class="legend-btn"
+							onclick={() => toggleEntityVisibility(row.entityId)}
+							aria-pressed={!isHidden}
+							title={isHidden ? translate('Tonen', $selectedLanguageStore) : translate('Verbergen', $selectedLanguageStore)}
+						>
+							<span class="legend-dot" style="background: {colorFor(row.entityId)}"></span>
+							<span class="legend-name">{row.name}</span>
+							{#if isActive && !isHidden}
+								<span class="legend-live-dot"></span>
+							{/if}
+							<span class="legend-value">{fmtValue(valueFor(row))}</span>
+						</button>
 					</div>
 				{/each}
 			</div>
@@ -1261,12 +1202,6 @@
 		background: rgba(255,255,255,0.045);
 		border-color: rgba(255,255,255,0.10);
 	}
-	.legend-btn-static,
-	.legend-btn-static:hover {
-		cursor: default;
-		background: rgba(255,255,255,0.025);
-		border-color: rgba(255,255,255,0.06);
-	}
 	.legend-item.hidden .legend-btn {
 		opacity: 0.4;
 	}
@@ -1309,70 +1244,6 @@
 		flex-shrink: 0;
 		letter-spacing: -0.01em;
 	}
-	.legend-rename {
-		width: 24px; height: 24px;
-		display: grid; place-items: center;
-		background: transparent;
-		border: 0;
-		border-radius: 6px;
-		color: rgba(255,255,255,0.35);
-		cursor: pointer;
-		transition: background 0.15s, color 0.15s, opacity 0.15s;
-		opacity: 0;
-		flex-shrink: 0;
-	}
-	.legend-item:hover .legend-rename {
-		opacity: 1;
-	}
-	.legend-rename:hover {
-		background: rgba(255,255,255,0.08);
-		color: #f5f5f5;
-	}
-
-	/* Rename inline (binnen legenda) */
-	.device-rename {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		flex: 1;
-		min-width: 0;
-	}
-	.device-rename-input {
-		flex: 1;
-		min-width: 0;
-		background: rgba(0,0,0,0.3);
-		border: 0.5px solid rgba(251,146,60,0.35);
-		border-radius: 6px;
-		padding: 3px 7px;
-		font-size: 12px;
-		color: #f5f5f5;
-		outline: none;
-		font-family: inherit;
-		letter-spacing: -0.01em;
-	}
-	.device-rename-input:focus {
-		border-color: rgba(251,146,60,0.6);
-	}
-	.device-rename-btn {
-		width: 20px; height: 20px;
-		display: grid; place-items: center;
-		border: 0;
-		border-radius: 5px;
-		cursor: pointer;
-		transition: background 0.15s;
-		flex-shrink: 0;
-	}
-	.device-rename-btn.save {
-		background: rgba(74,222,128,0.18);
-		color: #4ade80;
-	}
-	.device-rename-btn.save:hover { background: rgba(74,222,128,0.28); }
-	.device-rename-btn.cancel {
-		background: rgba(248,113,113,0.14);
-		color: #f87171;
-	}
-	.device-rename-btn.cancel:hover { background: rgba(248,113,113,0.24); }
-
 	/* === BELANGRIJK: scrollen in modal body === */
 	.devices-body {
 		gap: 14px !important;
@@ -1401,6 +1272,5 @@
 		.np-detail-head-title { font-size: 14px; }
 		.devices-summary { grid-template-columns: 1fr; }
 		.chart-legend { grid-template-columns: 1fr; }
-		.legend-rename { opacity: 1; }
 	}
 </style>
