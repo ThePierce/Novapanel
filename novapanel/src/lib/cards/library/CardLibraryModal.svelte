@@ -244,17 +244,21 @@
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
 								<defs>
 									<linearGradient id={`np-divider-line-${entry.id}`} x1="0" y1="0" x2="1" y2="0">
-										<stop offset="0" stop-color="rgba(96,165,250,0)" />
-										<stop offset="0.5" stop-color="rgba(96,165,250,0.9)" />
-										<stop offset="1" stop-color="rgba(96,165,250,0)" />
+										<stop offset="0" stop-color="rgba(245,245,245,0)" />
+										<stop offset="0.18" stop-color="rgba(245,245,245,0.55)" />
+										<stop offset="0.5" stop-color="rgba(245,245,245,0.78)" />
+										<stop offset="0.82" stop-color="rgba(245,245,245,0.55)" />
+										<stop offset="1" stop-color="rgba(245,245,245,0)" />
 									</linearGradient>
 								</defs>
 								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
-								<rect x="44" y="50" width="88" height="10" rx="5" fill="rgba(255,255,255,0.12)" />
-								<rect x="44" y="72" width="156" height="8" rx="4" fill="rgba(255,255,255,0.08)" />
-								<rect x="44" y="105" width="232" height="3" rx="1.5" fill={`url(#np-divider-line-${entry.id})`} />
-								<rect x="44" y="126" width="126" height="8" rx="4" fill="rgba(255,255,255,0.08)" />
-								<rect x="44" y="142" width="180" height="8" rx="4" fill="rgba(255,255,255,0.06)" />
+								<rect x="40" y="38" width="44" height="44" rx="10" fill="rgba(255,255,255,0.06)" />
+								<rect x="96" y="44" width="120" height="9" rx="3" fill="rgba(255,255,255,0.13)" />
+								<rect x="96" y="62" width="80" height="7" rx="2.5" fill="rgba(255,255,255,0.07)" />
+								<rect x="36" y="92" width="248" height="2" rx="1" fill={`url(#np-divider-line-${entry.id})`} />
+								<rect x="40" y="108" width="44" height="44" rx="10" fill="rgba(255,255,255,0.06)" />
+								<rect x="96" y="114" width="100" height="9" rx="3" fill="rgba(255,255,255,0.13)" />
+								<rect x="96" y="132" width="64" height="7" rx="2.5" fill="rgba(255,255,255,0.07)" />
 							</svg>
 						{:else if entry.preview.kind === 'weather'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -275,22 +279,21 @@
 							</svg>
 						{:else if entry.preview.kind === 'week_calendar'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
-
-								<circle cx="68" cy="70" r="27" fill="rgba(56,189,248,0.18)" />
-								<rect x="54" y="55" width="28" height="28" rx="5" fill="none" stroke="#38bdf8" stroke-width="4" />
-								<line x1="54" y1="64" x2="82" y2="64" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" />
-								<circle cx="61" cy="72" r="2.6" fill="#38bdf8" />
-								<circle cx="69" cy="72" r="2.6" fill="#38bdf8" />
-								<circle cx="77" cy="72" r="2.6" fill="#38bdf8" />
-
-								<rect x="122" y="46" width="134" height="14" rx="7" fill="rgba(56,189,248,0.18)" />
-								<rect x="122" y="70" width="88" height="10" rx="5" fill="#a7f3d0" opacity="0.82" />
-								<rect x="122" y="88" width="116" height="10" rx="5" fill="#fde68a" opacity="0.82" />
-								<rect x="122" y="106" width="74" height="10" rx="5" fill="#93c5fd" opacity="0.82" />
-
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Weekkalender')}</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">3 {t('events')}</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<defs>
+									<linearGradient id={`np-cal-page-${entry.id}`} x1="0" y1="0" x2="0" y2="1">
+										<stop offset="0" stop-color="#1e293b" />
+										<stop offset="1" stop-color="#0f172a" />
+									</linearGradient>
+								</defs>
+								<rect x="58" y="64" width="44" height="44" rx="6" fill={`url(#np-cal-page-${entry.id})`} stroke="#4ade80" stroke-width="1.6" />
+								<rect x="58" y="64" width="44" height="11" rx="6" fill="#4ade80" opacity="0.85" />
+								<rect x="58" y="69" width="44" height="6" fill="#4ade80" opacity="0.85" />
+								<rect x="66" y="60" width="2.5" height="9" rx="1.2" fill="rgba(255,255,255,0.55)" />
+								<rect x="91.5" y="60" width="2.5" height="9" rx="1.2" fill="rgba(255,255,255,0.55)" />
+								<text x="80" y="100" text-anchor="middle" font-size="20" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">12</text>
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Weekkalender')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">3 {t('events')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'alarm_panel'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -315,54 +318,128 @@
 							</svg>
 						{:else if entry.preview.kind === 'light_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
-								<circle cx="68" cy="70" r="27" fill="rgba(255,211,56,0.18)" />
-								<path d="M68 48C59 48 53 55 53 63C53 69 56.5 73.5 61 76.2V83H75V76.2C79.5 73.5 83 69 83 63C83 55 77 48 68 48Z" fill="#ffd338" opacity="0.95" />
-								<path d="M62 90H74M64 96H72" stroke="#ffd338" stroke-width="4" stroke-linecap="round" />
-								<rect x="122" y="54" width="136" height="10" rx="5" fill="rgba(255,255,255,0.13)" />
-								<rect x="122" y="54" width="92" height="10" rx="5" fill="#ffd338" opacity="0.92" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Leeslamp')}</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">68%</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<circle cx="80" cy="85" r="30" fill="rgba(255,211,56,0.08)" />
+								<ellipse cx="80" cy="80" rx="12" ry="15" fill="#ffd338" opacity="0.9" />
+								<rect x="74" y="94" width="12" height="5" rx="2.5" fill="#ffd338" opacity="0.6" />
+								<path d="M58 64 L52 58 M102 64 L108 58 M58 96 L52 102 M102 96 L108 102 M80 50 L80 44 M80 110 L80 116" stroke="#ffd338" stroke-width="1.6" stroke-linecap="round" opacity="0.55" />
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Lamp')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">{t('Aan')} · 68%</text>
 							</svg>
 						{:else if entry.preview.kind === 'climate_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
-								<circle cx="68" cy="70" r="27" fill="rgba(251,146,60,0.18)" />
-								<path d="M68 48v43M58 82a10 10 0 1 0 20 0M68 48a7 7 0 0 0-7 7v24h14V55a7 7 0 0 0-7-7Z" fill="none" stroke="#fb923c" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-								<rect x="122" y="54" width="86" height="10" rx="5" fill="#fb923c" opacity="0.9" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Thermostaat')}</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">21° · {t('doel')} 22°</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<defs>
+									<linearGradient id={`np-climate-dial-${entry.id}`} x1="0" y1="0" x2="1" y2="1">
+										<stop offset="0" stop-color="#fb923c" />
+										<stop offset="1" stop-color="#f97316" />
+									</linearGradient>
+								</defs>
+								<circle cx="80" cy="85" r="28" fill="rgba(251,146,60,0.08)" stroke="rgba(251,146,60,0.18)" stroke-width="1" />
+								<g stroke="rgba(251,146,60,0.35)" stroke-width="1.4" stroke-linecap="round">
+									<line x1="80" y1="60" x2="80" y2="64" />
+									<line x1="98.4" y1="66.6" x2="96.0" y2="69.0" transform="rotate(45 80 85)" />
+									<line x1="105" y1="85" x2="101" y2="85" />
+									<line x1="98.4" y1="103.4" x2="96.0" y2="101.0" transform="rotate(-45 80 85)" />
+									<line x1="80" y1="110" x2="80" y2="106" />
+									<line x1="61.6" y1="103.4" x2="64.0" y2="101.0" transform="rotate(45 80 85)" />
+									<line x1="55" y1="85" x2="59" y2="85" />
+									<line x1="61.6" y1="66.6" x2="64.0" y2="69.0" transform="rotate(-45 80 85)" />
+								</g>
+								<path d="M61 104 A 25 25 0 1 1 99 104" fill="none" stroke={`url(#np-climate-dial-${entry.id})`} stroke-width="3.5" stroke-linecap="round" />
+								<text x="80" y="83" text-anchor="middle" font-size="18" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">21°</text>
+								<text x="80" y="97" text-anchor="middle" font-size="9" font-weight="600" fill="rgba(251,146,60,0.85)" font-family="Inter, system-ui, Arial">→ 22°</text>
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Thermostaat')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">{t('Verwarmen')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'cover_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
-								<circle cx="68" cy="70" r="27" fill="rgba(96,165,250,0.18)" />
-								<path d="M52 49h32M55 55v36M81 55v36M55 55c7 4 13 4 26 0M55 70c7 4 13 4 26 0" fill="none" stroke="#60a5fa" stroke-width="4" stroke-linecap="round" />
-								<rect x="122" y="54" width="118" height="10" rx="5" fill="rgba(255,255,255,0.13)" />
-								<rect x="122" y="54" width="78" height="10" rx="5" fill="#60a5fa" opacity="0.9" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Gordijnen')}</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">66% {t('open')}</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<defs>
+									<linearGradient id={`np-curtain-left-${entry.id}`} x1="0" y1="0" x2="1" y2="0">
+										<stop offset="0" stop-color="#1d4ed8" />
+										<stop offset="1" stop-color="#60a5fa" />
+									</linearGradient>
+									<linearGradient id={`np-curtain-right-${entry.id}`} x1="1" y1="0" x2="0" y2="0">
+										<stop offset="0" stop-color="#1d4ed8" />
+										<stop offset="1" stop-color="#60a5fa" />
+									</linearGradient>
+								</defs>
+								<rect x="52" y="60" width="56" height="3" rx="1.5" fill="rgba(255,255,255,0.35)" />
+								<circle cx="56" cy="61.5" r="2" fill="rgba(255,255,255,0.45)" />
+								<circle cx="104" cy="61.5" r="2" fill="rgba(255,255,255,0.45)" />
+								<path d="M55 63 Q57 75 55 88 Q57 100 55 110 L70 110 Q72 100 70 88 Q72 75 70 63 Z" fill={`url(#np-curtain-left-${entry.id})`} opacity="0.92" />
+								<path d="M61 63 V110" stroke="rgba(0,0,0,0.25)" stroke-width="0.8" />
+								<path d="M65 63 V110" stroke="rgba(255,255,255,0.18)" stroke-width="0.6" />
+								<path d="M90 63 Q88 75 90 88 Q88 100 90 110 L105 110 Q107 100 105 88 Q107 75 105 63 Z" fill={`url(#np-curtain-right-${entry.id})`} opacity="0.92" />
+								<path d="M99 63 V110" stroke="rgba(0,0,0,0.25)" stroke-width="0.8" />
+								<path d="M95 63 V110" stroke="rgba(255,255,255,0.18)" stroke-width="0.6" />
+								<ellipse cx="80" cy="112" rx="16" ry="2" fill="rgba(96,165,250,0.20)" />
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Gordijnen')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">66% {t('open')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'vacuum_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
-								<circle cx="68" cy="70" r="27" fill="rgba(52,211,153,0.18)" />
-								<circle cx="68" cy="70" r="18" fill="none" stroke="#34d399" stroke-width="5" />
-								<circle cx="68" cy="70" r="5" fill="#34d399" />
-								<path d="M84 55l8-8M83 85l8 8" stroke="#34d399" stroke-width="4" stroke-linecap="round" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Stofzuiger')}</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">{t('Schoonmaken')} · 82%</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<defs>
+									<radialGradient id={`np-vac-body-${entry.id}`} cx="0.5" cy="0.35" r="0.7">
+										<stop offset="0" stop-color="#4ade80" stop-opacity="0.45" />
+										<stop offset="0.6" stop-color="#22c55e" stop-opacity="0.30" />
+										<stop offset="1" stop-color="#15803d" stop-opacity="0.18" />
+									</radialGradient>
+								</defs>
+								<path d="M50 110 Q65 60 80 110 Q95 60 110 110" fill="none" stroke="rgba(52,211,153,0.20)" stroke-width="1.5" stroke-dasharray="3 4" stroke-linecap="round" />
+								<circle cx="80" cy="85" r="26" fill={`url(#np-vac-body-${entry.id})`} stroke="rgba(52,211,153,0.55)" stroke-width="1.5" />
+								<circle cx="80" cy="85" r="10" fill="rgba(15,23,42,0.85)" stroke="rgba(52,211,153,0.45)" stroke-width="1" />
+								<circle cx="80" cy="85" r="5" fill="#34d399" />
+								<circle cx="80" cy="85" r="1.8" fill="#0f172a" />
+								<path d="M65 73 Q80 67 95 73" fill="none" stroke="rgba(52,211,153,0.7)" stroke-width="1.6" stroke-linecap="round" />
+								<circle cx="71" cy="71" r="1.2" fill="#34d399" />
+								<circle cx="89" cy="71" r="1.2" fill="#34d399" />
+								<g stroke="rgba(52,211,153,0.5)" stroke-width="1" stroke-linecap="round">
+									<line x1="56" y1="92" x2="51" y2="89" />
+									<line x1="56" y1="98" x2="50" y2="98" />
+									<line x1="58" y1="103" x2="53" y2="106" />
+								</g>
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Stofzuiger')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">{t('Schoonmaken')} · 82%</text>
 							</svg>
 						{:else if entry.preview.kind === 'media_player_button'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
-								<circle cx="68" cy="70" r="27" fill="rgba(192,132,252,0.18)" />
-								<path d="M57 60h10l15-10v40L67 80H57Z" fill="#c084fc" opacity="0.95" />
-								<path d="M90 60c6 7 6 13 0 20" fill="none" stroke="#c084fc" stroke-width="4" stroke-linecap="round" />
-								<rect x="122" y="54" width="128" height="10" rx="5" fill="rgba(255,255,255,0.13)" />
-								<rect x="122" y="54" width="64" height="10" rx="5" fill="#c084fc" opacity="0.9" />
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Woonkamer')}</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">{t('Speelt muziek')}</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<defs>
+									<linearGradient id={`np-speaker-body-${entry.id}`} x1="0" y1="0" x2="0" y2="1">
+										<stop offset="0" stop-color="#a78bfa" />
+										<stop offset="1" stop-color="#7c3aed" />
+									</linearGradient>
+									<radialGradient id={`np-speaker-cone-${entry.id}`} cx="0.5" cy="0.5" r="0.5">
+										<stop offset="0" stop-color="#f5f5f5" stop-opacity="0.30" />
+										<stop offset="0.7" stop-color="#7c3aed" stop-opacity="0.10" />
+										<stop offset="1" stop-color="#1e1b4b" stop-opacity="0.45" />
+									</radialGradient>
+								</defs>
+								<rect x="68" y="58" width="24" height="54" rx="11" fill={`url(#np-speaker-body-${entry.id})`} opacity="0.95" />
+								<g stroke="rgba(255,255,255,0.20)" stroke-width="0.6">
+									<line x1="70" y1="68" x2="90" y2="68" />
+									<line x1="70" y1="73" x2="90" y2="73" />
+									<line x1="70" y1="78" x2="90" y2="78" />
+									<line x1="70" y1="83" x2="90" y2="83" />
+									<line x1="70" y1="88" x2="90" y2="88" />
+									<line x1="70" y1="93" x2="90" y2="93" />
+									<line x1="70" y1="98" x2="90" y2="98" />
+								</g>
+								<ellipse cx="80" cy="60" rx="9" ry="2.5" fill={`url(#np-speaker-cone-${entry.id})`} />
+								<circle cx="80" cy="59.5" r="1.5" fill="#f5f5f5" opacity="0.85" />
+								<g fill="none" stroke="#c084fc" stroke-linecap="round" opacity="0.75">
+									<path d="M100 78 Q104 85 100 92" stroke-width="2" />
+									<path d="M106 73 Q113 85 106 97" stroke-width="1.8" opacity="0.6" />
+									<path d="M112 68 Q122 85 112 102" stroke-width="1.6" opacity="0.4" />
+								</g>
+								<g fill="none" stroke="#c084fc" stroke-linecap="round" opacity="0.4">
+									<path d="M60 78 Q56 85 60 92" stroke-width="1.4" />
+								</g>
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t('Media player')}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">{t('Speelt muziek')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'openings_status'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -416,21 +493,31 @@
 							</svg>
 						{:else if entry.preview.kind === 'cameras_strip'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
-
-								<circle cx="68" cy="70" r="27" fill="rgba(96,165,250,0.18)" />
-								<rect x="52" y="58" width="32" height="24" rx="7" fill="none" stroke="#60a5fa" stroke-width="4" />
-								<circle cx="68" cy="70" r="7" fill="none" stroke="#60a5fa" stroke-width="4" />
-								<path d="M84 63l9-5v24l-9-5Z" fill="#60a5fa" opacity="0.86" />
-
-								<rect x="122" y="46" width="72" height="46" rx="8" fill="rgba(96,165,250,0.22)" />
-								<circle cx="140" cy="64" r="6" fill="none" stroke="#bfdbfe" stroke-width="2" opacity="0.8" />
-								<rect x="204" y="46" width="48" height="21" rx="6" fill="rgba(147,197,253,0.2)" />
-								<rect x="204" y="72" width="48" height="21" rx="6" fill="rgba(125,211,252,0.2)" />
-								<rect x="122" y="102" width="130" height="9" rx="4.5" fill="rgba(255,255,255,0.12)" />
-
-								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t("Camera's")}</text>
-								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">3 live</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<defs>
+									<linearGradient id={`np-cam-body-${entry.id}`} x1="0" y1="0" x2="0" y2="1">
+										<stop offset="0" stop-color="#60a5fa" />
+										<stop offset="1" stop-color="#1d4ed8" />
+									</linearGradient>
+									<radialGradient id={`np-cam-lens-${entry.id}`} cx="0.5" cy="0.5" r="0.5">
+										<stop offset="0" stop-color="#f5f5f5" stop-opacity="0.45" />
+										<stop offset="0.4" stop-color="#1e3a8a" />
+										<stop offset="1" stop-color="#0f172a" />
+									</radialGradient>
+								</defs>
+								<line x1="80" y1="55" x2="80" y2="68" stroke="rgba(255,255,255,0.30)" stroke-width="2" stroke-linecap="round" />
+								<circle cx="80" cy="55" r="2.5" fill="rgba(255,255,255,0.45)" />
+								<rect x="56" y="68" width="48" height="26" rx="13" fill={`url(#np-cam-body-${entry.id})`} opacity="0.95" />
+								<rect x="60" y="71" width="40" height="3" rx="1.5" fill="rgba(255,255,255,0.18)" />
+								<circle cx="98" cy="81" r="11" fill={`url(#np-cam-lens-${entry.id})`} stroke="rgba(255,255,255,0.20)" stroke-width="0.8" />
+								<circle cx="98" cy="81" r="5" fill="#0f172a" />
+								<circle cx="96" cy="79" r="1.8" fill="rgba(96,165,250,0.85)" />
+								<circle cx="63" cy="81" r="2" fill="#ef4444" />
+								<circle cx="63" cy="81" r="3.5" fill="none" stroke="#ef4444" stroke-width="0.8" opacity="0.5" />
+								<rect x="76" y="94" width="8" height="6" rx="1" fill="rgba(255,255,255,0.30)" />
+								<rect x="68" y="100" width="24" height="3" rx="1.5" fill="rgba(255,255,255,0.20)" />
+								<text x="124" y="78" font-size="13" font-weight="600" fill="#f5f5f5" font-family="Inter, system-ui, Arial" opacity="0.9">{t("Camera's")}</text>
+								<text x="124" y="96" font-size="11" fill="rgba(245,245,245,0.5)" font-family="Inter, system-ui, Arial">3 live</text>
 							</svg>
 						{/if}
 					</div>
