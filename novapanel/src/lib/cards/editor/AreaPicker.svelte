@@ -256,7 +256,7 @@
 </div>
 
 <style>
-	.ap-root { display: flex; flex-direction: column; gap: 8px; }
+	.ap-root { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 	.ap-search-bar {
 		display: flex; gap: 7px; align-items: center;
 		padding: 7px 10px;
@@ -355,6 +355,7 @@
 		padding: 8px 10px;
 		display: flex; flex-direction: column; gap: 3px;
 		margin-top: 2px;
+		min-height: 0;
 	}
 	.ap-area-list-head {
 		display: flex; align-items: center; justify-content: space-between;
@@ -371,7 +372,7 @@
 	.ap-area-list-title :global(i) { color: rgba(255,255,255,0.7); }
 	.ap-area-list-summary { font-weight: 400; color: rgba(255,255,255,0.5); font-size: 10.5px; margin-left: 4px; }
 	.ap-area-list-actions { display: flex; gap: 4px; flex-shrink: 0; }
-	.ap-area-rows { display: flex; flex-direction: column; gap: 1px; max-height: 280px; overflow-y: auto; padding-right: 4px; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
+	.ap-area-rows { display: flex; flex-direction: column; gap: 1px; max-height: min(280px, 42vh); overflow-y: auto; padding: 0 4px 18px 0; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; scroll-padding-bottom: 18px; }
 	.ap-area-rows::-webkit-scrollbar { width: 0; height: 0; display: none; }
 	.ap-area-row {
 		display: flex; align-items: center; gap: 8px;

@@ -1121,15 +1121,21 @@ let availabilityIgnoredOpen = $state(false);
 		50% { opacity: 0.4; transform: scale(1.4); }
 	}
 	.np-editor-body {
-		padding: 14px 22px;
+		padding: 14px 22px 28px;
 		display: flex;
 		flex-direction: column;
 		gap: 9px;
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
 		grid-template-rows: none;
 		grid-template-columns: none;
 		align-content: initial;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
+		scroll-padding-bottom: 28px;
 	}
 	.np-editor-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
 	.np-name-block {
