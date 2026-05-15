@@ -32,32 +32,9 @@ const HA_EVENT_TARGET_SELECTOR = [
 	'hui-root'
 ].join(',');
 
-const HA_SIDEBAR_REVEAL_SELECTOR = [
-	'ha-sidebar',
-	'home-assistant-main ha-sidebar',
-	'ha-drawer ha-sidebar',
-	'app-drawer ha-sidebar'
-].join(',');
-
-const HA_DRAWER_REVEAL_SELECTOR = ['ha-drawer', 'app-drawer'].join(',');
-
-const HA_SIDEBAR_INNER_SELECTOR = [
-	'.mdc-drawer',
-	'.mdc-drawer--modal',
-	'.mdc-drawer--open',
-	'aside',
-	'nav',
-	'#drawer',
-	'#sidebar',
-	'.drawer',
-	'.sidebar'
-].join(',');
-
-const SIDEBAR_Z_INDEX = '2147483647';
-
 let novaOpenedSidebar = false;
 let outsideCleanup: (() => void) | null = null;
-let revealCleanup: (() => void) | null = null;
+let frameRevealCleanup: (() => void) | null = null;
 let outsideInstallId = 0;
 
 type StyleSnapshot = {
@@ -267,85 +244,36 @@ function installParentOutsideHandler(targetWindow: Window, cleanupCallbacks: Arr
 	cleanupCallbacks.push(() => document.removeEventListener('pointerdown', handler, true));
 }
 
-function revealHASidebar(): boolean {
-	revealCleanup?.();
-	revealCleanup = null;
+function revealNativeHASidebarLayer(): boolean {
+	frameRevealCleanup?.();
+	frameRevealCleanup = null;
 
 	const snapshots: StyleSnapshot[] = [];
 	const cleanupCallbacks: Array<() => void> = [];
-	let revealed = false;
+	let loweredFrame = false;
 
 	for (const targetWindow of getCandidateWindows()) {
 		const document = getAccessibleDocument(targetWindow);
 		if (!document) continue;
 
+		const beforeLength = snapshots.length;
 		lowerNovaPanelFrames(targetWindow, snapshots);
-
-		for (const drawer of deepQuerySelectorAllElements(document, HA_DRAWER_REVEAL_SELECTOR)) {
-			setImportant(snapshots, drawer, 'display', 'block');
-			setImportant(snapshots, drawer, 'visibility', 'visible');
-			setImportant(snapshots, drawer, 'opacity', '1');
-			setImportant(snapshots, drawer, 'position', 'fixed');
-			setImportant(snapshots, drawer, 'z-index', SIDEBAR_Z_INDEX);
-			setImportant(snapshots, drawer, 'top', '0');
-			setImportant(snapshots, drawer, 'left', '0');
-			setImportant(snapshots, drawer, 'right', '0');
-			setImportant(snapshots, drawer, 'bottom', '0');
-			setImportant(snapshots, drawer, 'width', '100vw');
-			setImportant(snapshots, drawer, 'height', '100vh');
-			setImportant(snapshots, drawer, 'overflow', 'visible');
-			setImportant(snapshots, drawer, 'pointer-events', 'none');
-			setImportant(snapshots, drawer, 'transform', 'translateX(0)');
+		if (snapshots.length > beforeLength) {
+			loweredFrame = true;
+			installParentOutsideHandler(targetWindow, cleanupCallbacks);
 		}
-
-		const sidebars = deepQuerySelectorAllElements(document, HA_SIDEBAR_REVEAL_SELECTOR);
-		for (const sidebar of sidebars) {
-			revealed = true;
-			setImportant(snapshots, sidebar, 'display', 'block');
-			setImportant(snapshots, sidebar, 'visibility', 'visible');
-			setImportant(snapshots, sidebar, 'opacity', '1');
-			setImportant(snapshots, sidebar, 'pointer-events', 'auto');
-			setImportant(snapshots, sidebar, 'position', 'fixed');
-			setImportant(snapshots, sidebar, 'z-index', SIDEBAR_Z_INDEX);
-			setImportant(snapshots, sidebar, 'top', '0');
-			setImportant(snapshots, sidebar, 'left', '0');
-			setImportant(snapshots, sidebar, 'bottom', '0');
-			setImportant(snapshots, sidebar, 'height', '100vh');
-			setImportant(snapshots, sidebar, 'max-height', '100vh');
-			setImportant(snapshots, sidebar, 'width', 'min(82vw, 320px)');
-			setImportant(snapshots, sidebar, 'min-width', '240px');
-			setImportant(snapshots, sidebar, 'max-width', '82vw');
-			setImportant(snapshots, sidebar, 'transform', 'translateX(0)');
-
-			if (sidebar.shadowRoot) {
-				for (const inner of deepQuerySelectorAllElements(sidebar.shadowRoot, HA_SIDEBAR_INNER_SELECTOR)) {
-					setImportant(snapshots, inner, 'display', 'block');
-					setImportant(snapshots, inner, 'visibility', 'visible');
-					setImportant(snapshots, inner, 'opacity', '1');
-					setImportant(snapshots, inner, 'pointer-events', 'auto');
-					setImportant(snapshots, inner, 'transform', 'translateX(0)');
-					setImportant(snapshots, inner, 'z-index', SIDEBAR_Z_INDEX);
-					setImportant(snapshots, inner, 'width', '100%');
-					setImportant(snapshots, inner, 'height', '100%');
-				}
-			}
-		}
-
-		if (revealed) installParentOutsideHandler(targetWindow, cleanupCallbacks);
 	}
 
-	if (!revealed) return false;
-
-	revealCleanup = () => {
+	frameRevealCleanup = () => {
 		for (const cleanup of cleanupCallbacks) cleanup();
 		restoreStyles(snapshots);
 	};
-	return true;
+	return loweredFrame;
 }
 
-function clearRevealStyles() {
-	revealCleanup?.();
-	revealCleanup = null;
+function clearFrameRevealStyles() {
+	frameRevealCleanup?.();
+	frameRevealCleanup = null;
 }
 
 function createSidebarEvent(target: Window, eventName: string): CustomEvent {
@@ -426,7 +354,7 @@ export function closeHASidebar() {
 	if (!novaOpenedSidebar) return;
 	novaOpenedSidebar = false;
 	clearOutsideHandlers();
-	clearRevealStyles();
+	clearFrameRevealStyles();
 	toggleNativeHASidebar();
 }
 
@@ -461,7 +389,7 @@ export function openHASidebar(event?: MouseEvent) {
 		return;
 	}
 	const toggled = toggleNativeHASidebar();
-	const revealed = revealHASidebar();
+	const revealed = revealNativeHASidebarLayer();
 	if (!toggled && !revealed) return;
 	novaOpenedSidebar = true;
 	installOutsideCloseHandler(toggleButton);
