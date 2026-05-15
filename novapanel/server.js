@@ -364,6 +364,12 @@ function getRequestBaseUrl(req) {
     return `${proto}://${host}`;
 }
 
+function buildHaTargetUrl(hassUrl, forwardPath) {
+    const base = `${String(hassUrl || '').trim().replace(/\/+$/, '')}/`;
+    const relativePath = String(forwardPath || '/').replace(/^\/+/, '');
+    return new URL(relativePath, base);
+}
+
 function getSpotifyRedirectUriForRequest(req, config) {
     if (config.redirectUri) return normalizeSpotifyRedirectUri(config.redirectUri);
     const ingressPath = asTrimmedString(req.headers['x-ingress-path']).replace(/\/+$/, '');
@@ -854,7 +860,7 @@ app.get(
 				res.status(502).send('hass_url_unavailable');
 				return;
 			}
-			const target = new URL(req.originalUrl || req.url, `${hassUrl}/`);
+			const target = buildHaTargetUrl(hassUrl, req.originalUrl || req.url);
 			const upstream = await fetch(target, {
 				headers: token ? { authorization: `Bearer ${token}` } : {}
 			});
@@ -881,7 +887,7 @@ async function proxyHaRequest(req, res) {
 		const forwardUrl = String(req.originalUrl || req.url || '/')
 			.replace(/^\/api\/hassio_ingress\/[^/]+(?=\/api\/)/, '')
 			.replace(/^\/local_novapanel(?=\/api\/)/, '');
-		const target = new URL(forwardUrl, `${hassUrl}/`);
+		const target = buildHaTargetUrl(hassUrl, forwardUrl);
 		const headers = {
 			accept: req.headers.accept || '*/*',
 			'accept-encoding': 'identity',
@@ -897,6 +903,10 @@ async function proxyHaRequest(req, res) {
 			init.body = JSON.stringify(req.body);
 		}
 		const upstream = await fetch(target, init);
+		if (!upstream.ok) {
+			const cleanForwardPath = forwardUrl.split('?')[0] || '/';
+			log(`ha api proxy ${method} ${cleanForwardPath} -> ${upstream.status} target=${target.origin}${target.pathname}`);
+		}
 		res.status(upstream.status);
 		for (const header of ['content-type', 'cache-control']) {
 			const value = upstream.headers.get(header);
