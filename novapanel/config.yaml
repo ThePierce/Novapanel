@@ -1,5 +1,5 @@
 name: "Nova Panel"
-version: "1.0.0"
+version: "1.0.1"
 slug: "novapanel"
 description: "Nova Panel - Smart Home Dashboard"
 url: "https://github.com/ThePierce/Novapanel"
@@ -17,10 +17,8 @@ map:
   - config:rw
   - ssl:ro
 options:
-  hass_url: ""
   token: ""
 schema:
-  hass_url: "str?"
   token: "str?"
 init: false
 hassio_api: true

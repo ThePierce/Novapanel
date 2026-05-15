@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { entityStore } from '$lib/ha/entities-store';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import { getHaConnectionConfig } from '$lib/ha/entities-service-helpers';
 	import CameraPreviewImage from '$lib/cards/CameraPreviewImage.svelte';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
@@ -27,31 +26,30 @@
 
 	const PREVIEW_REFRESH_SECONDS = 12;
 
-	// Cache de echte HA-URL (bv. https://homeassistant.example.com), niet de ingress-prefix.
-	// entity_picture URLs van camera's bevatten al een token query-param, dus ze hoeven
-	// alleen aan de juiste host gehangen te worden.
-	let hassUrl = $state<string>('');
-	let configLoadAttempted = $state(false);
-
-	$effect(() => {
-		if (configLoadAttempted) return;
-		configLoadAttempted = true;
-		getHaConnectionConfig()
-			.then((cfg) => {
-				if (cfg?.hassUrl) hassUrl = cfg.hassUrl.replace(/\/+$/, '');
-			})
-			.catch(() => {
-				/* fallback gebruikt window.location.origin */
-			});
-	});
+	function browserSafeHaApiUrl(raw: string): string {
+		if (!raw) return '';
+		const base = typeof window !== 'undefined' ? window.location.origin : '';
+		if (!base) return raw;
+		const toLocalApiPath = (pathname: string) => {
+			const coreApiMatch = pathname.match(/^\/core(\/api\/.*)$/);
+			if (coreApiMatch?.[1]) return coreApiMatch[1];
+			return pathname.startsWith('/api/') ? pathname : '';
+		};
+		if (/^https?:\/\//i.test(raw)) {
+			try {
+				const parsed = new URL(raw);
+				const apiPath = toLocalApiPath(parsed.pathname);
+				if (apiPath) return `${base}${apiPath}${parsed.search}${parsed.hash}`;
+			} catch {}
+			return raw;
+		}
+		const clean = raw.startsWith('/') ? raw : `/${raw}`;
+		const apiPath = toLocalApiPath(clean);
+		return `${base}${apiPath || clean}`;
+	}
 
 	function snapshotUrlFor(entityPicture: string): string {
-		if (!entityPicture) return '';
-		if (entityPicture.startsWith('http')) return entityPicture;
-		// Gebruik hassUrl als beschikbaar, anders de huidige origin (HA staat op zelfde host bij ingress)
-		const base = hassUrl || (typeof window !== 'undefined' ? window.location.origin : '');
-		const clean = entityPicture.startsWith('/') ? entityPicture : `/${entityPicture}`;
-		return `${base}${clean}`;
+		return browserSafeHaApiUrl(entityPicture);
 	}
 
 	function cameraProxyUrlFor(entityId: string): string {

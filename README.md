@@ -28,9 +28,8 @@ Nova Panel uses the Home Assistant API through ingress when it runs as an add-on
 
 After installing Nova Panel, open the add-on **Configuration** tab in Home Assistant.
 
-Set these options:
+Set this option:
 
-- `hass_url`: use `http://supervisor/core` when Nova Panel runs as a Home Assistant add-on.
 - `token`: paste a Home Assistant long-lived access token.
 
 Create the token from your Home Assistant user profile:
@@ -41,7 +40,9 @@ Create the token from your Home Assistant user profile:
 4. Paste that token into the Nova Panel add-on `token` field.
 5. Save the add-on configuration and restart Nova Panel.
 
-These settings are required for entity data, service calls, cameras, calendars, media controls, and other Home Assistant-backed cards. A fresh install can open without them, but most cards will not be able to load data or control devices until both fields are set.
+Nova Panel automatically talks to Home Assistant through the add-on's internal Supervisor route. You do not need to enter a Home Assistant URL in the add-on configuration.
+
+The token is required for entity data, service calls, cameras, calendars, media controls, and other Home Assistant-backed cards. A fresh install can open without it, but most cards will not be able to load data or control devices until the token is set.
 
 ## Optional Integrations
 

@@ -353,6 +353,28 @@
 		return hassUrl || (typeof window !== 'undefined' ? window.location.origin : '');
 	}
 
+	function browserSafeHaApiUrl(raw: string): string {
+		if (!raw) return '';
+		const base = typeof window !== 'undefined' ? window.location.origin : '';
+		if (!base) return raw;
+		const toLocalApiPath = (pathname: string) => {
+			const coreApiMatch = pathname.match(/^\/core(\/api\/.*)$/);
+			if (coreApiMatch?.[1]) return coreApiMatch[1];
+			return pathname.startsWith('/api/') ? pathname : '';
+		};
+		if (/^https?:\/\//i.test(raw)) {
+			try {
+				const parsed = new URL(raw);
+				const apiPath = toLocalApiPath(parsed.pathname);
+				if (apiPath) return `${base}${apiPath}${parsed.search}${parsed.hash}`;
+			} catch {}
+			return raw;
+		}
+		const clean = raw.startsWith('/') ? raw : `/${raw}`;
+		const apiPath = toLocalApiPath(clean);
+		return `${base}${apiPath || clean}`;
+	}
+
 	const entityPicture = $derived(
 		(entity?.attributes as { entity_picture?: string } | undefined)?.entity_picture ?? ''
 	);
@@ -367,15 +389,10 @@
 	});
 
 	const snapshotUrl = $derived((() => {
-		const base = baseUrl();
 		const fallback = typeof window !== 'undefined'
 			? `${window.location.origin}/api/camera_proxy/${encodeURIComponent(camera.entityId)}`
 			: '';
-		const path = entityPicture
-			? entityPicture.startsWith('http')
-				? entityPicture
-				: `${base}${entityPicture.startsWith('/') ? '' : '/'}${entityPicture}`
-			: fallback;
+		const path = entityPicture ? browserSafeHaApiUrl(entityPicture) : fallback;
 		if (!path) return '';
 		const joiner = path.includes('?') ? '&' : '?';
 		return `${path}${joiner}_t=${tick}`;
@@ -403,9 +420,9 @@
 
 	async function createDirectHass(): Promise<HassLike & Record<string, unknown>> {
 		const connectionConfig = await getHaConnectionConfig().catch(() => null);
-		const haBase = (connectionConfig?.hassUrl || baseUrl()).replace(/\/+$/, '');
 		const token = connectionConfig?.token ?? '';
 		const localBase = typeof window !== 'undefined' ? window.location.origin : '';
+		const haBase = (localBase || connectionConfig?.hassUrl || baseUrl()).replace(/\/+$/, '');
 		const localWsUrl = getNovaWebSocketCandidates('/api/ha/websocket')[0] ?? '';
 		const states = Object.fromEntries(
 			entities.map((item) => [
@@ -426,14 +443,19 @@
 			if (/^https?:\/\//.test(path)) {
 				try {
 					const parsed = new URL(path);
-					if (localBase && parsed.pathname.startsWith('/api/')) {
-						return `${localBase}${parsed.pathname}${parsed.search}${parsed.hash}`;
+					const coreApiMatch = parsed.pathname.match(/^\/core(\/api\/.*)$/);
+					const apiPath = coreApiMatch?.[1] ?? (parsed.pathname.startsWith('/api/') ? parsed.pathname : '');
+					if (localBase && apiPath) {
+						return `${localBase}${apiPath}${parsed.search}${parsed.hash}`;
 					}
 				} catch {}
 				return path;
 			}
-			if (localBase && normalizePath(path).startsWith('/api/')) return `${localBase}${normalizePath(path)}`;
-			return `${haBase}${normalizePath(path)}`;
+			const normalizedPath = normalizePath(path);
+			const coreApiMatch = normalizedPath.match(/^\/core(\/api\/.*)$/);
+			const apiPath = coreApiMatch?.[1] ?? (normalizedPath.startsWith('/api/') ? normalizedPath : '');
+			if (localBase && apiPath) return `${localBase}${apiPath}`;
+			return `${haBase}${normalizedPath}`;
 		};
 		const callApi = async (method: string, path: string, parameters?: unknown) => {
 			const url = new URL(makeHassUrl(path));

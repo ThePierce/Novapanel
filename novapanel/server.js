@@ -235,23 +235,11 @@ async function handlePanelSyncConfig(req, res) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     try {
-        const options = await readAddonOptions();
         let authorityBaseUrl = null;
         const detectedBase = extractRequestApiBase(req);
         if (detectedBase) {
             authorityBaseUrl = detectedBase;
             log(`panel-sync-config auto-detected authority=${authorityBaseUrl}`);
-        }
-        // Fallback to hass_url option (origin only) when ingress header is absent
-        if (!authorityBaseUrl) {
-            const hassUrl = typeof options.hass_url === 'string' ? options.hass_url.trim() : '';
-            if (hassUrl) {
-                try {
-                    const u = new URL(hassUrl.includes('://') ? hassUrl : `https://${hassUrl}`);
-                    authorityBaseUrl = `${u.protocol}//${u.host}`;
-                    log(`panel-sync-config hass_url fallback authority=${authorityBaseUrl}`);
-                } catch {}
-            }
         }
         log(`panel-sync-config GET -> 200 authority=${authorityBaseUrl || 'none'}`);
         res.status(200).json({ ok: true, authorityBaseUrl });
@@ -481,7 +469,6 @@ const handleHaConnection = async (req, res) => {
 	res.setHeader('x-novapanel-ha', '1');
 	try {
         const options = await readAddonOptions();
-        const optionHassUrl = typeof options.hass_url === 'string' ? options.hass_url.trim() : '';
         const optionToken = typeof options.token === 'string' ? options.token.trim() : '';
         const envHassUrl = typeof process.env.HASS_URL === 'string' ? process.env.HASS_URL.trim() : '';
         const envToken =
@@ -494,9 +481,10 @@ const handleHaConnection = async (req, res) => {
         const forwardedProto = typeof req.headers['x-forwarded-proto'] === 'string' ? req.headers['x-forwarded-proto'].trim() : '';
         const host = typeof req.headers.host === 'string' ? req.headers.host.trim() : '';
         const fallbackOrigin = host ? `${forwardedProto || 'http'}://${host}` : '';
-        const hassUrl = envHassUrl || optionHassUrl || proxyTarget || fallbackOrigin;
+        const internalHassUrl = envHassUrl || proxyTarget || (IS_DEVELOPMENT ? '' : 'http://supervisor/core');
+        const hassUrl = envHassUrl || proxyTarget || fallbackOrigin || internalHassUrl;
         const token = envToken || optionToken;
-        log(`ha connection requested: hassUrl=${hassUrl || '-'} token=${token ? 'present' : 'missing'} envHassUrl=${envHassUrl ? 'present' : 'missing'} proxyTarget=${proxyTarget || '-'}`);
+        log(`ha connection requested: hassUrl=${hassUrl || '-'} internal=${internalHassUrl || '-'} token=${token ? 'present' : 'missing'} envHassUrl=${envHassUrl ? 'present' : 'missing'} proxyTarget=${proxyTarget || '-'}`);
         res.status(200).json({
             hassUrl,
             token
@@ -514,7 +502,6 @@ app.get(
 
 async function getHaProxyConfig(req) {
 	const options = await readAddonOptions();
-	const optionHassUrl = typeof options.hass_url === 'string' ? options.hass_url.trim() : '';
 	const optionToken = typeof options.token === 'string' ? options.token.trim() : '';
 	const envHassUrl = typeof process.env.HASS_URL === 'string' ? process.env.HASS_URL.trim() : '';
 	const envToken =
@@ -525,7 +512,7 @@ async function getHaProxyConfig(req) {
 				: '';
 	const proxyTarget = typeof req.headers['x-proxy-target'] === 'string' ? req.headers['x-proxy-target'].trim() : '';
 	return {
-		hassUrl: (envHassUrl || optionHassUrl || proxyTarget).replace(/\/+$/, ''),
+		hassUrl: (envHassUrl || proxyTarget || (IS_DEVELOPMENT ? '' : 'http://supervisor/core')).replace(/\/+$/, ''),
 		token: envToken || optionToken
 	};
 }

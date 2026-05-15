@@ -559,7 +559,7 @@ function dedupeUrlOrder(urls: string[]): string[] {
 	return out;
 }
 
-/** HA origin from addon option `panel_state_authority_url` (public URL leads panel-state sync across LAN vs DNS origins). */
+/** Public Nova API origin discovered from the active ingress/local route for panel-state sync. */
 let resolvedPanelAuthorityOrigin: string | null | undefined = undefined;
 let panelAuthorityResolutionPromise: Promise<void> | null = null;
 

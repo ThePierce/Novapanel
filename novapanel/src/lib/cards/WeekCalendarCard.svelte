@@ -209,10 +209,23 @@
 	function avatarUrlFor(entity: HomeAssistantEntity | null) {
 		const raw = typeof entity?.attributes?.entity_picture === 'string' ? entity.attributes.entity_picture : '';
 		if (!raw) return '';
-		if (/^https?:\/\//i.test(raw)) return raw;
-		const base = hassUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+		const base = typeof window !== 'undefined' ? window.location.origin : hassUrl;
+		const toLocalApiPath = (pathname: string) => {
+			const coreApiMatch = pathname.match(/^\/core(\/api\/.*)$/);
+			if (coreApiMatch?.[1]) return coreApiMatch[1];
+			return pathname.startsWith('/api/') ? pathname : '';
+		};
+		if (/^https?:\/\//i.test(raw)) {
+			try {
+				const parsed = new URL(raw);
+				const apiPath = toLocalApiPath(parsed.pathname);
+				if (base && apiPath) return `${base}${apiPath}${parsed.search}${parsed.hash}`;
+			} catch {}
+			return raw;
+		}
 		const clean = raw.startsWith('/') ? raw : `/${raw}`;
-		return `${base}${clean}`;
+		const apiPath = toLocalApiPath(clean);
+		return `${base}${apiPath || clean}`;
 	}
 
 	function initialFor(sourceOrPerson: CalendarSource | HomeAssistantEntity) {
