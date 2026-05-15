@@ -32,6 +32,15 @@
 						msg.indexOf('/_app/immutable/') !== -1
 					);
 				}
+				function isIgnoredTransitionAbort(value) {
+					try {
+						var name = value && typeof value === 'object' && value.name ? String(value.name) : '';
+						var msg = messageFrom(value);
+						return name === 'AbortError' && msg.indexOf('Transition was skipped') !== -1;
+					} catch (e) {
+						return false;
+					}
+				}
 				function reloadFresh() {
 					try {
 						var now = Date.now();
@@ -57,6 +66,10 @@
 					reloadFresh();
 				});
 				window.addEventListener('unhandledrejection', function (event) {
+					if (isIgnoredTransitionAbort(event.reason)) {
+						try { event.preventDefault(); } catch (e) {}
+						return;
+					}
 					if (!isStaleBuildError(event.reason)) return;
 					try { event.preventDefault(); } catch (e) {}
 					reloadFresh();

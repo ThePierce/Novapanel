@@ -119,16 +119,7 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 		options.onStatus('connecting');
 		options.onError('');
 		closeDirectSocket();
-		try {
-			const connected = await connectWithDirectWebsocket();
-			if (connected) {
-				log('connected via direct websocket path');
-				return;
-			}
-		} catch (error) {
-			log('direct websocket path failed', error);
-		}
-		const hass = await getHassWithRetry();
+		const hass = await getHassWithRetry(3, 150);
 		if (hass) {
 			try {
 				const connected = await connectWithEmbeddedHass(hass);
@@ -139,6 +130,15 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 			} catch (error) {
 				log('embedded hass path failed', error);
 			}
+		}
+		try {
+			const connected = await connectWithDirectWebsocket();
+			if (connected) {
+				log('connected via direct websocket path');
+				return;
+			}
+		} catch (error) {
+			log('direct websocket path failed', error);
 		}
 		log('all realtime paths failed');
 		options.onStatus('error');
