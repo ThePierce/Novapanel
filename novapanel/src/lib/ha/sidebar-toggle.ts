@@ -32,9 +32,38 @@ const HA_EVENT_TARGET_SELECTOR = [
 	'hui-root'
 ].join(',');
 
+const HA_SIDEBAR_REVEAL_SELECTOR = [
+	'ha-sidebar',
+	'home-assistant-main ha-sidebar',
+	'ha-drawer ha-sidebar',
+	'app-drawer ha-sidebar'
+].join(',');
+
+const HA_SIDEBAR_INNER_SELECTOR = [
+	'.mdc-drawer',
+	'.mdc-drawer--modal',
+	'.mdc-drawer--open',
+	'aside',
+	'nav',
+	'#drawer',
+	'#sidebar',
+	'.drawer',
+	'.sidebar'
+].join(',');
+
+const SIDEBAR_Z_INDEX = '2147483647';
+
 let novaOpenedSidebar = false;
 let outsideCleanup: (() => void) | null = null;
+let revealCleanup: (() => void) | null = null;
 let outsideInstallId = 0;
+
+type StyleSnapshot = {
+	element: HTMLElement;
+	property: string;
+	value: string;
+	priority: string;
+};
 
 function asHTMLElement(element: Element | null | undefined): HTMLElement | null {
 	if (!element || typeof (element as HTMLElement).matches !== 'function') return null;
@@ -92,9 +121,28 @@ function deepQuerySelectorAll(
 	return found;
 }
 
+function deepQuerySelectorAllElements(
+	root: ParentNode | ShadowRoot,
+	selector: string,
+	found: Set<HTMLElement> = new Set()
+): Set<HTMLElement> {
+	for (const element of root.querySelectorAll(selector)) {
+		const htmlElement = asHTMLElement(element);
+		if (htmlElement) found.add(htmlElement);
+	}
+
+	for (const element of root.querySelectorAll('*')) {
+		const shadow = (element as HTMLElement).shadowRoot;
+		if (!shadow) continue;
+		deepQuerySelectorAllElements(shadow, selector, found);
+	}
+
+	return found;
+}
+
 function getClickableElement(element: HTMLElement): HTMLElement {
 	const shadowButton = element.shadowRoot?.querySelector(
-		'button, ha-icon-button, mwc-icon-button, paper-icon-button'
+		'button, ha-button, ha-icon-button, mwc-icon-button, paper-icon-button'
 	) as HTMLElement | null;
 	if (shadowButton && shadowButton !== element) return getClickableElement(shadowButton);
 	return element;
@@ -131,6 +179,108 @@ function getCandidateWindows(): Window[] {
 		windows.push(candidate);
 	}
 	return windows;
+}
+
+function setImportant(snapshots: StyleSnapshot[], element: HTMLElement, property: string, value: string) {
+	snapshots.push({
+		element,
+		property,
+		value: element.style.getPropertyValue(property),
+		priority: element.style.getPropertyPriority(property)
+	});
+	element.style.setProperty(property, value, 'important');
+}
+
+function restoreStyles(snapshots: StyleSnapshot[]) {
+	for (const snapshot of snapshots.reverse()) {
+		if (snapshot.value) {
+			snapshot.element.style.setProperty(snapshot.property, snapshot.value, snapshot.priority);
+		} else {
+			snapshot.element.style.removeProperty(snapshot.property);
+		}
+	}
+}
+
+function isEventInsideHASidebar(event: Event): boolean {
+	const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+	return path.some((entry) => {
+		const element = asHTMLElement(entry as Element);
+		return element?.tagName.toLowerCase() === 'ha-sidebar';
+	});
+}
+
+function installParentOutsideHandler(targetWindow: Window, cleanupCallbacks: Array<() => void>) {
+	const document = getAccessibleDocument(targetWindow);
+	if (!document) return;
+	const handler = (event: PointerEvent) => {
+		if (isEventInsideHASidebar(event)) return;
+		closeHASidebar();
+	};
+	document.addEventListener('pointerdown', handler, true);
+	cleanupCallbacks.push(() => document.removeEventListener('pointerdown', handler, true));
+}
+
+function revealHASidebar(): boolean {
+	revealCleanup?.();
+	revealCleanup = null;
+
+	const snapshots: StyleSnapshot[] = [];
+	const cleanupCallbacks: Array<() => void> = [];
+	let revealed = false;
+
+	for (const targetWindow of getCandidateWindows()) {
+		if (targetWindow === window) continue;
+		const document = getAccessibleDocument(targetWindow);
+		if (!document) continue;
+
+		const sidebars = deepQuerySelectorAllElements(document, HA_SIDEBAR_REVEAL_SELECTOR);
+		for (const sidebar of sidebars) {
+			revealed = true;
+			setImportant(snapshots, sidebar, 'display', 'block');
+			setImportant(snapshots, sidebar, 'visibility', 'visible');
+			setImportant(snapshots, sidebar, 'opacity', '1');
+			setImportant(snapshots, sidebar, 'pointer-events', 'auto');
+			setImportant(snapshots, sidebar, 'position', 'fixed');
+			setImportant(snapshots, sidebar, 'z-index', SIDEBAR_Z_INDEX);
+			setImportant(snapshots, sidebar, 'top', '0');
+			setImportant(snapshots, sidebar, 'left', '0');
+			setImportant(snapshots, sidebar, 'bottom', '0');
+			setImportant(snapshots, sidebar, 'height', '100vh');
+			setImportant(snapshots, sidebar, 'max-height', '100vh');
+			setImportant(snapshots, sidebar, 'width', 'min(82vw, 320px)');
+			setImportant(snapshots, sidebar, 'min-width', '240px');
+			setImportant(snapshots, sidebar, 'max-width', '82vw');
+			setImportant(snapshots, sidebar, 'transform', 'translateX(0)');
+
+			if (sidebar.shadowRoot) {
+				for (const inner of deepQuerySelectorAllElements(sidebar.shadowRoot, HA_SIDEBAR_INNER_SELECTOR)) {
+					setImportant(snapshots, inner, 'display', 'block');
+					setImportant(snapshots, inner, 'visibility', 'visible');
+					setImportant(snapshots, inner, 'opacity', '1');
+					setImportant(snapshots, inner, 'pointer-events', 'auto');
+					setImportant(snapshots, inner, 'transform', 'translateX(0)');
+					setImportant(snapshots, inner, 'z-index', SIDEBAR_Z_INDEX);
+					setImportant(snapshots, inner, 'width', '100%');
+					setImportant(snapshots, inner, 'height', '100%');
+				}
+			}
+		}
+
+		if (revealed) installParentOutsideHandler(targetWindow, cleanupCallbacks);
+	}
+
+	if (!revealed) return false;
+
+	revealCleanup = () => {
+		for (const cleanup of cleanupCallbacks) cleanup();
+		restoreStyles(snapshots);
+	};
+	return true;
+}
+
+function clearRevealStyles() {
+	revealCleanup?.();
+	revealCleanup = null;
 }
 
 function createSidebarEvent(target: Window, eventName: string): CustomEvent {
@@ -211,6 +361,7 @@ export function closeHASidebar() {
 	if (!novaOpenedSidebar) return;
 	novaOpenedSidebar = false;
 	clearOutsideHandlers();
+	clearRevealStyles();
 	toggleNativeHASidebar();
 }
 
@@ -240,11 +391,13 @@ export function openHASidebar(event?: MouseEvent) {
 	event?.preventDefault();
 	event?.stopPropagation();
 	const toggleButton = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
-	if (!toggleNativeHASidebar()) return;
-	novaOpenedSidebar = !novaOpenedSidebar;
 	if (novaOpenedSidebar) {
-		installOutsideCloseHandler(toggleButton);
-	} else {
-		clearOutsideHandlers();
+		closeHASidebar();
+		return;
 	}
+	const toggled = toggleNativeHASidebar();
+	const revealed = revealHASidebar();
+	if (!toggled && !revealed) return;
+	novaOpenedSidebar = true;
+	installOutsideCloseHandler(toggleButton);
 }
