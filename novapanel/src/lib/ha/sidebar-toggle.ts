@@ -32,6 +32,13 @@ const HA_EVENT_TARGET_SELECTOR = [
 	'hui-root'
 ].join(',');
 
+const HA_SIDEBAR_SELECTOR = [
+	'ha-sidebar',
+	'home-assistant-main ha-sidebar',
+	'ha-drawer ha-sidebar',
+	'app-drawer ha-sidebar'
+].join(',');
+
 let novaOpenedSidebar = false;
 let outsideCleanup: (() => void) | null = null;
 let frameRevealCleanup: (() => void) | null = null;
@@ -42,6 +49,19 @@ type StyleSnapshot = {
 	property: string;
 	value: string;
 	priority: string;
+};
+
+type AttributeSnapshot = {
+	element: HTMLElement;
+	name: string;
+	hadAttribute: boolean;
+	value: string | null;
+};
+
+type PropertySnapshot = {
+	element: HTMLElement;
+	name: string;
+	value: unknown;
 };
 
 function asHTMLElement(element: Element | null | undefined): HTMLElement | null {
@@ -192,31 +212,57 @@ function setImportant(snapshots: StyleSnapshot[], element: HTMLElement, property
 	element.style.setProperty(property, value, 'important');
 }
 
-function isCurrentFrame(frame: HTMLElement): boolean {
-	const iframe = frame as HTMLIFrameElement;
-	try {
-		if (iframe.contentWindow === window) return true;
-	} catch {}
-	const src = iframe.getAttribute('src') ?? '';
-	return (
-		src.includes('hassio_ingress') ||
-		src.includes('novapanel') ||
-		src.includes('e806fdae_novapanel')
-	);
-}
-
-function lowerNovaPanelFrames(targetWindow: Window, snapshots: StyleSnapshot[]) {
-	if (targetWindow === window) return;
-	const document = getAccessibleDocument(targetWindow);
-	if (!document) return;
-	for (const frame of deepQuerySelectorAllElements(document, 'iframe')) {
-		if (!isCurrentFrame(frame)) continue;
-		setImportant(snapshots, frame, 'z-index', '1');
+function setAttributeTemporarily(
+	snapshots: AttributeSnapshot[],
+	element: HTMLElement,
+	name: string,
+	value: string | boolean
+) {
+	snapshots.push({
+		element,
+		name,
+		hadAttribute: element.hasAttribute(name),
+		value: element.getAttribute(name)
+	});
+	if (value === false) {
+		element.removeAttribute(name);
+	} else if (value === true) {
+		element.setAttribute(name, '');
+	} else {
+		element.setAttribute(name, value);
 	}
 }
 
-function restoreStyles(snapshots: StyleSnapshot[]) {
-	for (const snapshot of snapshots.reverse()) {
+function setPropertyTemporarily(
+	snapshots: PropertySnapshot[],
+	element: HTMLElement,
+	name: string,
+	value: unknown
+) {
+	snapshots.push({ element, name, value: (element as unknown as Record<string, unknown>)[name] });
+	try {
+		(element as unknown as Record<string, unknown>)[name] = value;
+	} catch {}
+}
+
+function restoreTemporaryState(
+	styleSnapshots: StyleSnapshot[],
+	attributeSnapshots: AttributeSnapshot[],
+	propertySnapshots: PropertySnapshot[]
+) {
+	for (const snapshot of propertySnapshots.reverse()) {
+		try {
+			(snapshot.element as unknown as Record<string, unknown>)[snapshot.name] = snapshot.value;
+		} catch {}
+	}
+	for (const snapshot of attributeSnapshots.reverse()) {
+		if (snapshot.hadAttribute) {
+			snapshot.element.setAttribute(snapshot.name, snapshot.value ?? '');
+		} else {
+			snapshot.element.removeAttribute(snapshot.name);
+		}
+	}
+	for (const snapshot of styleSnapshots.reverse()) {
 		if (snapshot.value) {
 			snapshot.element.style.setProperty(snapshot.property, snapshot.value, snapshot.priority);
 		} else {
@@ -244,31 +290,80 @@ function installParentOutsideHandler(targetWindow: Window, cleanupCallbacks: Arr
 	cleanupCallbacks.push(() => document.removeEventListener('pointerdown', handler, true));
 }
 
+function applyExpandedSidebarOverlay(
+	sidebar: HTMLElement,
+	styleSnapshots: StyleSnapshot[],
+	attributeSnapshots: AttributeSnapshot[],
+	propertySnapshots: PropertySnapshot[]
+) {
+	setPropertyTemporarily(propertySnapshots, sidebar, 'alwaysExpand', true);
+	setAttributeTemporarily(attributeSnapshots, sidebar, 'always-expand', true);
+	setAttributeTemporarily(attributeSnapshots, sidebar, 'expanded', true);
+
+	setImportant(styleSnapshots, sidebar, 'position', 'fixed');
+	setImportant(styleSnapshots, sidebar, 'z-index', '2147483647');
+	setImportant(styleSnapshots, sidebar, 'top', '0');
+	setImportant(styleSnapshots, sidebar, 'left', '0');
+	setImportant(styleSnapshots, sidebar, 'bottom', '0');
+	setImportant(styleSnapshots, sidebar, 'height', '100vh');
+	setImportant(styleSnapshots, sidebar, 'width', 'calc(256px + var(--safe-area-inset-left, 0px))');
+	setImportant(styleSnapshots, sidebar, 'max-width', '82vw');
+	setImportant(styleSnapshots, sidebar, 'pointer-events', 'auto');
+	setImportant(styleSnapshots, sidebar, 'transform', 'translateX(0)');
+	setImportant(styleSnapshots, sidebar, 'box-shadow', '0 0 24px rgba(0, 0, 0, 0.32)');
+
+	const menuButton = queryShadow(sidebar, 'ha-menu-button');
+	if (menuButton) {
+		setImportant(styleSnapshots, menuButton, 'display', 'none');
+	}
+
+	try {
+		(sidebar as HTMLElement & { requestUpdate?: () => void }).requestUpdate?.();
+	} catch {}
+}
+
 function revealNativeHASidebarLayer(): boolean {
 	frameRevealCleanup?.();
 	frameRevealCleanup = null;
 
-	const snapshots: StyleSnapshot[] = [];
+	const styleSnapshots: StyleSnapshot[] = [];
+	const attributeSnapshots: AttributeSnapshot[] = [];
+	const propertySnapshots: PropertySnapshot[] = [];
 	const cleanupCallbacks: Array<() => void> = [];
-	let loweredFrame = false;
+	let revealed = false;
 
 	for (const targetWindow of getCandidateWindows()) {
 		const document = getAccessibleDocument(targetWindow);
 		if (!document) continue;
 
-		const beforeLength = snapshots.length;
-		lowerNovaPanelFrames(targetWindow, snapshots);
-		if (snapshots.length > beforeLength) {
-			loweredFrame = true;
+		const sidebars = Array.from(deepQuerySelectorAllElements(document, HA_SIDEBAR_SELECTOR));
+		if (sidebars.length > 0) {
+			revealed = true;
+			for (const sidebar of sidebars) {
+				applyExpandedSidebarOverlay(sidebar, styleSnapshots, attributeSnapshots, propertySnapshots);
+			}
+			for (const delay of [60, 180, 420]) {
+				const timerId = targetWindow.setTimeout(() => {
+						for (const sidebar of sidebars) {
+							applyExpandedSidebarOverlay(
+								sidebar,
+								styleSnapshots,
+								attributeSnapshots,
+								propertySnapshots
+							);
+						}
+					}, delay);
+				cleanupCallbacks.push(() => targetWindow.clearTimeout(timerId));
+			}
 			installParentOutsideHandler(targetWindow, cleanupCallbacks);
 		}
 	}
 
 	frameRevealCleanup = () => {
 		for (const cleanup of cleanupCallbacks) cleanup();
-		restoreStyles(snapshots);
+		restoreTemporaryState(styleSnapshots, attributeSnapshots, propertySnapshots);
 	};
-	return loweredFrame;
+	return revealed;
 }
 
 function clearFrameRevealStyles() {
@@ -276,19 +371,37 @@ function clearFrameRevealStyles() {
 	frameRevealCleanup = null;
 }
 
-function createSidebarEvent(target: Window, eventName: string): CustomEvent {
+function createSidebarEvent(target: Window, eventName: string, detail?: unknown): CustomEvent {
 	const EventConstructor = target.CustomEvent ?? CustomEvent;
-	return new EventConstructor(eventName, { bubbles: true, composed: true });
+	return new EventConstructor(eventName, { bubbles: true, composed: true, detail });
 }
 
-function dispatchSidebarEvent(targetWindow: Window, target: EventTarget | null | undefined, eventName: string) {
+function dispatchSidebarEvent(
+	targetWindow: Window,
+	target: EventTarget | null | undefined,
+	eventName: string,
+	detail?: unknown
+) {
 	if (!target) return false;
 	try {
-		target.dispatchEvent(createSidebarEvent(targetWindow, eventName));
+		target.dispatchEvent(createSidebarEvent(targetWindow, eventName, detail));
 		return true;
 	} catch {
 		return false;
 	}
+}
+
+function openNativeHASidebarExpanded(): boolean {
+	let signalled = false;
+	for (const targetWindow of getCandidateWindows()) {
+		const document = getAccessibleDocument(targetWindow);
+		if (!document) continue;
+		for (const main of deepQuerySelectorAll(document, 'home-assistant-main')) {
+			signalled =
+				dispatchSidebarEvent(targetWindow, main, 'hass-toggle-menu', { open: true }) || signalled;
+		}
+	}
+	return signalled;
 }
 
 function signalHASidebar(targetWindow: Window): boolean {
@@ -355,7 +468,6 @@ export function closeHASidebar() {
 	novaOpenedSidebar = false;
 	clearOutsideHandlers();
 	clearFrameRevealStyles();
-	toggleNativeHASidebar();
 }
 
 function installOutsideCloseHandler(toggleButton: HTMLElement | null) {
@@ -388,9 +500,9 @@ export function openHASidebar(event?: MouseEvent) {
 		closeHASidebar();
 		return;
 	}
-	const toggled = toggleNativeHASidebar();
+	const opened = openNativeHASidebarExpanded();
 	const revealed = revealNativeHASidebarLayer();
-	if (!toggled && !revealed) return;
+	if (!opened && !revealed && !toggleNativeHASidebar()) return;
 	novaOpenedSidebar = true;
 	installOutsideCloseHandler(toggleButton);
 }
