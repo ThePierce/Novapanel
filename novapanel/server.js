@@ -736,6 +736,108 @@ async function callHaWebSocket(req, payload, timeoutMs = 15000) {
 	throw lastError ?? new Error('ha_ws_failed');
 }
 
+function calendarEventsFromResult(result) {
+	if (Array.isArray(result)) return result;
+	if (result && typeof result === 'object' && Array.isArray(result.events)) return result.events;
+	return [];
+}
+
+function validateCalendarEntityId(value) {
+	const entityId = asTrimmedString(value);
+	if (!/^calendar\.[A-Za-z0-9_]+$/.test(entityId)) throw new Error('invalid_calendar_entity');
+	return entityId;
+}
+
+function validateCalendarIso(value, fallbackDate) {
+	const raw = asTrimmedString(value) || fallbackDate.toISOString();
+	const parsed = new Date(raw);
+	if (!Number.isFinite(parsed.getTime())) throw new Error('invalid_calendar_range');
+	return parsed.toISOString();
+}
+
+async function fetchHaCalendarRest(req, entityId, start, end) {
+	const { hassUrl, token } = await getHaProxyConfig(req);
+	if (!hassUrl) throw new Error('hass_url_unavailable');
+	if (!token) throw new Error('hass_token_unavailable');
+	const query = new URLSearchParams({ start, end });
+	const target = buildHaTargetUrl(hassUrl, `/api/calendars/${encodeURIComponent(entityId)}?${query.toString()}`);
+	const upstream = await fetch(target, {
+		headers: {
+			accept: 'application/json',
+			'accept-encoding': 'identity',
+			authorization: `Bearer ${token}`
+		}
+	});
+	if (!upstream.ok) throw new Error(`ha_calendar_rest_http_${upstream.status}`);
+	return await upstream.json();
+}
+
+async function loadHaCalendarEvents(req, entityId, start, end) {
+	const attempts = [
+		() => callHaWebSocket(req, { type: 'calendar/list_events', entity_id: entityId, start, end }, 20000),
+		() => callHaWebSocket(req, { type: 'calendar/event/subscribe', entity_id: entityId, start, end }, 20000),
+		() => fetchHaCalendarRest(req, entityId, start, end)
+	];
+	let lastError = null;
+	for (const attempt of attempts) {
+		try {
+			const result = await attempt();
+			return calendarEventsFromResult(result);
+		} catch (error) {
+			lastError = error;
+		}
+	}
+	throw lastError ?? new Error('ha_calendar_events_unavailable');
+}
+
+async function handleHaCalendarEvents(req, res) {
+	res.setHeader('Cache-Control', 'no-store');
+	try {
+		const entityId = validateCalendarEntityId(req.query.entity_id);
+		const start = validateCalendarIso(req.query.start, new Date());
+		const end = validateCalendarIso(req.query.end, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+		const events = await loadHaCalendarEvents(req, entityId, start, end);
+		res.status(200).json({ events });
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		log(`ha calendar events proxy error: ${message}`);
+		res.status(message.startsWith('invalid_') ? 400 : 502).json({ events: [], error: message });
+	}
+}
+
+async function handleLegacyHaCalendarEvents(req, res) {
+	res.setHeader('Cache-Control', 'no-store');
+	try {
+		const entityId = validateCalendarEntityId(req.params.entityId);
+		const start = validateCalendarIso(req.query.start, new Date());
+		const end = validateCalendarIso(req.query.end, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+		const events = await loadHaCalendarEvents(req, entityId, start, end);
+		res.status(200).json({ events });
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		log(`ha legacy calendar proxy error: ${message}`);
+		res.status(message.startsWith('invalid_') ? 400 : 502).json({ events: [], error: message });
+	}
+}
+
+app.get(
+	[
+		'/api/ha/calendar/events',
+		'/local_novapanel/api/ha/calendar/events',
+		'/api/hassio_ingress/:ingressToken/api/ha/calendar/events'
+	],
+	handleHaCalendarEvents
+);
+
+app.get(
+	[
+		'/api/calendars/:entityId',
+		'/local_novapanel/api/calendars/:entityId',
+		'/api/hassio_ingress/:ingressToken/api/calendars/:entityId'
+	],
+	handleLegacyHaCalendarEvents
+);
+
 async function handleHaWs(req, res) {
 	res.setHeader('Cache-Control', 'no-store');
 	try {
@@ -1003,6 +1105,7 @@ app.use(
 		'/api/camera_proxy',
 		'/api/camera_proxy_stream',
 		'/api/hls',
+		'/api/image',
 		'/api/image_proxy',
 		'/api/media_source',
 		'/api/stream',
@@ -1010,6 +1113,7 @@ app.use(
 		'/local_novapanel/api/camera_proxy',
 		'/local_novapanel/api/camera_proxy_stream',
 		'/local_novapanel/api/hls',
+		'/local_novapanel/api/image',
 		'/local_novapanel/api/image_proxy',
 		'/local_novapanel/api/media_source',
 		'/local_novapanel/api/stream',
@@ -1017,6 +1121,7 @@ app.use(
 		'/api/hassio_ingress/:ingressToken/api/camera_proxy',
 		'/api/hassio_ingress/:ingressToken/api/camera_proxy_stream',
 		'/api/hassio_ingress/:ingressToken/api/hls',
+		'/api/hassio_ingress/:ingressToken/api/image',
 		'/api/hassio_ingress/:ingressToken/api/image_proxy',
 		'/api/hassio_ingress/:ingressToken/api/media_source',
 		'/api/hassio_ingress/:ingressToken/api/stream',

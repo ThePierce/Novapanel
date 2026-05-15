@@ -193,10 +193,6 @@
 		);
 	}
 
-	function isHomeAssistantGeneratedImage(url: string): boolean {
-		return /\/?api\/image\/serve\/[^/?#]+\/\d+x\d+/i.test(url);
-	}
-
 	function normalizeAvatarUrl(raw: string): string {
 		const trimmed = raw.trim();
 		return trimmed ? browserSafeHomeAssistantUrl(trimmed) : '';
@@ -211,7 +207,6 @@
 	function safeAvatarUrl(raw: string) {
 		const url = normalizeAvatarUrl(raw);
 		if (!url || invalidAvatarUrls[url]) return '';
-		if (isHomeAssistantGeneratedImage(url)) return '';
 		return url;
 	}
 
