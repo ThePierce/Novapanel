@@ -49,6 +49,18 @@ const SESSION_ADDON_READ_OK_KEY = 'np_addon_read_ok';
 /** Remember which panel-state URL worked so every device retries it first (ingress vs /local_novapanel). */
 const PREFERRED_PANEL_STATE_URL_KEY = 'np_panel_state_api_preferred';
 
+const RESERVED_APP_BASE_SEGMENTS = new Set(['api', '_app', 'favicon.ico', 'hacsfiles', 'energy-asset']);
+
+function getCurrentAppPathBase(pathname = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'): string {
+	const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`;
+	const ingressMatch = normalized.match(/^(\/api\/hassio_ingress\/[^/]+)/);
+	if (ingressMatch?.[1]) return ingressMatch[1];
+	const segments = normalized.split('/').filter(Boolean);
+	const firstSegment = segments[0] ?? '';
+	if (!firstSegment || RESERVED_APP_BASE_SEGMENTS.has(firstSegment)) return '';
+	return `/${firstSegment}`;
+}
+
 function loadPreferredPanelStateUrls(): string[] {
 	if (typeof window === 'undefined') return [];
 	try {
@@ -624,6 +636,7 @@ function collectPanelStateDiscoveryCandidates(panelStateApiPath: string): string
 	const pathnameBase = pathname.replace(/\/+$/, '');
 	const normalizedApiPath = panelStateApiPath.replace(/^\/+/, '');
 	const absoluteApiPath = `/${normalizedApiPath}`;
+	const currentAppBase = getCurrentAppPathBase(pathname);
 
 	const ingressPath = (window as Window & { __novapanel_ingress?: string }).__novapanel_ingress;
 	const normalizedIngress =
@@ -648,6 +661,17 @@ function collectPanelStateDiscoveryCandidates(panelStateApiPath: string): string
 		append(`${origin}${base}/${normalizedApiPath}`);
 		append(`${base}/${normalizedApiPath}`);
 	};
+
+	const appendCurrentAppBasePair = (appBase: string) => {
+		const base = appBase.replace(/\/+$/, '');
+		if (!base) return;
+		append(`${origin}${base}/${normalizedApiPath}`);
+		append(`${base}/${normalizedApiPath}`);
+	};
+
+	if (currentAppBase) {
+		appendCurrentAppBasePair(currentAppBase);
+	}
 
 	// Highest priority: derive ingress base from the loaded module URL itself.
 	try {
@@ -686,7 +710,7 @@ function collectPanelStateDiscoveryCandidates(panelStateApiPath: string): string
 
 	// Onder HA Ingress is /api/panel-state zonder prefix nooit valide (HA proxiet 404).
 	// Sla die fallbacks alleen aan voor non-ingress setups (lokale dev / direct-LAN).
-	const runningUnderIngress = Boolean(normalizedIngress || perfIngressBase || pathnameIngressMatchEarly);
+	const runningUnderIngress = Boolean(normalizedIngress || perfIngressBase || pathnameIngressMatchEarly || currentAppBase);
 	if (!runningUnderIngress) {
 		append(`${origin}/local_novapanel/${normalizedApiPath}`);
 		append(`/local_novapanel/${normalizedApiPath}`);
@@ -695,14 +719,20 @@ function collectPanelStateDiscoveryCandidates(panelStateApiPath: string): string
 	}
 	try {
 		const parentOrigin = window.parent?.location?.origin;
-		if (parentOrigin) {
+		if (parentOrigin && currentAppBase) {
+			append(`${parentOrigin}${currentAppBase}/${normalizedApiPath}`);
+		}
+		if (parentOrigin && !runningUnderIngress) {
 			append(`${parentOrigin}${absoluteApiPath}`);
 			append(`${parentOrigin}/local_novapanel/${normalizedApiPath}`);
 		}
 	} catch {}
 	try {
 		const topOrigin = window.top?.location?.origin;
-		if (topOrigin) {
+		if (topOrigin && currentAppBase) {
+			append(`${topOrigin}${currentAppBase}/${normalizedApiPath}`);
+		}
+		if (topOrigin && !runningUnderIngress) {
 			append(`${topOrigin}${absoluteApiPath}`);
 			append(`${topOrigin}/local_novapanel/${normalizedApiPath}`);
 		}
@@ -728,8 +758,8 @@ export function getPanelStateApiCandidates(panelStateApiPath: string): string[] 
 	const ordered = collectPanelStateDiscoveryCandidates(panelStateApiPath);
 	return dedupeUrlOrder([
 		...buildAuthorityOriginPanelApiUrls(panelStateApiPath),
-		...loadPreferredPanelStateUrls(),
-		...ordered
+		...ordered,
+		...loadPreferredPanelStateUrls()
 	]);
 }
 
@@ -883,6 +913,7 @@ export async function readAddonPanelState(candidates: string[]): Promise<PanelSt
 			const slice = uniqueCandidates.slice(offset, offset + READ_PARALLEL_BATCH);
 			const batch = await Promise.all(slice.map((url) => tryOne(url)));
 			for (const r of batch) rows.push(r);
+			if (batch.some((row) => row.ok)) break;
 		}
 		for (const row of rows) {
 			if (!row.ok) {
@@ -904,6 +935,7 @@ export async function readAddonPanelState(candidates: string[]): Promise<PanelSt
 				const slice = uniqueCandidates.slice(offset, offset + READ_PARALLEL_BATCH);
 				const batch = await Promise.all(slice.map((url) => tryOneReadPost(url)));
 				for (const r of batch) fallbackRows.push(r);
+				if (batch.some((row) => row.ok)) break;
 			}
 			for (const row of fallbackRows) {
 				if (!row.ok) {

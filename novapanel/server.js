@@ -29,6 +29,20 @@ log(`Data dir: ${DATA_DIR}`);
 
 app.use(express.json({ limit: '1mb' }));
 
+const RESERVED_INGRESS_PREFIXES = new Set(['api', 'local_novapanel', '_app', 'favicon.ico', 'hacsfiles', 'energy-asset']);
+
+// Home Assistant add-on ingress normally strips the add-on slug before forwarding,
+// but some routes/webviews keep it. Accept both /api/... and /<addon_slug>/api/....
+app.use((req, _res, next) => {
+    const requestUrl = req.url || '';
+    const match = requestUrl.match(/^\/([^/?#]+)(?=\/api(?:\/|$))/);
+    const prefix = match?.[1] || '';
+    if (prefix && !RESERVED_INGRESS_PREFIXES.has(prefix)) {
+        req.url = requestUrl.replace(/^\/[^/?#]+(?=\/api(?:\/|$))/, '');
+    }
+    next();
+});
+
 /** Lets LAN-origin pages call panel-state / sync-config on the public HTTPS HA URL (credentials + reflected Origin). */
 app.use((req, res, next) => {
     const url = req.originalUrl || req.url || '';
@@ -207,6 +221,13 @@ function extractRequestApiBase(req) {
     const ingressPath = asTrimmedString(req.headers['x-ingress-path']).replace(/\/+$/, '');
     if (!host) return '';
     if (ingressPath) return `${proto}://${host}${ingressPath}`;
+    const requestUrl = req.originalUrl || req.url || '';
+    const hassIngressMatch = requestUrl.match(/^(\/api\/hassio_ingress\/[^/]+)(?=\/api(?:\/|$))/);
+    if (hassIngressMatch?.[1]) return `${proto}://${host}${hassIngressMatch[1]}`;
+    const slugMatch = requestUrl.match(/^\/([^/?#]+)(?=\/api(?:\/|$))/);
+    const slug = slugMatch?.[1] || '';
+    if (slug && !RESERVED_INGRESS_PREFIXES.has(slug)) return `${proto}://${host}/${slug}`;
+    if (requestUrl.startsWith('/local_novapanel/api/')) return `${proto}://${host}/local_novapanel`;
     return `${proto}://${host}`;
 }
 

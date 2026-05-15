@@ -15,8 +15,11 @@ function findHASidebarToggleButton(root: ParentNode | ShadowRoot): HTMLElement |
 	const candidates = [
 		'button[title*="Zijbalk"]',
 		'button[aria-label*="Zijbalk"]',
+		'button[title*="Menu"]',
+		'button[aria-label*="Menu"]',
 		'button[title*="Sidebar"]',
 		'button[aria-label*="Sidebar"]',
+		'button[aria-label*="Open Home Assistant sidebar"]',
 		'ha-sidebar ha-icon-button',
 		'ha-menu-button'
 	];
@@ -40,23 +43,43 @@ function findHASidebarToggleButton(root: ParentNode | ShadowRoot): HTMLElement |
 	return null;
 }
 
-export function openHASidebar() {
+function signalHASidebar(target: Window) {
+	const events = ['hass-toggle-menu', 'hass-toggle-sidebar', 'hass-more-info-dismissed'];
+	for (const eventName of events) {
+		try {
+			target.dispatchEvent(new CustomEvent(eventName, { bubbles: true, composed: true }));
+		} catch {}
+	}
 	try {
-		if (window.parent !== window) {
-			const targetDocument = window.parent.document;
-			const toggleButton = findHASidebarToggleButton(targetDocument);
+		target.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', code: 'KeyM', bubbles: true, composed: true }));
+	} catch {}
+	const messages = [
+		{ type: 'hass-toggle-menu' },
+		{ type: 'hass-toggle-sidebar' },
+		{ type: 'hass-sidebar-toggle' },
+		{ command: 'toggle-sidebar' }
+	];
+	for (const message of messages) {
+		try {
+			target.postMessage(message, '*');
+		} catch {}
+	}
+}
+
+export function openHASidebar() {
+	const targets = Array.from(new Set([window.parent, window.top, window].filter(Boolean))) as Window[];
+	let clicked = false;
+	for (const target of targets) {
+		try {
+			const toggleButton = findHASidebarToggleButton(target.document);
 			if (toggleButton) {
 				toggleButton.click();
-				return;
+				clicked = true;
 			}
-			window.parent.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
-			window.parent.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true }));
-			window.parent.postMessage({ type: 'hass-sidebar-toggle' }, '*');
-			return;
+		} catch {}
+		signalHASidebar(target);
+		if (clicked) {
+			break;
 		}
-		window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
-		window.dispatchEvent(new CustomEvent('hass-toggle-menu', { bubbles: true }));
-	} catch {
-		window.parent?.postMessage({ type: 'hass-sidebar-toggle' }, '*');
 	}
 }

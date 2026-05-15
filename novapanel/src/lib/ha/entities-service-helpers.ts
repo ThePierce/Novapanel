@@ -29,6 +29,17 @@ type NovaWindow = Window & {
 	__novapanel_ingress?: string;
 };
 
+const RESERVED_NOVA_BASE_SEGMENTS = new Set(['api', '_app', 'favicon.ico', 'hacsfiles', 'energy-asset']);
+
+function getCurrentNovaAppBase(pathname = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'): string {
+	const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`;
+	const ingressMatch = normalized.match(/^(\/api\/hassio_ingress\/[^/]+)/);
+	if (ingressMatch?.[1]) return ingressMatch[1];
+	const firstSegment = normalized.split('/').filter(Boolean)[0] ?? '';
+	if (!firstSegment || RESERVED_NOVA_BASE_SEGMENTS.has(firstSegment)) return '';
+	return `/${firstSegment}`;
+}
+
 export type HomeAssistantEntity = {
 	entityId: string;
 	friendlyName: string;
@@ -130,7 +141,8 @@ export function getNovaApiCandidates(apiPath: string): string[] {
 	const endpoint = apiPath.startsWith('/') ? apiPath : `/${apiPath}`;
 	const candidates = new Set<string>();
 	const pathname = window.location.pathname || '/';
-	const firstSegment = pathname.split('/').filter(Boolean)[0] ?? '';
+	const currentBase = getCurrentNovaAppBase(pathname);
+	if (currentBase) candidates.add(`${currentBase}${endpoint}`);
 	const ingressPath = (window as NovaWindow).__novapanel_ingress?.trim() ?? '';
 	if (ingressPath) candidates.add(`${ingressPath}${endpoint}`);
 	try {
@@ -144,6 +156,8 @@ export function getNovaApiCandidates(apiPath: string): string[] {
 	try {
 		const base = new URL(document.baseURI);
 		const basePath = base.pathname.replace(/\/+$/, '');
+		const documentBase = getCurrentNovaAppBase(basePath);
+		if (documentBase) candidates.add(`${documentBase}${endpoint}`);
 		if (basePath.includes('/api/hassio_ingress/')) {
 			const ingressBase = basePath.match(/^\/api\/hassio_ingress\/[^/]+/)?.[0] ?? '';
 			if (ingressBase) candidates.add(`${ingressBase}${endpoint}`);
@@ -155,8 +169,8 @@ export function getNovaApiCandidates(apiPath: string): string[] {
 	} catch {}
 	const ingressMatch = pathname.match(/^\/api\/hassio_ingress\/[^/]+/);
 	if (ingressMatch?.[0]) candidates.add(`${ingressMatch[0]}${endpoint}`);
-	if (firstSegment && firstSegment !== 'api') candidates.add(`/${firstSegment}${endpoint}`);
 	candidates.add(endpoint);
+	candidates.add(`/local_novapanel${endpoint}`);
 	return [...candidates];
 }
 
@@ -176,37 +190,7 @@ export function getNovaWebSocketCandidates(apiPath: string): string[] {
 }
 
 export async function getHaConnectionConfig(): Promise<HaConnectionConfig | null> {
-	const endpoint = '/api/ha/connection';
-	const candidates = new Set<string>();
-	const pathname = window.location.pathname || '/';
-	const firstSegment = pathname.split('/').filter(Boolean)[0] ?? '';
-	const ingressPath = (window as NovaWindow).__novapanel_ingress?.trim() ?? '';
-	if (ingressPath) candidates.add(`${ingressPath}${endpoint}`);
-	try {
-		const perfIngress = performance
-			.getEntriesByType('resource')
-			.map((entry) => entry.name)
-			.find((url) => url.includes('/api/hassio_ingress/'));
-		const perfIngressBase = perfIngress?.match(/\/api\/hassio_ingress\/[^/]+/)?.[0] ?? '';
-		if (perfIngressBase) candidates.add(`${perfIngressBase}${endpoint}`);
-	} catch {}
-	try {
-		const base = new URL(document.baseURI);
-		const basePath = base.pathname.replace(/\/+$/, '');
-		if (basePath.includes('/api/hassio_ingress/')) {
-			const ingressBase = basePath.match(/^\/api\/hassio_ingress\/[^/]+/)?.[0] ?? '';
-			if (ingressBase) candidates.add(`${ingressBase}${endpoint}`);
-		}
-		if (basePath.includes('/local_novapanel')) {
-			const localBase = basePath.match(/^\/local_novapanel/)?.[0] ?? '';
-			if (localBase) candidates.add(`${localBase}${endpoint}`);
-		}
-	} catch {}
-	const ingressMatch = pathname.match(/^\/api\/hassio_ingress\/[^/]+/);
-	if (ingressMatch?.[0]) candidates.add(`${ingressMatch[0]}${endpoint}`);
-	if (firstSegment && firstSegment !== 'api') candidates.add(`/${firstSegment}${endpoint}`);
-	candidates.add(endpoint);
-	for (const candidate of candidates) {
+	for (const candidate of getNovaApiCandidates('/api/ha/connection')) {
 		try {
 			const response = await fetch(candidate, {
 				credentials: 'same-origin',
