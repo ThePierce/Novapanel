@@ -24,6 +24,7 @@ export type CardEditorOpenState = {
 	statusEntityIds?: CardDraft['statusEntityIds'];
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
 	statusEntityAliases?: CardDraft['statusEntityAliases'];
+	statusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'];
 	statusIcon?: CardDraft['statusIcon'];
 	netEntityId?: string;
 	solarEntityId?: string;
@@ -98,6 +99,7 @@ export type CardEditorOpenState = {
 	initialStatusEntityIds?: CardDraft['statusEntityIds'];
 	initialStatusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
 	initialStatusEntityAliases?: CardDraft['statusEntityAliases'];
+	initialStatusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'];
 	initialStatusIcon?: CardDraft['statusIcon'];
 	initialEnergyDeviceAliases?: CardDraft['energyDeviceAliases'];
 };
@@ -153,6 +155,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		statusEntityIds: card.statusEntityIds,
 		statusDiscoveredEntityIds: card.statusDiscoveredEntityIds,
 		statusEntityAliases: card.statusEntityAliases,
+		statusEntityIconOverrides: card.statusEntityIconOverrides,
 		statusIcon,
 		netEntityId: card.netEntityId,
 		solarEntityId: card.solarEntityId,
@@ -203,6 +206,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		initialStatusEntityIds: card.statusEntityIds,
 		initialStatusDiscoveredEntityIds: card.statusDiscoveredEntityIds,
 		initialStatusEntityAliases: card.statusEntityAliases,
+		initialStatusEntityIconOverrides: card.statusEntityIconOverrides,
 		initialStatusIcon: statusIcon,
 		initialNetEntityId: card.netEntityId,
 		initialSolarEntityId: card.solarEntityId,

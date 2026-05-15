@@ -238,6 +238,7 @@
 	let cardEditorStatusDeviceClasses = $state<string[]>([]);
 	let cardEditorStatusEntityIds = $state<string[]>([]);
 	let cardEditorStatusEntityAliases = $state<Record<string, string>>({});
+	let cardEditorStatusEntityIconOverrides = $state<Record<string, string>>({});
 	// Light group picker state — lifted to page.svelte so it renders outside the transformed modal
 	let lgPickerOpen = $state(false);
 	let lgPickerEditingId = $state<string | null>(null);
@@ -330,6 +331,7 @@
 	let cardEditorInitialStatusEntityIds = $state<string[]>([]);
 	let cardEditorInitialStatusDiscoveredEntityIds = $state<string[] | undefined>(undefined);
 	let cardEditorInitialStatusEntityAliases = $state<Record<string, string>>({});
+	let cardEditorInitialStatusEntityIconOverrides = $state<Record<string, string>>({});
 	let cardEditorInitialStatusIcon = $state('lightbulb');
 	let cardEditorInitialNetEntityId = $state('');
 	let cardEditorInitialSolarEntityId = $state('');
@@ -793,6 +795,7 @@ function getEditorUiState() {
 			cardEditorStatusEntityIds,
 			cardEditorStatusDiscoveredEntityIds,
 			cardEditorStatusEntityAliases,
+			cardEditorStatusEntityIconOverrides,
 			cardEditorStatusIcon,
 			cardEditorNetEntityId,
 			cardEditorSolarEntityId,
@@ -870,6 +873,7 @@ function getEditorUiState() {
 			cardEditorInitialStatusEntityIds,
 			cardEditorInitialStatusDiscoveredEntityIds,
 			cardEditorInitialStatusEntityAliases,
+			cardEditorInitialStatusEntityIconOverrides,
 			cardEditorInitialStatusIcon,
 		sectionEditorOpen,
 		sectionEditorId,
@@ -927,6 +931,8 @@ function setEditorUiState(
 		if ('cardEditorStatusDiscoveredEntityIds' in patch)
 			cardEditorStatusDiscoveredEntityIds = patch.cardEditorStatusDiscoveredEntityIds;
 		if (patch.cardEditorStatusEntityAliases !== undefined) cardEditorStatusEntityAliases = patch.cardEditorStatusEntityAliases;
+		if (patch.cardEditorStatusEntityIconOverrides !== undefined)
+			cardEditorStatusEntityIconOverrides = patch.cardEditorStatusEntityIconOverrides;
 		if (patch.cardEditorStatusIcon !== undefined) cardEditorStatusIcon = patch.cardEditorStatusIcon;
 		if (patch.cardEditorNetEntityId !== undefined) cardEditorNetEntityId = patch.cardEditorNetEntityId;
 		if (patch.cardEditorSolarEntityId !== undefined) cardEditorSolarEntityId = patch.cardEditorSolarEntityId;
@@ -981,6 +987,8 @@ function setEditorUiState(
 			cardEditorInitialStatusDiscoveredEntityIds = patch.cardEditorInitialStatusDiscoveredEntityIds;
 		if (patch.cardEditorInitialStatusEntityAliases !== undefined)
 			cardEditorInitialStatusEntityAliases = patch.cardEditorInitialStatusEntityAliases;
+		if (patch.cardEditorInitialStatusEntityIconOverrides !== undefined)
+			cardEditorInitialStatusEntityIconOverrides = patch.cardEditorInitialStatusEntityIconOverrides;
 		if (patch.cardEditorInitialStatusIcon !== undefined) cardEditorInitialStatusIcon = patch.cardEditorInitialStatusIcon;
 		if (patch.cardEditorInitialNetEntityId !== undefined) cardEditorInitialNetEntityId = patch.cardEditorInitialNetEntityId;
 		if (patch.cardEditorInitialSolarEntityId !== undefined) cardEditorInitialSolarEntityId = patch.cardEditorInitialSolarEntityId;
@@ -2023,6 +2031,7 @@ if (browser) {
 				JSON.stringify([...(cardEditorStatusDiscoveredEntityIds ?? [])].sort()) !==
 					JSON.stringify([...(cardEditorInitialStatusDiscoveredEntityIds ?? [])].sort()) ||
 				JSON.stringify(cardEditorStatusEntityAliases ?? {}) !== JSON.stringify(cardEditorInitialStatusEntityAliases ?? {}) ||
+				JSON.stringify(cardEditorStatusEntityIconOverrides ?? {}) !== JSON.stringify(cardEditorInitialStatusEntityIconOverrides ?? {}) ||
 				cardEditorStatusIcon !== cardEditorInitialStatusIcon ||
 			cardEditorNetEntityId !== (cardEditorInitialNetEntityId ?? '') ||
 			cardEditorSolarEntityId !== (cardEditorInitialSolarEntityId ?? '') ||
@@ -2623,6 +2632,7 @@ if (browser) {
 				{cardEditorStatusDeviceClasses}
 				{cardEditorStatusEntityIds}
 				{cardEditorStatusEntityAliases}
+				{cardEditorStatusEntityIconOverrides}
 				mediaHubPlayerAliases={mediaHubPlayerAliases}
 				lightButtonEntityIds={sidebarLightEntityIds}
 				cardEditorStatusDiscoveredEntityIds={cardEditorStatusDiscoveredEntityIds}
@@ -2651,6 +2661,7 @@ if (browser) {
 				onStatusDeviceClassesChange={(value) => (cardEditorStatusDeviceClasses = value)}
 				onStatusEntityIdsChange={(value) => (cardEditorStatusEntityIds = value)}
 				onStatusEntityAliasesChange={(value) => (cardEditorStatusEntityAliases = value)}
+				onStatusEntityIconOverridesChange={(value) => (cardEditorStatusEntityIconOverrides = value)}
 				onMediaHubPlayerAliasesChange={(value) => {
 					mediaHubPlayerAliases = value;
 					void persistDashboardState();

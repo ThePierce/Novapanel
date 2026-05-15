@@ -48,6 +48,7 @@ type EditorUiState = {
 	cardEditorStatusEntityIds?: CardDraft['statusEntityIds'];
 	cardEditorStatusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
 	cardEditorStatusEntityAliases?: CardDraft['statusEntityAliases'];
+	cardEditorStatusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'];
 	cardEditorStatusIcon?: CardDraft['statusIcon'];
 	cardEditorNetEntityId?: string;
 	cardEditorSolarEntityId?: string;
@@ -121,6 +122,7 @@ type EditorUiState = {
 	cardEditorInitialStatusEntityIds?: CardDraft['statusEntityIds'];
 	cardEditorInitialStatusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
 	cardEditorInitialStatusEntityAliases?: CardDraft['statusEntityAliases'];
+	cardEditorInitialStatusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'];
 	cardEditorInitialStatusIcon?: CardDraft['statusIcon'];
 	cardEditorInitialEnergyDeviceEntityIds?: string[];
 	cardEditorInitialEnergyDeviceTodayEntityIds?: string[];
@@ -227,6 +229,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorStatusEntityIds: next.statusEntityIds,
 			cardEditorStatusDiscoveredEntityIds: next.statusDiscoveredEntityIds,
 			cardEditorStatusEntityAliases: next.statusEntityAliases ?? {},
+			cardEditorStatusEntityIconOverrides: next.statusEntityIconOverrides ?? {},
 			cardEditorStatusIcon: next.statusIcon,
 				cardEditorNetEntityId: next.netEntityId ?? '',
 				cardEditorSolarEntityId: next.solarEntityId ?? '',
@@ -303,6 +306,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorInitialStatusEntityIds: next.initialStatusEntityIds,
 			cardEditorInitialStatusDiscoveredEntityIds: next.initialStatusDiscoveredEntityIds,
 			cardEditorInitialStatusEntityAliases: next.initialStatusEntityAliases ?? {},
+			cardEditorInitialStatusEntityIconOverrides: next.initialStatusEntityIconOverrides ?? {},
 			cardEditorInitialStatusIcon: next.initialStatusIcon,
 				cardEditorInitialEnergyDeviceAliases: next.initialEnergyDeviceAliases ?? {},
 			cardEditorOpen: true,
@@ -415,6 +419,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			statusDiscoveredEntityIds:
 				state.cardEditorStatusDiscoveredEntityIds ?? existing?.statusDiscoveredEntityIds,
 			statusEntityAliases: state.cardEditorStatusEntityAliases,
+			statusEntityIconOverrides: state.cardEditorStatusEntityIconOverrides,
 			statusIcon: state.cardEditorStatusIcon,
 			netEntityId: state.cardEditorNetEntityId,
 			solarEntityId: state.cardEditorSolarEntityId,

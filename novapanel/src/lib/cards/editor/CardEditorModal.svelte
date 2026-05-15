@@ -127,6 +127,7 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorStatusDeviceClasses?: string[];
 		cardEditorStatusEntityIds?: string[];
 		cardEditorStatusEntityAliases?: Record<string, string>;
+		cardEditorStatusEntityIconOverrides?: Record<string, string>;
 		mediaHubPlayerAliases?: Record<string, string>;
 		lightButtonEntityIds?: string[];
 		cardEditorStatusDiscoveredEntityIds?: string[];
@@ -155,6 +156,7 @@ let availabilityIgnoredOpen = $state(false);
 		onStatusDeviceClassesChange: (value: string[]) => void;
 		onStatusEntityIdsChange: (value: string[]) => void;
 		onStatusEntityAliasesChange: (value: Record<string, string>) => void;
+		onStatusEntityIconOverridesChange: (value: Record<string, string>) => void;
 		onMediaHubPlayerAliasesChange?: (value: Record<string, string>) => void;
 		onStatusDiscoveredEntityIdsChange: (value: string[]) => void;
 		onStatusIconChange: (value: string) => void;
@@ -237,6 +239,7 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorStatusDeviceClasses,
 		cardEditorStatusEntityIds,
 		cardEditorStatusEntityAliases = {},
+		cardEditorStatusEntityIconOverrides = {},
 		mediaHubPlayerAliases = {},
 		lightButtonEntityIds = [],
 		cardEditorStatusDiscoveredEntityIds,
@@ -265,6 +268,7 @@ let availabilityIgnoredOpen = $state(false);
 		onStatusDeviceClassesChange,
 		onStatusEntityIdsChange,
 		onStatusEntityAliasesChange,
+		onStatusEntityIconOverridesChange,
 		onMediaHubPlayerAliasesChange,
 		onStatusDiscoveredEntityIdsChange,
 		onStatusIconChange,
@@ -845,6 +849,7 @@ let availabilityIgnoredOpen = $state(false);
 				statusDomains={cardEditorStatusDomains}
 				statusEntityIds={cardEditorStatusEntityIds}
 				statusEntityAliases={cardEditorStatusEntityAliases}
+				statusEntityIconOverrides={cardEditorStatusEntityIconOverrides}
 				mediaHubPlayerAliases={mediaHubPlayerAliases}
 				statusDeviceClasses={cardEditorStatusDeviceClasses}
 				statusIcon={cardEditorStatusIcon}
@@ -859,6 +864,7 @@ let availabilityIgnoredOpen = $state(false);
 				{onStatusDeviceClassesChange}
 				{onStatusIconChange}
 				{onStatusEntityAliasesChange}
+				{onStatusEntityIconOverridesChange}
 				{onMediaHubPlayerAliasesChange}
 				{toggleStatusEntityId}
 				{selectAllScopedPickerEntities}

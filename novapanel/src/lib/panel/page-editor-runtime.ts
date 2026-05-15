@@ -88,6 +88,7 @@ export function saveCardEditorRuntime(input: {
 	statusEntityIds?: CardDraft['statusEntityIds'];
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'];
 	statusEntityAliases?: CardDraft['statusEntityAliases'];
+	statusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'];
 	statusIcon?: CardDraft['statusIcon'];
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'];
 	netEntityId?: string;
@@ -145,6 +146,7 @@ export function saveCardEditorRuntime(input: {
 				input.statusEntityIds,
 				input.statusDiscoveredEntityIds,
 				input.statusEntityAliases,
+				input.statusEntityIconOverrides,
 				input.statusIcon,
 				input.ignoredEntityIds,
 				input.netEntityId,
@@ -205,6 +207,7 @@ export function saveCardEditorRuntime(input: {
 			input.statusEntityIds,
 			input.statusDiscoveredEntityIds,
 			input.statusEntityAliases,
+			input.statusEntityIconOverrides,
 			input.statusIcon,
 			input.ignoredEntityIds,
 			input.netEntityId,

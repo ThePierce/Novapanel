@@ -44,6 +44,18 @@ function cleanAliasMap(value?: Record<string, string>): Record<string, string> |
 	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
+function cleanIconMap(value?: Record<string, string>): Record<string, string> | undefined {
+	if (!value || typeof value !== 'object') return undefined;
+	const entries = Object.entries(value)
+		.map(([key, icon]) => {
+			const cleanedKey = key.trim();
+			const cleanedIcon = icon.trim();
+			return [cleanedKey, cleanedIcon && cleanedIcon.includes(':') ? cleanedIcon : `mdi:${cleanedIcon}`] as const;
+		})
+		.filter(([key, icon]) => key.length > 0 && icon.length > 4);
+	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 export function addCatalogCardToSidebar(
 	cards: CardDraft[],
 	selected: CardDefinition,
@@ -215,6 +227,7 @@ export function saveCardEdits(
 	statusEntityIds?: CardDraft['statusEntityIds'],
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'],
 	statusEntityAliases?: CardDraft['statusEntityAliases'],
+	statusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'],
 	statusIcon?: CardDraft['statusIcon'],
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'],
 	netEntityId?: string,
@@ -292,6 +305,13 @@ export function saveCardEdits(
 			cardType === 'availability_status' ||
 			cardType === 'media_players_status'
 				? cleanAliasMap(statusEntityAliases)
+				: undefined,
+		statusEntityIconOverrides:
+			cardType === 'lights_status' ||
+			cardType === 'openings_status' ||
+			cardType === 'devices_status' ||
+			cardType === 'availability_status'
+				? cleanIconMap(statusEntityIconOverrides)
 				: undefined,
 		statusDiscoveredEntityIds:
 			cardType === 'lights_status' ||
@@ -431,6 +451,7 @@ export function saveCardInSidebar(
 	statusEntityIds?: CardDraft['statusEntityIds'],
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'],
 	statusEntityAliases?: CardDraft['statusEntityAliases'],
+	statusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'],
 	statusIcon?: CardDraft['statusIcon'],
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'],
 	netEntityId?: string,
@@ -487,6 +508,7 @@ export function saveCardInSidebar(
 					statusEntityIds,
 					statusDiscoveredEntityIds,
 					statusEntityAliases,
+					statusEntityIconOverrides,
 					statusIcon,
 					ignoredEntityIds,
 					netEntityId,
@@ -546,6 +568,7 @@ export function saveCardInSections(
 	statusEntityIds?: CardDraft['statusEntityIds'],
 	statusDiscoveredEntityIds?: CardDraft['statusDiscoveredEntityIds'],
 	statusEntityAliases?: CardDraft['statusEntityAliases'],
+	statusEntityIconOverrides?: CardDraft['statusEntityIconOverrides'],
 	statusIcon?: CardDraft['statusIcon'],
 	ignoredEntityIds?: CardDraft['ignoredEntityIds'],
 	netEntityId?: string,
@@ -604,6 +627,7 @@ export function saveCardInSections(
 						statusEntityIds,
 						statusDiscoveredEntityIds,
 						statusEntityAliases,
+						statusEntityIconOverrides,
 						statusIcon,
 						ignoredEntityIds,
 						netEntityId,

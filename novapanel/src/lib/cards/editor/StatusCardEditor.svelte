@@ -1,6 +1,7 @@
 <script lang="ts">
 	import EditorSection from '$lib/cards/editor/EditorSection.svelte';
 	import AreaPicker from '$lib/cards/editor/AreaPicker.svelte';
+	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
 	import { filteredEntities } from '$lib/ha/entities-store';
 
 	type Row = { id: string; label: string; displayName: string };
@@ -14,6 +15,7 @@
 		statusDomains?: string[];
 		statusEntityIds?: string[];
 		statusEntityAliases?: Record<string, string>;
+		statusEntityIconOverrides?: Record<string, string>;
 		mediaHubPlayerAliases?: Record<string, string>;
 		statusDeviceClasses?: string[];
 		statusIcon?: string;
@@ -28,6 +30,7 @@
 		onStatusDeviceClassesChange: (v: string[]) => void;
 		onStatusIconChange: (v: string) => void;
 		onStatusEntityAliasesChange: (v: Record<string, string>) => void;
+		onStatusEntityIconOverridesChange: (v: Record<string, string>) => void;
 		onMediaHubPlayerAliasesChange?: (v: Record<string, string>) => void;
 		toggleStatusEntityId: (entityId: string, checked: boolean) => void;
 		selectAllScopedPickerEntities: () => void;
@@ -85,6 +88,33 @@
 	const showsIconField = $derived(
 		p.cardType === 'lights_status' || p.cardType === 'devices_status' || p.cardType === 'media_players_status'
 	);
+	const supportsEntityIconOverrides = $derived(p.cardType !== 'media_players_status');
+
+	function normalizeIconValue(value: string | undefined): string {
+		const raw = typeof value === 'string' ? value.trim() : '';
+		if (!raw) return '';
+		return raw.includes(':') ? raw : `mdi:${raw}`;
+	}
+
+	function defaultEntityIcon(
+		entity: { entityId: string; icon?: string; deviceClass?: string } | undefined,
+		fallbackName: string
+	): string {
+		const entityIcon = normalizeIconValue(entity?.icon);
+		if (entityIcon) return entityIcon;
+		if (p.cardType === 'lights_status') return 'mdi:lightbulb-outline';
+		if (p.cardType === 'availability_status') return 'mdi:lan-disconnect';
+		if (p.cardType === 'openings_status') {
+			const deviceClass = (entity?.deviceClass ?? '').toLowerCase();
+			const haystack = `${entity?.entityId ?? ''} ${fallbackName}`.toLowerCase();
+			if (deviceClass.includes('garage') || haystack.includes('garage')) return 'mdi:garage';
+			if (deviceClass.includes('window') || haystack.includes('window') || haystack.includes('raam')) {
+				return 'mdi:window-closed-variant';
+			}
+			return 'mdi:door-closed';
+		}
+		return 'mdi:power-plug';
+	}
 
 	const aliasRows = $derived.by(() => {
 		const selectedRowsById = new Map(
@@ -104,10 +134,14 @@
 				const originalName = entity?.friendlyName?.trim() || pickerRow?.displayName?.trim() || id;
 				const aliases = p.cardType === 'media_players_status' ? (p.mediaHubPlayerAliases ?? {}) : (p.statusEntityAliases ?? {});
 				const alias = aliases[id] ?? aliases[entity?.entityId ?? id] ?? '';
+				const canonicalId = entity?.entityId ?? id;
+				const iconOverride = p.statusEntityIconOverrides?.[canonicalId] ?? p.statusEntityIconOverrides?.[id] ?? '';
 				return {
-					id: entity?.entityId ?? id,
+					id: canonicalId,
 					originalName,
-					alias: typeof alias === 'string' ? alias : ''
+					alias: typeof alias === 'string' ? alias : '',
+					iconOverride: typeof iconOverride === 'string' ? iconOverride : '',
+					defaultIcon: defaultEntityIcon(entity, originalName)
 				};
 			});
 	});
@@ -120,6 +154,23 @@
 		else delete next[entityId];
 		if (p.cardType === 'media_players_status') p.onMediaHubPlayerAliasesChange?.(next);
 		else p.onStatusEntityAliasesChange(next);
+	}
+
+	function updateEntityIcon(entityId: string, value: string) {
+		const next = { ...(p.statusEntityIconOverrides ?? {}) };
+		const trimmed = value.trim();
+		if (trimmed) next[entityId] = value;
+		else delete next[entityId];
+		p.onStatusEntityIconOverridesChange(next);
+	}
+
+	function commitEntityIcon(entityId: string, value: string) {
+		const trimmed = value.trim();
+		updateEntityIcon(entityId, normalizeIconValue(trimmed));
+	}
+
+	function effectiveEntityIcon(row: { iconOverride: string; defaultIcon: string }): string {
+		return normalizeIconValue(row.iconOverride) || row.defaultIcon;
 	}
 </script>
 
@@ -184,13 +235,13 @@
 
 {#if aliasRows.length > 0}
 	<EditorSection
-		title={p.t('Namen')}
+		title={p.t(supportsEntityIconOverrides ? 'Namen en iconen' : 'Namen')}
 		icon="pencil"
 		tone={statusTone}
-		status={aliasRows.some((row) => row.alias.trim().length > 0) ? 'partial' : 'empty'}
+		status={aliasRows.some((row) => row.alias.trim().length > 0 || row.iconOverride.trim().length > 0) ? 'partial' : 'empty'}
 		statusLabel={`${aliasRows.length} ${p.t(aliasRows.length === 1 ? 'entiteit' : 'entiteiten')}`}
 	>
-		<div class="np-help">{p.t('Pas hier de namen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.')}</div>
+		<div class="np-help">{p.t(supportsEntityIconOverrides ? 'Pas hier de namen en iconen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.' : 'Pas hier de namen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.')}</div>
 		<div class="alias-editor-list">
 			{#each aliasRows as row (row.id)}
 				<div class="alias-editor-row">
@@ -201,13 +252,32 @@
 						</span>
 						<span class="alias-editor-id">{row.id}</span>
 					</div>
-					<input
-						type="text"
-						class="np-input"
-						value={row.alias}
-						placeholder={row.originalName}
-						oninput={(event) => updateEntityAlias(row.id, (event.currentTarget as HTMLInputElement).value)}
-					/>
+					<div class="alias-editor-controls" class:single={!supportsEntityIconOverrides}>
+						<input
+							type="text"
+							class="np-input"
+							aria-label={p.t('Naam')}
+							value={row.alias}
+							placeholder={row.originalName}
+							oninput={(event) => updateEntityAlias(row.id, (event.currentTarget as HTMLInputElement).value)}
+						/>
+						{#if supportsEntityIconOverrides}
+							<div class="alias-icon-field">
+								<span class="alias-icon-preview">
+									<StatusIcon icon={effectiveEntityIcon(row)} size={18} />
+								</span>
+								<input
+									type="text"
+									class="np-input mono alias-icon-input"
+									aria-label={p.t('Icoon')}
+									value={row.iconOverride}
+									placeholder={row.defaultIcon}
+									oninput={(event) => updateEntityIcon(row.id, (event.currentTarget as HTMLInputElement).value)}
+									onblur={(event) => commitEntityIcon(row.id, (event.currentTarget as HTMLInputElement).value)}
+								/>
+							</div>
+						{/if}
+					</div>
 				</div>
 			{/each}
 		</div>
@@ -249,7 +319,7 @@
 	}
 	.alias-editor-row {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(180px, 0.9fr);
+		grid-template-columns: minmax(0, 1fr) minmax(260px, 1.15fr);
 		gap: 0.5rem;
 		align-items: center;
 		padding: 0.55rem;
@@ -279,8 +349,41 @@
 		font-size: 0.68rem;
 		color: rgba(255,255,255,0.42);
 	}
+	.alias-editor-controls {
+		display: grid;
+		grid-template-columns: minmax(140px, 1fr) minmax(126px, 0.72fr);
+		gap: 0.45rem;
+		min-width: 0;
+	}
+	.alias-editor-controls.single {
+		grid-template-columns: 1fr;
+	}
+	.alias-icon-field {
+		position: relative;
+		min-width: 0;
+	}
+	.alias-icon-preview {
+		position: absolute;
+		left: 0.55rem;
+		top: 50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.25rem;
+		height: 1.25rem;
+		color: rgba(255,255,255,0.72);
+		transform: translateY(-50%);
+		pointer-events: none;
+	}
+	.alias-icon-input {
+		width: 100%;
+		padding-left: 2.1rem;
+	}
 	@media (max-width: 640px) {
 		.alias-editor-row {
+			grid-template-columns: 1fr;
+		}
+		.alias-editor-controls {
 			grid-template-columns: 1fr;
 		}
 	}

@@ -151,7 +151,10 @@ const EMPTY_RECORD: Record<string, string> = {};
 		void iconOverrideTick;
 		if (!supportsCustomIconEditor(kind)) return getDefaultEntityDetailIcon(entity);
 		const override = statusEntityIconOverrides?.[entity.entityId];
-		if (typeof override === 'string' && override.trim().length > 0) return override.trim();
+		if (typeof override === 'string' && override.trim().length > 0) {
+			const value = override.trim();
+			return value.includes(':') ? value : `mdi:${value}`;
+		}
 		return getDefaultEntityDetailIcon(entity);
 	}
 
