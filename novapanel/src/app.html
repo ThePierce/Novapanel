@@ -11,6 +11,65 @@
 		</style>
 		<script>
 			(function () {
+				var reloadKey = 'np_stale_build_reload_at';
+				function messageFrom(value) {
+					try {
+						if (!value) return '';
+						if (typeof value === 'string') return value;
+						if (value.message) return String(value.message);
+						return String(value);
+					} catch (e) {
+						return '';
+					}
+				}
+				function isStaleBuildError(value) {
+					var msg = messageFrom(value).toLowerCase();
+					return (
+						msg.indexOf('failed to fetch dynamically imported module') !== -1 ||
+						msg.indexOf('error loading dynamically imported module') !== -1 ||
+						msg.indexOf('importing a module script failed') !== -1 ||
+						msg.indexOf('unable to preload css') !== -1 ||
+						msg.indexOf('/_app/immutable/') !== -1
+					);
+				}
+				function reloadFresh() {
+					try {
+						var now = Date.now();
+						var last = Number(sessionStorage.getItem(reloadKey) || '0');
+						if (last && now - last < 15000) return;
+						sessionStorage.setItem(reloadKey, String(now));
+						if (window.caches && caches.keys) {
+							caches.keys().then(function (keys) {
+								keys.forEach(function (key) {
+									try { caches.delete(key); } catch (e) {}
+								});
+							}).catch(function () {});
+						}
+						var url = new URL(location.href);
+						url.searchParams.set('np_reload', String(now));
+						location.replace(url.toString());
+					} catch (e) {
+						try { location.reload(); } catch (ignore) {}
+					}
+				}
+				window.addEventListener('vite:preloadError', function (event) {
+					try { event.preventDefault(); } catch (e) {}
+					reloadFresh();
+				});
+				window.addEventListener('unhandledrejection', function (event) {
+					if (!isStaleBuildError(event.reason)) return;
+					try { event.preventDefault(); } catch (e) {}
+					reloadFresh();
+				});
+				window.addEventListener('error', function (event) {
+					if (!isStaleBuildError(event.error || event.message || event.filename)) return;
+					try { event.preventDefault(); } catch (e) {}
+					reloadFresh();
+				}, true);
+			})();
+		</script>
+		<script>
+			(function () {
 				try {
 					if (!/[?&]np_resync=1(?:&|$)/.test(location.search)) return;
 					var keys = [

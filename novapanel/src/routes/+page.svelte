@@ -68,7 +68,15 @@
 
 	function cachedImport<T>(loader: () => Promise<T>): () => Promise<T> {
 		let promise: Promise<T> | null = null;
-		return () => (promise ??= loader());
+		return () => {
+			if (!promise) {
+				promise = loader().catch((error) => {
+					promise = null;
+					throw error;
+				});
+			}
+			return promise;
+		};
 	}
 
 	const loadCardLibraryModal = cachedImport(() => import('$lib/cards/library/CardLibraryModal.svelte'));

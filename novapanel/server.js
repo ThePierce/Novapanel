@@ -1769,6 +1769,82 @@ app.get(
     }
 );
 
+function getImmutableAssetContentType(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    if (ext === '.js') return 'application/javascript; charset=utf-8';
+    if (ext === '.css') return 'text/css; charset=utf-8';
+    if (ext === '.json') return 'application/json; charset=utf-8';
+    if (ext === '.woff2') return 'font/woff2';
+    if (ext === '.woff') return 'font/woff';
+    if (ext === '.ttf') return 'font/ttf';
+    if (ext === '.svg') return 'image/svg+xml';
+    return 'application/octet-stream';
+}
+
+function staleBuildReloadModule(requestUrl) {
+    const safeUrl = JSON.stringify(String(requestUrl || ''));
+    return `
+const requestUrl = ${safeUrl};
+try {
+  const key = 'np_stale_build_reload_at';
+  const now = Date.now();
+  const last = Number(sessionStorage.getItem(key) || '0');
+  if (!last || now - last > 15000) {
+    sessionStorage.setItem(key, String(now));
+    try {
+      if (window.caches && caches.keys) {
+        caches.keys().then((keys) => keys.forEach((cacheKey) => caches.delete(cacheKey))).catch(() => {});
+      }
+    } catch {}
+    const url = new URL(location.href);
+    url.searchParams.set('np_reload', String(now));
+    url.searchParams.set('np_missing_chunk', requestUrl.split('/').pop() || '1');
+    location.replace(url.toString());
+  }
+} catch {
+  try { location.reload(); } catch {}
+}
+export default {};
+`;
+}
+
+// Old browser sessions may request hashed chunks from the previous add-on build.
+// Serve current immutable assets even when HA keeps the ingress prefix in the URL,
+// and return a tiny reload module for missing JS chunks instead of a hard 404.
+app.get('*', async (req, res, next) => {
+    const requestPath = req.path || '';
+    const match = requestPath.match(/\/_app\/immutable\/(.+)$/);
+    if (!match?.[1]) return next();
+    const relativePath = match[1];
+    const normalized = path.normalize(relativePath);
+    if (path.isAbsolute(normalized) || normalized.startsWith('..') || normalized.includes(`..${path.sep}`)) {
+        return next();
+    }
+    const assetPath = path.join(process.cwd(), 'build', 'client', '_app', 'immutable', normalized);
+    try {
+        const data = await fs.readFile(assetPath);
+        res.setHeader('Content-Type', getImmutableAssetContentType(assetPath));
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.status(200).end(data);
+        return;
+    } catch {
+        if (normalized.endsWith('.js')) {
+            log(`stale frontend chunk requested: ${req.originalUrl || req.url}`);
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.status(200).send(staleBuildReloadModule(req.originalUrl || req.url));
+            return;
+        }
+        if (normalized.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.status(200).send('/* stale Nova Panel stylesheet ignored */');
+            return;
+        }
+        next();
+    }
+});
+
 async function attachFrontend(httpServer) {
     if (IS_DEVELOPMENT) {
         const { createServer: createViteServer } = await import('vite');
