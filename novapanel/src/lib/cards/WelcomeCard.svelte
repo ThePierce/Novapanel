@@ -5,11 +5,13 @@
 </script>
 
 <div class="welcome-card">
-	<div class="welcome-mark" aria-hidden="true">N</div>
-	<div class="welcome-copy">
-		<span>{translate('Welkom bij', $selectedLanguageStore)}</span>
-		<strong>Novapanel</strong>
-		<p>{translate('Begin met een leeg dashboard en voeg zelf secties, kaarten en Home Assistant-entiteiten toe.', $selectedLanguageStore)}</p>
+	<div class="welcome-center">
+		<div class="welcome-mark" aria-hidden="true">N</div>
+		<div class="welcome-copy">
+			<span>{translate('Welkom bij', $selectedLanguageStore)}</span>
+			<strong>Novapanel</strong>
+			<p>{translate('Begin met een leeg dashboard en voeg zelf secties, kaarten en Home Assistant-entiteiten toe.', $selectedLanguageStore)}</p>
+		</div>
 	</div>
 	<a class="welcome-link" href={readmeUrl} target="_blank" rel="noreferrer">
 		README
@@ -19,10 +21,10 @@
 <style>
 	.welcome-card {
 		min-height: 16rem;
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
+		position: relative;
+		display: flex;
 		align-items: center;
-		gap: 1.1rem;
+		justify-content: center;
 		padding: clamp(1.25rem, 2vw, 1.8rem);
 		border-radius: 18px;
 		background:
@@ -35,9 +37,19 @@
 		box-sizing: border-box;
 	}
 
+	.welcome-center {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 1.1rem;
+		max-width: min(100%, 44rem);
+		text-align: left;
+	}
+
 	.welcome-mark {
 		width: 4.6rem;
 		height: 4.6rem;
+		flex: 0 0 auto;
 		display: grid;
 		place-items: center;
 		border-radius: 1.15rem;
@@ -77,6 +89,9 @@
 	}
 
 	.welcome-link {
+		position: absolute;
+		right: clamp(1rem, 1.8vw, 1.55rem);
+		bottom: clamp(1rem, 1.8vw, 1.55rem);
 		height: 2.45rem;
 		display: inline-flex;
 		align-items: center;
@@ -97,8 +112,14 @@
 
 	@media (max-width: 720px) {
 		.welcome-card {
-			grid-template-columns: 1fr;
-			justify-items: start;
+			min-height: 18rem;
+			justify-content: center;
+			padding-bottom: 4.6rem;
+		}
+
+		.welcome-center {
+			flex-direction: column;
+			text-align: center;
 		}
 	}
 </style>

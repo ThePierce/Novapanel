@@ -55,7 +55,7 @@ export const cardCatalog: CardDefinition[] = [
 	{
 		id: 'divider',
 		type: 'divider',
-		label: 'Divider',
+		label: 'Divider line',
 		target: 'sidebar',
 		preview: { kind: 'divider' }
 	},

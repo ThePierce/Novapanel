@@ -167,6 +167,7 @@ const phraseTranslations: Record<string, Partial<Record<LanguageCode, string>>> 
 	'Kies kalender-entiteiten in edit mode.': { en: 'Choose calendar entities in edit mode.', de: 'Kalender-Entitäten im Bearbeitungsmodus wählen.', fr: 'Choisissez les entités calendrier en mode édition.', es: 'Elige entidades de calendario en modo edición.' },
 	'Hele dag': { en: 'All day', de: 'Ganztägig', fr: 'Toute la journée', es: 'Todo el día' },
 	'Afspraak': { en: 'Event', de: 'Termin', fr: 'Événement', es: 'Evento' },
+	'events': { nl: 'afspraken', en: 'events', de: 'Termine', fr: 'événements', es: 'eventos' },
 	'Kalender laden...': { en: 'Loading calendar...', de: 'Kalender wird geladen...', fr: 'Chargement du calendrier...', es: 'Cargando calendario...' },
 	'Kalender laden mislukt': { en: 'Calendar failed to load', de: 'Kalender konnte nicht geladen werden', fr: 'Échec du chargement du calendrier', es: 'No se pudo cargar el calendario' },
 	'Locatie van': { en: 'Location of', de: 'Standort von', fr: 'Position de', es: 'Ubicación de' },

@@ -1992,6 +1992,12 @@ if (browser) {
 	const activeSidebarCards = $derived(
 		editMode ? panelDraftHistory.present.sidebarCards : savedSidebarCards
 	);
+	const hasUserConfiguredCards = $derived.by(() =>
+		activeSidebarCards.length > 0 ||
+		activeViewSections.some((section) =>
+			(section.cards ?? []).some((card) => card.hiddenInSection !== true && card.cardType !== 'welcome')
+		)
+	);
 	const sidebarLightEntityIds = $derived.by(() => {
 		const ids: string[] = [];
 		const seen = new Set<string>();
@@ -2114,6 +2120,20 @@ if (browser) {
 	const renderedSidebarItems = $derived(
 		safeBuildSidebarItems(renderedSidebarCards, getLocalizedCardLabel, selectedLanguage, debugLog)
 	);
+	const welcomeCardVisible = $derived.by(() =>
+		!hasUserConfiguredCards &&
+		renderedResponsiveViewSections.some((section) =>
+			(section.cards ?? []).some((card) => shouldRenderViewCard(card) && card.cardType === 'welcome')
+		)
+	);
+
+	function shouldRenderViewCard(card: CardDraft) {
+		return card.hiddenInSection !== true && (card.cardType !== 'welcome' || !hasUserConfiguredCards);
+	}
+
+	function shouldRenderViewSection(section: ViewSectionDraft) {
+		return sectionHasHeader(section) || (section.cards ?? []).some((card) => shouldRenderViewCard(card));
+	}
 
 	function isCameraStripSection(section: { cards?: Array<{ cardType?: string }> }): boolean {
 		return (
@@ -2350,6 +2370,7 @@ if (browser) {
 		onOpenSettings={openSettings}
 		onOpenHASidebar={openHASidebar}
 		onToggleControls={toggleControls}
+		showDrawerHint={welcomeCardVisible}
 	/>
 
 	<SidebarShell
@@ -2389,7 +2410,7 @@ if (browser) {
 								{/each}
 							</div>
 						{/if}
-						{#each renderedResponsiveViewSections as section (section.id)}
+						{#each renderedResponsiveViewSections.filter((section) => shouldRenderViewSection(section)) as section (section.id)}
 							<section
 								class="view-section"
 								class:editable={editMode}
@@ -2469,7 +2490,7 @@ if (browser) {
 									}}
 									ondrop={() => dropViewCard(section.id, null)}
 								>
-									{#each section.cards.filter((card) => card.hiddenInSection !== true) as card (card.id)}
+									{#each section.cards.filter((card) => shouldRenderViewCard(card)) as card (card.id)}
 										{@const entityButtonKind = entityButtonKindForCard(card.cardType)}
 										<div
 											class="card-item"

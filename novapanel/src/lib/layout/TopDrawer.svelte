@@ -17,6 +17,7 @@
 		onOpenSettings: () => void;
 		onOpenHASidebar: () => void;
 		onToggleControls: () => void;
+		showDrawerHint?: boolean;
 	};
 
 	let {
@@ -34,11 +35,12 @@
 		onOpenCardLibrary,
 		onOpenSettings,
 		onOpenHASidebar,
-		onToggleControls
+		onToggleControls,
+		showDrawerHint = false
 	}: Props = $props();
 </script>
 
-<div class="drawer-shell">
+<div class="drawer-shell" class:open={controlsOpen} class:showHint={showDrawerHint && !controlsOpen}>
 	<section class="top-drawer" class:open={controlsOpen}>
 		<div class="drawer-row">
 			{#if editMode}
@@ -100,6 +102,34 @@
 
 <style>
 	.drawer-shell { position: absolute; top: 0; left: 0; right: 0; z-index: 35; }
+	.drawer-shell::before,
+	.drawer-shell::after {
+		content: '';
+		position: absolute;
+		right: 3.25rem;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 180ms ease, transform 180ms ease;
+	}
+	.drawer-shell::before {
+		top: 5.15rem;
+		width: 0.2rem;
+		height: 2.35rem;
+		border-radius: 999px;
+		background: linear-gradient(180deg, rgba(219,234,254,0.88), rgba(219,234,254,0));
+		box-shadow: 0 0 18px rgba(96,165,250,0.35);
+	}
+	.drawer-shell::after {
+		top: 4.6rem;
+		width: 1.25rem;
+		height: 1.25rem;
+		border-left: 0.22rem solid rgba(219,234,254,0.9);
+		border-top: 0.22rem solid rgba(219,234,254,0.9);
+		transform: translateX(0.52rem) rotate(45deg);
+		filter: drop-shadow(0 0 10px rgba(96,165,250,0.42));
+	}
+	.drawer-shell.showHint::before { opacity: 0.72; }
+	.drawer-shell.showHint::after { opacity: 0.72; transform: translateX(0.52rem) rotate(45deg); }
 	.top-drawer { height: 4.75rem; width: 100%; display: flex; align-items: center; justify-content: flex-end; padding: 1rem 5rem 1rem 2rem; border-bottom: 1px solid #262e3f; background: #121722; transform: translateY(-105%); opacity: 0; transition: transform 220ms ease, opacity 180ms ease; pointer-events: none; box-sizing: border-box; }
 	.top-drawer.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
 	.drawer-row { display: flex; align-items: center; justify-content: flex-start; gap: 0.7rem; width: 100%; flex-wrap: wrap; }

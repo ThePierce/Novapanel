@@ -240,6 +240,22 @@
 									12 May
 								</text>
 							</svg>
+						{:else if entry.preview.kind === 'divider'}
+							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
+								<defs>
+									<linearGradient id={`np-divider-line-${entry.id}`} x1="0" y1="0" x2="1" y2="0">
+										<stop offset="0" stop-color="rgba(96,165,250,0)" />
+										<stop offset="0.5" stop-color="rgba(96,165,250,0.9)" />
+										<stop offset="1" stop-color="rgba(96,165,250,0)" />
+									</linearGradient>
+								</defs>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
+								<rect x="44" y="50" width="88" height="10" rx="5" fill="rgba(255,255,255,0.12)" />
+								<rect x="44" y="72" width="156" height="8" rx="4" fill="rgba(255,255,255,0.08)" />
+								<rect x="44" y="105" width="232" height="3" rx="1.5" fill={`url(#np-divider-line-${entry.id})`} />
+								<rect x="44" y="126" width="126" height="8" rx="4" fill="rgba(255,255,255,0.08)" />
+								<rect x="44" y="142" width="180" height="8" rx="4" fill="rgba(255,255,255,0.06)" />
+							</svg>
 						{:else if entry.preview.kind === 'weather'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
 								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
@@ -259,17 +275,22 @@
 							</svg>
 						{:else if entry.preview.kind === 'week_calendar'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
-								{#each [0, 1, 2, 3, 4] as i}
-									<line x1={62 + i * 45} y1="42" x2={62 + i * 45} y2="142" stroke="rgba(255,255,255,0.08)" />
-									<text x={42 + i * 45} y="34" text-anchor="middle" font-size="11" font-weight="700" fill="rgba(245,245,245,0.84)" font-family="Inter, system-ui, Arial">{t('Ma')}</text>
-								{/each}
-								<text x="26" y="66" font-size="10" fill="rgba(245,245,245,0.54)" font-family="Inter, system-ui, Arial">15:00</text>
-								<text x="26" y="106" font-size="10" fill="rgba(245,245,245,0.54)" font-family="Inter, system-ui, Arial">16:00</text>
-								<rect x="68" y="54" width="40" height="50" rx="8" fill="#a7f3d0" opacity="0.88" />
-								<rect x="116" y="78" width="40" height="44" rx="8" fill="#f9a8d4" opacity="0.88" />
-								<rect x="210" y="58" width="40" height="66" rx="8" fill="#93c5fd" opacity="0.88" />
-								<text x="160" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Weekkalender')}</text>
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
+
+								<circle cx="68" cy="70" r="27" fill="rgba(56,189,248,0.18)" />
+								<rect x="54" y="55" width="28" height="28" rx="5" fill="none" stroke="#38bdf8" stroke-width="4" />
+								<line x1="54" y1="64" x2="82" y2="64" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" />
+								<circle cx="61" cy="72" r="2.6" fill="#38bdf8" />
+								<circle cx="69" cy="72" r="2.6" fill="#38bdf8" />
+								<circle cx="77" cy="72" r="2.6" fill="#38bdf8" />
+
+								<rect x="122" y="46" width="134" height="14" rx="7" fill="rgba(56,189,248,0.18)" />
+								<rect x="122" y="70" width="88" height="10" rx="5" fill="#a7f3d0" opacity="0.82" />
+								<rect x="122" y="88" width="116" height="10" rx="5" fill="#fde68a" opacity="0.82" />
+								<rect x="122" y="106" width="74" height="10" rx="5" fill="#93c5fd" opacity="0.82" />
+
+								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t('Weekkalender')}</text>
+								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">3 {t('events')}</text>
 							</svg>
 						{:else if entry.preview.kind === 'alarm_panel'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
@@ -395,19 +416,21 @@
 							</svg>
 						{:else if entry.preview.kind === 'cameras_strip'}
 							<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="preview-svg">
-								<rect x="10" y="12" width="300" height="146" rx="16" fill="#121722" stroke="#324058" />
-								<!-- Grote camera -->
-								<rect x="22" y="32" width="160" height="106" rx="10" fill="rgba(96,165,250,0.08)" stroke="rgba(96,165,250,0.25)" stroke-width="1" />
-								<circle cx="50" cy="60" r="9" fill="none" stroke="rgba(96,165,250,0.5)" stroke-width="1.4" />
-								<circle cx="50" cy="60" r="3" fill="rgba(96,165,250,0.5)" />
-								<rect x="30" y="118" width="80" height="9" rx="3" fill="rgba(255,255,255,0.18)" />
-								<!-- 2 kleine cameras gestapeld -->
-								<rect x="192" y="32" width="106" height="50" rx="8" fill="rgba(167,139,250,0.08)" stroke="rgba(167,139,250,0.25)" stroke-width="1" />
-								<circle cx="212" cy="50" r="6" fill="none" stroke="rgba(167,139,250,0.5)" stroke-width="1.2" />
-								<rect x="200" y="68" width="50" height="6" rx="2" fill="rgba(255,255,255,0.18)" />
-								<rect x="192" y="88" width="106" height="50" rx="8" fill="rgba(96,165,250,0.08)" stroke="rgba(96,165,250,0.25)" stroke-width="1" />
-								<circle cx="212" cy="106" r="6" fill="none" stroke="rgba(96,165,250,0.5)" stroke-width="1.2" />
-								<rect x="200" y="124" width="50" height="6" rx="2" fill="rgba(255,255,255,0.18)" />
+								<rect x="10" y="12" width="300" height="146" rx="16" fill="#1b2230" stroke="#324058" />
+
+								<circle cx="68" cy="70" r="27" fill="rgba(96,165,250,0.18)" />
+								<rect x="52" y="58" width="32" height="24" rx="7" fill="none" stroke="#60a5fa" stroke-width="4" />
+								<circle cx="68" cy="70" r="7" fill="none" stroke="#60a5fa" stroke-width="4" />
+								<path d="M84 63l9-5v24l-9-5Z" fill="#60a5fa" opacity="0.86" />
+
+								<rect x="122" y="46" width="72" height="46" rx="8" fill="rgba(96,165,250,0.22)" />
+								<circle cx="140" cy="64" r="6" fill="none" stroke="#bfdbfe" stroke-width="2" opacity="0.8" />
+								<rect x="204" y="46" width="48" height="21" rx="6" fill="rgba(147,197,253,0.2)" />
+								<rect x="204" y="72" width="48" height="21" rx="6" fill="rgba(125,211,252,0.2)" />
+								<rect x="122" y="102" width="130" height="9" rx="4.5" fill="rgba(255,255,255,0.12)" />
+
+								<text x="46" y="123" font-size="17" font-weight="700" fill="#f5f5f5" font-family="Inter, system-ui, Arial">{t("Camera's")}</text>
+								<text x="46" y="142" font-size="11" fill="rgba(245,245,245,0.56)" font-family="Inter, system-ui, Arial">3 live</text>
 							</svg>
 						{/if}
 					</div>
