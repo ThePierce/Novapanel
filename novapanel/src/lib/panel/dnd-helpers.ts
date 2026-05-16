@@ -129,7 +129,8 @@ export function moveViewCard(
 	draggingViewCardFromSectionId: string,
 	draggingViewCardId: string,
 	targetSectionId: string,
-	targetCardId: string | null = null
+	targetCardId: string | null = null,
+	placement: 'before' | 'after' = 'before'
 ) {
 	const sourceSection = sections.find((section) => section.id === draggingViewCardFromSectionId);
 	const targetSection = sections.find((section) => section.id === targetSectionId);
@@ -144,10 +145,14 @@ export function moveViewCard(
 	const targetAfterRemoval = sectionsWithoutCard.find((section) => section.id === targetSectionId);
 	if (!targetAfterRemoval) return sections;
 	const targetCards = [...targetAfterRemoval.cards];
-	const insertIndex =
-		targetCardId === null
-			? targetCards.length
-			: Math.max(0, targetCards.findIndex((card) => card.id === targetCardId));
+	let insertIndex: number;
+	if (targetCardId === null) {
+		insertIndex = targetCards.length;
+	} else {
+		const rawIndex = targetCards.findIndex((card) => card.id === targetCardId);
+		const baseIndex = rawIndex < 0 ? targetCards.length : rawIndex;
+		insertIndex = placement === 'after' ? baseIndex + 1 : baseIndex;
+	}
 	targetCards.splice(insertIndex < 0 ? targetCards.length : insertIndex, 0, draggedCard);
 	return sectionsWithoutCard.map((section) =>
 		section.id === targetSectionId ? { ...section, cards: targetCards } : section

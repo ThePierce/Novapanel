@@ -203,7 +203,7 @@
 >
 	<div class="entity-bg" aria-hidden="true"></div>
 	<button type="button" class="entity-icon-button" aria-label={`${displayName} ${translate('apply', $selectedLanguageStore)}`} onclick={quickAction}>
-		<StatusIcon icon={cardIcon} size={34} />
+		<StatusIcon icon={cardIcon} size={20} />
 	</button>
 	<div class="entity-copy">
 		<div class="entity-name">{displayName}</div>
@@ -215,18 +215,18 @@
 	.entity-button-card {
 		position: relative;
 		width: 100%;
-		min-height: 4.1rem;
+		min-height: 3.4rem;
 		display: grid;
 		grid-template-columns: auto 1fr;
 		align-items: center;
-		gap: 0.72rem;
-		padding: 0.55rem 0.62rem;
-		border-radius: 14px;
-		color: rgba(255, 255, 255, 0.9);
+		gap: 0.6rem;
+		padding: 0.45rem 0.6rem;
+		border-radius: 12px;
+		color: rgba(255, 255, 255, 0.92);
 		background:
-			linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
-			#20293a;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.055);
+			linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+			#1f2738;
+		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.05);
 		box-sizing: border-box;
 		overflow: hidden;
 		cursor: pointer;
@@ -235,13 +235,13 @@
 	.entity-button-card:hover {
 		transform: translateY(-1px);
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.08),
-			0 12px 32px rgba(0,0,0,0.2);
+			inset 0 0 0 0.5px rgba(255,255,255,0.08),
+			0 8px 22px rgba(0,0,0,0.22);
 	}
 	.entity-button-card.is-active {
 		background:
 			radial-gradient(circle at 22% 18%, var(--entity-soft), transparent 44%),
-			linear-gradient(145deg, rgba(255,255,255,0.11), rgba(255,255,255,0.035)),
+			linear-gradient(145deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03)),
 			#222b3c;
 	}
 	.entity-button-card.is-unavailable {
@@ -256,20 +256,24 @@
 	.entity-icon-button {
 		position: relative;
 		z-index: 1;
-		width: 2.85rem;
-		height: 2.85rem;
+		width: 2.3rem;
+		height: 2.3rem;
 		display: grid;
 		place-items: center;
 		border: 0;
-		border-radius: 13px;
+		border-radius: 11px;
 		color: var(--entity-accent);
 		background: var(--entity-soft);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.07);
 		cursor: pointer;
 		transition: transform 140ms ease, background 160ms ease;
 	}
+	.entity-icon-button :global(.mdi-mask) {
+		width: 1.25rem !important;
+		height: 1.25rem !important;
+	}
 	.entity-icon-button:hover {
-		transform: scale(1.035);
+		transform: scale(1.04);
 	}
 	.entity-icon-button:active {
 		transform: scale(0.97);
@@ -280,16 +284,19 @@
 		min-width: 0;
 	}
 	.entity-name {
-		font-size: 0.98rem;
-		line-height: 1.12;
-		font-weight: 750;
-		overflow-wrap: anywhere;
+		font-size: 0.82rem;
+		line-height: 1.15;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.entity-state {
-		margin-top: 0.22rem;
-		font-size: 0.78rem;
-		font-weight: 650;
-		color: rgba(255,255,255,0.54);
+		margin-top: 0.12rem;
+		font-size: 0.7rem;
+		font-weight: 500;
+		color: rgba(255,255,255,0.5);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;

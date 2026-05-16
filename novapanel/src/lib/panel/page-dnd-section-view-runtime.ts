@@ -154,7 +154,7 @@ export function createSectionViewDndHandlers(params: CreateSectionViewDndHandler
 		});
 	}
 
-	function dropViewCard(targetSectionId: string, targetCardId: string | null = null) {
+	function dropViewCard(targetSectionId: string, targetCardId: string | null = null, placement: 'before' | 'after' = 'before') {
 		const state = getState();
 		if (!state.editMode || !state.draggingViewCardId || !state.draggingViewCardFromSectionId) {
 			debugLog('drag_drop_view_card_blocked', {
@@ -173,6 +173,7 @@ export function createSectionViewDndHandlers(params: CreateSectionViewDndHandler
 		debugLog('drag_drop_view_card', {
 			targetSectionId,
 			targetCardId,
+			placement,
 			draggingViewCardId: state.draggingViewCardId,
 			draggingViewCardFromSectionId: state.draggingViewCardFromSectionId
 		});
@@ -182,7 +183,8 @@ export function createSectionViewDndHandlers(params: CreateSectionViewDndHandler
 				state.draggingViewCardFromSectionId,
 				state.draggingViewCardId,
 				targetSectionId,
-				targetCardId
+				targetCardId,
+				placement
 			)
 		);
 		setState({

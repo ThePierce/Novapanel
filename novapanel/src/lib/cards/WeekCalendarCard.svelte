@@ -86,6 +86,7 @@
 	let error = $state('');
 	let personModal = $state<PersonModalState | null>(null);
 	let eventModal = $state<PositionedEvent | null>(null);
+	let mapZoomOffset = $state(0);
 	let calendarScrollEl = $state<HTMLDivElement | null>(null);
 	let invalidAvatarUrls = $state<Record<string, true>>({});
 	let loadToken = 0;
@@ -334,6 +335,21 @@
 
 	function closePersonModal() {
 		personModal = null;
+		mapZoomOffset = 0;
+	}
+
+	function zoomMapIn() {
+		mapZoomOffset = Math.min(mapZoomOffset + 1, 6);
+	}
+
+	function zoomMapOut() {
+		mapZoomOffset = Math.max(mapZoomOffset - 1, -4);
+	}
+
+	function onMapWheel(event: WheelEvent) {
+		event.preventDefault();
+		if (event.deltaY < 0) zoomMapIn();
+		else zoomMapOut();
 	}
 
 	function handleTitleToggle(event: MouseEvent) {
@@ -406,7 +422,8 @@
 		const heightPx = 430;
 		const zoomX = Math.log2(widthPx / (spanX * 256 * 1.5));
 		const zoomY = Math.log2(heightPx / (spanY * 256 * 1.5));
-		const zoom = Math.floor(clampNumber(Math.min(zoomX, zoomY), 3, 17));
+		const baseZoom = Math.floor(clampNumber(Math.min(zoomX, zoomY), 3, 17));
+		const zoom = Math.floor(clampNumber(baseZoom + mapZoomOffset, 3, 19));
 		const scale = 256 * 2 ** zoom;
 		const centerX = ((minX + maxX) / 2) * scale;
 		const centerY = ((minY + maxY) / 2) * scale;
@@ -1073,7 +1090,7 @@
 				</button>
 			</div>
 
-			<div class="wc-location-map">
+			<div class="wc-location-map" onwheel={onMapWheel}>
 				<div class="wc-map-surface" aria-hidden="true"></div>
 				<div class="wc-map-tiles" aria-hidden="true">
 					{#each mapView.tiles as tile (tile.key)}
@@ -1088,6 +1105,14 @@
 					{/each}
 				</div>
 				<div class="wc-map-shade" aria-hidden="true"></div>
+				<div class="wc-map-zoom">
+					<button type="button" class="wc-map-zoom-btn" aria-label="Inzoomen" onclick={zoomMapIn}>
+						<TablerIcon name="plus" size={14} />
+					</button>
+					<button type="button" class="wc-map-zoom-btn" aria-label="Uitzoomen" onclick={zoomMapOut}>
+						<TablerIcon name="minus" size={14} />
+					</button>
+				</div>
 				{#if homeCoordinates()}
 					{@const home = homeCoordinates()}
 					<div class="wc-map-marker home" style={home ? mapPointStyle(home.lat, home.lon, personModal.people, mapView) : ''}>
@@ -1868,6 +1893,34 @@
 		font-weight: 750;
 		text-decoration: none;
 		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+	}
+	.wc-map-zoom {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		z-index: 6;
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+	.wc-map-zoom-btn {
+		width: 28px;
+		height: 28px;
+		display: grid;
+		place-items: center;
+		background: rgba(15,23,42,0.78);
+		border: 0.5px solid rgba(255,255,255,0.14);
+		border-radius: 7px;
+		color: #f5f5f5;
+		cursor: pointer;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+		transition: background 0.15s, transform 0.12s;
+	}
+	.wc-map-zoom-btn:hover {
+		background: rgba(15,23,42,0.92);
+	}
+	.wc-map-zoom-btn:active {
+		transform: scale(0.92);
 	}
 	.wc-map-marker.person {
 		display: grid;

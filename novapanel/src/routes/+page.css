@@ -66,12 +66,50 @@
 .modal-overlay {
 	position: fixed;
 	inset: 0;
-	background: rgba(0, 0, 0, 0.36);
+	background: rgba(0, 0, 0, 0.45);
+	backdrop-filter: blur(10px) saturate(1.05);
+	-webkit-backdrop-filter: blur(10px) saturate(1.05);
 	border: 0;
 	padding: 0;
 	margin: 0;
 	z-index: 40;
 	cursor: default;
+}
+
+.app-shell.is-mobile.mobile-sidebar-open :global(.sidebar-shell) {
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 85vw;
+	max-width: 320px;
+	z-index: 60;
+	transform: translateX(0);
+	transition: transform 240ms ease;
+	box-shadow: 8px 0 32px rgba(0,0,0,0.45);
+}
+.app-shell.is-mobile :global(.sidebar-shell) {
+	transform: translateX(-100%);
+	transition: transform 240ms ease;
+}
+.mobile-sidebar-scrim {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+	backdrop-filter: blur(6px) saturate(1.05);
+	-webkit-backdrop-filter: blur(6px) saturate(1.05);
+	border: 0;
+	padding: 0;
+	margin: 0;
+	z-index: 55;
+	cursor: default;
+}
+
+[class*="modal-overlay"],
+[class*="-overlay"][class*="modal"] {
+	backdrop-filter: blur(10px) saturate(1.05) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(1.05) !important;
+	background: rgba(0, 0, 0, 0.45) !important;
 }
 
 .app-popup {
@@ -225,6 +263,31 @@
 
 .view-section.drop-after::after {
 	bottom: 0.25rem;
+}
+
+.card-item.drop-before,
+.card-item.drop-after {
+	position: relative;
+}
+.card-item.drop-before::before,
+.card-item.drop-after::after {
+	content: '';
+	position: absolute;
+	left: 0.4rem;
+	right: 0.4rem;
+	height: 2px;
+	background: #60a5fa;
+	border-radius: 999px;
+	box-shadow: 0 0 8px rgba(96,165,250,0.5);
+	opacity: 0.9;
+	pointer-events: none;
+	z-index: 10;
+}
+.card-item.drop-before::before {
+	top: -3px;
+}
+.card-item.drop-after::after {
+	bottom: -3px;
 }
 
 .panel {
@@ -713,8 +776,50 @@
 		grid-template-columns: 1fr !important;
 	}
 
-	:global(.sidebar-shell) {
-		display: none !important;
+	.app-shell:not(.mobile-sidebar-open) :global(.sidebar-shell) {
+		transform: translateX(-100%);
+	}
+
+	.app-shell.mobile-sidebar-open :global(.sidebar-shell) {
+		position: fixed;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		width: 85vw;
+		max-width: 320px;
+		z-index: 60;
+		transform: translateX(0);
+		box-shadow: 8px 0 32px rgba(0,0,0,0.45);
+	}
+
+	.app-popup,
+	:global([class*="-modal"][role="dialog"]),
+	:global(.energy-modal),
+	:global(.weather-modal),
+	:global(.weather-forecast-modal),
+	:global(.alarm-modal),
+	:global(.status-modal),
+	:global(.camera-detail-modal),
+	:global(.devices-modal),
+	:global(.section-cards-modal),
+	:global(.entity-button-modal),
+	:global(.light-button-modal),
+	:global(.settings-modal),
+	:global(.card-library-modal) {
+		width: calc(100vw - 0.75rem) !important;
+		height: auto !important;
+		max-height: calc(100vh - 0.75rem) !important;
+		max-width: calc(100vw - 0.75rem) !important;
+	}
+
+	.sections-grid {
+		grid-template-columns: 1fr !important;
+		gap: 0.6rem !important;
+	}
+
+	.view-section {
+		grid-area: auto !important;
+		grid-column: 1 / -1 !important;
 	}
 }
 
@@ -723,8 +828,13 @@
 	grid-template-columns: 1fr !important;
 }
 
-:global(html.np-phone.np-portrait .sidebar-shell) {
-	display: none !important;
+:global(html.np-phone.np-portrait) .app-shell:not(.mobile-sidebar-open) :global(.sidebar-shell) {
+	transform: translateX(-100%);
+}
+
+:global(html.np-phone.np-portrait) .app-shell.mobile-sidebar-open :global(.sidebar-shell),
+.app-shell.mobile-sidebar-open :global(.sidebar-shell) {
+	transform: translateX(0);
 }
 
 @keyframes curtainDown {
@@ -1017,9 +1127,9 @@
 .np-detail-head-title h3 {
 	color: #f5f5f5 !important;
 	font-weight: 500 !important;
-	letter-spacing: -0.01em !important;
+	letter-spacing: 0 !important;
 	line-height: 1.2 !important;
-	font-size: 15px !important;
+	font-size: 14px !important;
 	min-width: 0 !important;
 	overflow: hidden !important;
 	text-overflow: ellipsis !important;
@@ -1027,8 +1137,8 @@
 }
 
 .np-detail-head-sub {
-	font-size: 11.5px !important;
-	margin-top: 3px !important;
+	font-size: 11px !important;
+	margin-top: 2px !important;
 	color: rgba(255,255,255,0.5) !important;
 	min-width: 0 !important;
 	overflow: hidden !important;

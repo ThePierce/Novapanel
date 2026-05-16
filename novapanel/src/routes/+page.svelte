@@ -383,6 +383,8 @@
 	let activeViewSectionId = $state('');
 	let draggingSectionId = $state('');
 	let draggingViewCardId = $state('');
+	let viewCardDropTargetId = $state('');
+	let viewCardDropPlacement = $state<'before' | 'after'>('before');
 	let draggingViewCardFromSectionId = $state('');
 	let draggingSidebarCardId = $state('');
 let recentDraggingSidebarCardId = $state('');
@@ -405,6 +407,49 @@ let sectionDropPlacement = $state<'before' | 'after'>('before');
 				viewportIsPortrait
 			)
 	);
+	const isMobile = $derived(
+		viewportWidth > 0 &&
+			viewportHeight > 0 &&
+			Math.min(viewportWidth, viewportHeight) < 600 &&
+			viewportIsPortrait
+	);
+	let mobileSidebarOpen = $state(false);
+	let touchStartX = $state(0);
+	let touchStartY = $state(0);
+	let touchTracking = $state(false);
+	function onTouchStart(event: TouchEvent) {
+		if (!isMobile) return;
+		const touch = event.touches[0];
+		if (!touch) return;
+		if (!mobileSidebarOpen && touch.clientX > 24) return;
+		touchStartX = touch.clientX;
+		touchStartY = touch.clientY;
+		touchTracking = true;
+	}
+	function onTouchMove(event: TouchEvent) {
+		if (!touchTracking) return;
+		const touch = event.touches[0];
+		if (!touch) return;
+		const dx = touch.clientX - touchStartX;
+		const dy = touch.clientY - touchStartY;
+		if (Math.abs(dy) > Math.abs(dx) + 10) {
+			touchTracking = false;
+		}
+	}
+	function onTouchEnd(event: TouchEvent) {
+		if (!touchTracking) return;
+		touchTracking = false;
+		const touch = event.changedTouches[0];
+		if (!touch) return;
+		const dx = touch.clientX - touchStartX;
+		const dy = touch.clientY - touchStartY;
+		if (Math.abs(dy) > Math.abs(dx)) return;
+		if (!mobileSidebarOpen && dx > 60) {
+			mobileSidebarOpen = true;
+		} else if (mobileSidebarOpen && dx < -60) {
+			mobileSidebarOpen = false;
+		}
+	}
 	const appGridColumns = $derived(sidebarVisible ? `${sidebarWidth}px 1fr` : '1fr');
 	let isHydrated = $state(false);
 	let panelBootstrap: Promise<void> | null = null;
@@ -2318,9 +2363,14 @@ if (browser) {
 <div
 	class="app-shell"
 	class:drawer-open={controlsOpen}
+	class:mobile-sidebar-open={mobileSidebarOpen}
+	class:is-mobile={isMobile}
 	style:grid-template-columns={appGridColumns}
 	style:--drawer-offset={controlsOpen ? '4.75rem' : '0px'}
 	ondragovercapture={trackDragOverInvalid}
+	ontouchstart={onTouchStart}
+	ontouchmove={onTouchMove}
+	ontouchend={onTouchEnd}
 >
 	{#if browser && !isHydrated}
 		<!-- Loading overlay removed: panel loads synchronously from localStorage -->
@@ -2346,9 +2396,12 @@ if (browser) {
 	/>
 
 	<SidebarShell
-		state={{ enabled: sidebarVisible, width: sidebarWidth, items: renderedSidebarItems }}
+		state={{ enabled: sidebarVisible || (isMobile && mobileSidebarOpen), width: sidebarWidth, items: renderedSidebarItems }}
 		editable={editMode}
-		onSelectItem={(item) => onSidebarItemSelect(item)}
+		onSelectItem={(item) => {
+			onSidebarItemSelect(item);
+			if (isMobile) mobileSidebarOpen = false;
+		}}
 		onDragStartItem={startSidebarCardDrag}
 		onDragEndItem={endSidebarCardDrag}
 		onDragOverValid={handleSidebarValidDragOver}
@@ -2358,6 +2411,15 @@ if (browser) {
 		activeDropTargetId={sidebarDropTargetId}
 		activeDropPlacement={sidebarDropPlacement}
 	/>
+
+	{#if isMobile && mobileSidebarOpen}
+		<button
+			type="button"
+			class="mobile-sidebar-scrim"
+			aria-label="Sluit zijbalk"
+			onclick={() => (mobileSidebarOpen = false)}
+		></button>
+	{/if}
 
 	<div class="main-zone" style:grid-column={sidebarVisible ? '2' : '1'}>
 		<main class="home-content">
@@ -2460,7 +2522,10 @@ if (browser) {
 										if (!editMode || !draggingViewCardId) return;
 										allowValidDrop(event);
 									}}
-									ondrop={() => dropViewCard(section.id, null)}
+									ondrop={() => {
+										dropViewCard(section.id, null);
+										viewCardDropTargetId = '';
+									}}
 								>
 									{#each section.cards.filter((card) => shouldRenderViewCard(card)) as card (card.id)}
 										{@const entityButtonKind = entityButtonKindForCard(card.cardType)}
@@ -2473,6 +2538,8 @@ if (browser) {
 											class:week-calendar-card-item={card.cardType === 'week_calendar'}
 											class:week-calendar-expanded={card.cardType === 'week_calendar' && isExpandedWeekCalendarCard(card.id)}
 											class:light-button-card-item={card.cardType === 'light_button' || !!entityButtonKind}
+											class:drop-before={draggingViewCardId !== card.id && viewCardDropTargetId === card.id && viewCardDropPlacement === 'before'}
+											class:drop-after={draggingViewCardId !== card.id && viewCardDropTargetId === card.id && viewCardDropPlacement === 'after'}
 											role={card.cardType === 'week_calendar' && !editMode ? undefined : 'button'}
 											tabindex={card.cardType === 'week_calendar' && !editMode ? undefined : '0'}
 											draggable={editMode}
@@ -2483,12 +2550,26 @@ if (browser) {
 												applyDragCursorIndicatorOnly(event);
 												startViewCardDrag(section.id, card.id);
 											}}
-											ondragend={endViewCardDrag}
+											ondragend={() => {
+												endViewCardDrag();
+												viewCardDropTargetId = '';
+											}}
 											ondragover={(event) => {
 												if (!editMode || !draggingViewCardId) return;
 												allowValidDrop(event);
+												const target = event.currentTarget as HTMLElement;
+												const rect = target.getBoundingClientRect();
+												const midY = rect.top + rect.height / 2;
+												viewCardDropTargetId = card.id;
+												viewCardDropPlacement = event.clientY < midY ? 'before' : 'after';
 											}}
-											ondrop={() => dropViewCard(section.id, card.id)}
+											ondragleave={() => {
+												if (viewCardDropTargetId === card.id) viewCardDropTargetId = '';
+											}}
+											ondrop={() => {
+												dropViewCard(section.id, card.id, viewCardDropPlacement);
+												viewCardDropTargetId = '';
+											}}
 										>
 											{#if card.title && card.title.trim().length > 0 && card.cardType !== 'light_button' && card.cardType !== 'week_calendar' && !entityButtonKind}
 												<h3 class="card-title">{card.title}</h3>
