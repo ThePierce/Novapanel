@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4
+
+- Bumped the add-on, npm package, documentation, Git tag, and GitHub Release version to `1.0.4`.
+- Made Home Assistant button actions feel instant by applying optimistic UI updates before the service call finishes.
+- Added a short-lived optimistic state lock so fast polls with stale Home Assistant data do not immediately undo the visual feedback.
+- Prefer the Nova Panel/Home Assistant service proxy before falling back to embedded Home Assistant frontend objects, reducing ingress-side click latency.
+
 ## 1.0.3
 
 - Added a main-area Device Button Card for switch, plug, and appliance-style entities.

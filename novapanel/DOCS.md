@@ -7,7 +7,7 @@ Nova Panel is a Home Assistant kiosk dashboard built with Svelte 5 and SvelteKit
 - [Install As A Home Assistant Add-on](#install-as-a-home-assistant-add-on)
 - [Add-on Configuration](#add-on-configuration)
 - [Optional Integrations](#optional-integrations)
-- [1.0.3 Update Summary](#103-update-summary)
+- [1.0.4 Update Summary](#104-update-summary)
 - [Dashboard Model](#dashboard-model)
 - [Using Edit Mode](#using-edit-mode)
 - [Card Reference](#card-reference)
@@ -54,8 +54,11 @@ The token is required for entity data, service calls, cameras, calendars, media 
 - Advanced Camera Card if you enable the Advanced Camera Card option for camera tiles.
 - Spotify developer credentials if you want Spotify controls in the media hub.
 
-## 1.0.3 Update Summary
+## 1.0.4 Update Summary
 
+- Bumped Nova Panel release management to `1.0.4` across the add-on config, npm package metadata, Git tag, and GitHub Release.
+- Made Home Assistant button actions feel instant by applying optimistic UI feedback immediately and reconciling with the real Home Assistant state shortly after.
+- Kept optimistic button states stable for a short moment so stale HA polling cannot visually undo a just-pressed action.
 - Added the main-area Device Button Card for switch, plug, and appliance-style controls.
 - Updated status card editing so display names and icon overrides live in edit mode, show the original Home Assistant name in parentheses, and only list entities included in that card.
 - Improved entity button cards with faster live state refresh, cleaner cover subtitles, and cover icons that follow open/closed status for curtains, blinds, and shutters.
