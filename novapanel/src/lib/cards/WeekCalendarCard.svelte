@@ -16,6 +16,16 @@
 		endDate: Date;
 		allDay: boolean;
 	};
+	type EventLayout = {
+		event: PositionedEvent;
+		column: number;
+		columns: number;
+	};
+	type EventDetailLine = {
+		label: string;
+		value: string;
+		href?: string;
+	};
 	type DayWindow = {
 		key: string;
 		date: Date;
@@ -59,14 +69,23 @@
 		title?: string;
 		sources?: CalendarSource[];
 		expanded?: boolean;
+		canToggleExpansion?: boolean;
+		onToggleExpansion?: () => void;
 	};
 
-	let { title = 'Weekkalender', sources = [], expanded = false }: Props = $props();
+	let {
+		title = 'Weekkalender',
+		sources = [],
+		expanded = false,
+		canToggleExpansion = false,
+		onToggleExpansion
+	}: Props = $props();
 	let now = $state(new Date());
 	let events = $state<PositionedEvent[]>([]);
 	let loading = $state(false);
 	let error = $state('');
 	let personModal = $state<PersonModalState | null>(null);
+	let eventModal = $state<PositionedEvent | null>(null);
 	let calendarScrollEl = $state<HTMLDivElement | null>(null);
 	let invalidAvatarUrls = $state<Record<string, true>>({});
 	let loadToken = 0;
@@ -90,6 +109,7 @@
 	);
 	const hasAllDayEvents = $derived(days.some((day) => allDayEventsForDay(day).length > 0));
 	const scrollAnchorKey = $derived(`${todayKey}-${expanded ? 'expanded' : 'compact'}-${hasAllDayEvents ? 'all-day' : 'timed'}-${sourceKey}`);
+	const displayTitle = $derived(title && title.trim().length > 0 ? title.trim() : translate('Weekkalender', $selectedLanguageStore));
 
 	$effect(() => {
 		sourceKey = JSON.stringify(visibleSources.map((source) => [source.entityId, source.alias, source.color, source.personEntityId]));
@@ -316,6 +336,21 @@
 		personModal = null;
 	}
 
+	function handleTitleToggle(event: MouseEvent) {
+		event.stopPropagation();
+		if (!canToggleExpansion) return;
+		onToggleExpansion?.();
+	}
+
+	function openEventModal(calendarEvent: PositionedEvent, event: MouseEvent) {
+		event.stopPropagation();
+		eventModal = calendarEvent;
+	}
+
+	function closeEventModal() {
+		eventModal = null;
+	}
+
 	function boundsFor(people: PersonLocation[]) {
 		const home = homeCoordinates();
 		const points = [
@@ -537,18 +572,75 @@
 		return dayStart >= eventStart && dayStart < eventEnd;
 	}
 
-	function eventStyle(event: PositionedEvent, day: DayWindow) {
+	function eventKey(event: PositionedEvent) {
+		return event.uid ?? `${event.source.entityId}-${event.summary}-${event.startDate.toISOString()}-${event.endDate.toISOString()}`;
+	}
+
+	function clampedEventStart(event: PositionedEvent, day: DayWindow) {
+		return Math.max(event.startDate.getTime(), day.windowStart.getTime());
+	}
+
+	function clampedEventEnd(event: PositionedEvent, day: DayWindow) {
+		return Math.min(event.endDate.getTime(), day.windowEnd.getTime());
+	}
+
+	function layoutTimedEventsForDay(day: DayWindow): EventLayout[] {
+		const sorted = timedEventsForDay(day).sort((a, b) => {
+			const startDiff = clampedEventStart(a, day) - clampedEventStart(b, day);
+			if (startDiff !== 0) return startDiff;
+			return clampedEventEnd(b, day) - clampedEventEnd(a, day);
+		});
+		const clusters: PositionedEvent[][] = [];
+		let cluster: PositionedEvent[] = [];
+		let clusterEnd = -Infinity;
+		for (const event of sorted) {
+			const start = clampedEventStart(event, day);
+			const end = clampedEventEnd(event, day);
+			if (cluster.length > 0 && start >= clusterEnd) {
+				clusters.push(cluster);
+				cluster = [];
+				clusterEnd = -Infinity;
+			}
+			cluster.push(event);
+			clusterEnd = Math.max(clusterEnd, end);
+		}
+		if (cluster.length > 0) clusters.push(cluster);
+
+		return clusters.flatMap((clusterEvents) => {
+			const columnEnds: number[] = [];
+			const placed = clusterEvents.map((event) => {
+				const start = clampedEventStart(event, day);
+				const end = clampedEventEnd(event, day);
+				let column = columnEnds.findIndex((columnEnd) => columnEnd <= start);
+				if (column === -1) {
+					column = columnEnds.length;
+					columnEnds.push(end);
+				} else {
+					columnEnds[column] = end;
+				}
+				return { event, column, columns: 1 };
+			});
+			const columns = Math.max(1, columnEnds.length);
+			return placed.map((item) => ({ ...item, columns }));
+		});
+	}
+
+	function eventStyle(event: PositionedEvent, day: DayWindow, layout?: EventLayout) {
 		const total = day.windowEnd.getTime() - day.windowStart.getTime();
-		const start = Math.max(event.startDate.getTime(), day.windowStart.getTime());
-		const end = Math.min(event.endDate.getTime(), day.windowEnd.getTime());
+		const start = clampedEventStart(event, day);
+		const end = clampedEventEnd(event, day);
 		const top = ((start - day.windowStart.getTime()) / total) * 100;
 		const height = Math.max(7, ((end - start) / total) * 100);
-		return `--event-color: ${event.color}; top: ${top}%; height: ${height}%;`;
+		const columns = Math.max(1, layout?.columns ?? 1);
+		const column = Math.max(0, layout?.column ?? 0);
+		const left = (column / columns) * 100;
+		const width = 100 / columns;
+		return `--event-color: ${event.color}; top: ${top}%; height: ${height}%; left: calc(${left}% + 0.12rem); width: calc(${width}% - 0.24rem);`;
 	}
 
 	function eventVisibleMinutes(event: PositionedEvent, day: DayWindow) {
-		const start = Math.max(event.startDate.getTime(), day.windowStart.getTime());
-		const end = Math.min(event.endDate.getTime(), day.windowEnd.getTime());
+		const start = clampedEventStart(event, day);
+		const end = clampedEventEnd(event, day);
 		return Math.max(0, Math.round((end - start) / 60_000));
 	}
 
@@ -590,16 +682,173 @@
 		const end = event.endDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
 		return `${start}-${end}`;
 	}
+
+	function formatEventTimeRange(event: PositionedEvent) {
+		if (event.allDay) return translate('Hele dag', $selectedLanguageStore);
+		const start = event.startDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
+		const end = event.endDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
+		return `${start} ${translate('tot', $selectedLanguageStore)} ${end}`;
+	}
+
+	function formatEventDate(value: Date) {
+		return value.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: 'long', day: '2-digit', month: 'long' });
+	}
+
+	function visibleAllDayEndDate(event: PositionedEvent) {
+		if (!event.allDay) return event.endDate;
+		const end = new Date(event.endDate);
+		if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0 && end.getMilliseconds() === 0) {
+			end.setDate(end.getDate() - 1);
+		}
+		return end;
+	}
+
+	function formatEventDateRange(event: PositionedEvent) {
+		if (event.allDay) {
+			const end = visibleAllDayEndDate(event);
+			if (isSameCalendarDay(event.startDate, end)) return `${formatEventDate(event.startDate)} · ${translate('Hele dag', $selectedLanguageStore)}`;
+			return `${formatEventDate(event.startDate)} ${translate('tot', $selectedLanguageStore)} ${formatEventDate(end)}`;
+		}
+		if (isSameCalendarDay(event.startDate, event.endDate)) {
+			return `${formatEventDate(event.startDate)} · ${formatEventTimeRange(event)}`;
+		}
+		return `${formatEventDate(event.startDate)} ${formatEventTimeRange(event)} · ${formatEventDate(event.endDate)}`;
+	}
+
+	function decodeBasicEntities(value: string) {
+		return value
+			.replace(/&nbsp;/g, ' ')
+			.replace(/&amp;/g, '&')
+			.replace(/&quot;/g, '"')
+			.replace(/&#39;/g, "'")
+			.replace(/&lt;/g, '<')
+			.replace(/&gt;/g, '>');
+	}
+
+	function cleanEventText(value: unknown) {
+		if (typeof value !== 'string') return '';
+		return decodeBasicEntities(
+			value
+				.replace(/<br\s*\/?>/gi, '\n')
+				.replace(/<\/p>/gi, '\n')
+				.replace(/<[^>]+>/g, '')
+		)
+			.replace(/\r\n/g, '\n')
+			.replace(/\n{3,}/g, '\n\n')
+			.trim();
+	}
+
+	function compactDetailValue(value: unknown): string {
+		if (value === null || value === undefined) return '';
+		if (typeof value === 'string') return cleanEventText(value);
+		if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+		if (value instanceof Date) return value.toLocaleString(localeFor($selectedLanguageStore));
+		if (Array.isArray(value)) {
+			return value.map(compactDetailValue).filter(Boolean).join(', ');
+		}
+		if (typeof value === 'object') {
+			const record = value as Record<string, unknown>;
+			const common = ['displayName', 'name', 'email', 'value', 'status']
+				.map((key) => compactDetailValue(record[key]))
+				.filter(Boolean);
+			if (common.length > 0) return common.join(' · ');
+			try {
+				return JSON.stringify(value);
+			} catch {
+				return '';
+			}
+		}
+		return '';
+	}
+
+	function detailLabelFor(key: string) {
+		const labels: Record<string, string> = {
+			htmlLink: translate('Link', $selectedLanguageStore),
+			link: translate('Link', $selectedLanguageStore),
+			url: translate('Link', $selectedLanguageStore),
+			status: translate('Status', $selectedLanguageStore),
+			organizer: translate('Organisator', $selectedLanguageStore),
+			attendees: translate('Deelnemers', $selectedLanguageStore),
+			creator: translate('Aangemaakt door', $selectedLanguageStore),
+			created: translate('Aangemaakt', $selectedLanguageStore),
+			updated: translate('Bijgewerkt', $selectedLanguageStore),
+			recurrence: translate('Herhaling', $selectedLanguageStore),
+			recurrence_id: translate('Herhaling', $selectedLanguageStore),
+			rrule: translate('Herhaling', $selectedLanguageStore)
+		};
+		if (labels[key]) return labels[key];
+		return key
+			.replace(/([a-z])([A-Z])/g, '$1 $2')
+			.replace(/[_-]+/g, ' ')
+			.replace(/\s+/g, ' ')
+			.trim()
+			.replace(/^./, (char) => char.toUpperCase());
+	}
+
+	function isLikelyUrl(value: string) {
+		return /^https?:\/\//i.test(value);
+	}
+
+	function eventPrimaryDetails(event: PositionedEvent): EventDetailLine[] {
+		const details: EventDetailLine[] = [
+			{ label: translate('Wanneer', $selectedLanguageStore), value: formatEventDateRange(event) },
+			{ label: translate('Kalender', $selectedLanguageStore), value: event.sourceName }
+		];
+		const location = cleanEventText(event.location);
+		if (location) details.push({ label: translate('Locatie', $selectedLanguageStore), value: location });
+		return details;
+	}
+
+	function eventNotes(event: PositionedEvent) {
+		return cleanEventText(event.description);
+	}
+
+	function eventAdditionalDetails(event: PositionedEvent): EventDetailLine[] {
+		const ignored = new Set([
+			'uid',
+			'summary',
+			'start',
+			'end',
+			'description',
+			'location',
+			'source',
+			'sourceName',
+			'color',
+			'startDate',
+			'endDate',
+			'allDay'
+		]);
+		return Object.entries(event)
+			.filter(([key]) => !ignored.has(key))
+			.map(([key, value]) => {
+				const text = compactDetailValue(value);
+				return {
+					label: detailLabelFor(key),
+					value: text.length > 280 ? `${text.slice(0, 277)}...` : text,
+					href: isLikelyUrl(text) ? text : undefined
+				};
+			})
+			.filter((detail) => detail.value.length > 0);
+	}
 </script>
 
 <div class="week-calendar-card" class:expanded style={`--visible-hours: ${visibleHours}; --timeline-hours: ${timelineHours};`}>
 	<div class="wc-top">
 		<div class="wc-title-row">
-			<TablerIcon name="calendar-week" size={18} />
-			<div>
-				<strong>{title && title.trim().length > 0 ? title.trim() : translate('Weekkalender', $selectedLanguageStore)}</strong>
-				<span>{now.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: 'long', day: '2-digit', month: 'long' })} · {now.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
-			</div>
+			<button
+				type="button"
+				class="wc-title-button"
+				class:can-toggle={canToggleExpansion}
+				disabled={!canToggleExpansion}
+				aria-label={`${expanded ? translate('Maak kleiner', $selectedLanguageStore) : translate('Maak groter', $selectedLanguageStore)}: ${displayTitle}`}
+				onclick={handleTitleToggle}
+			>
+				<span class="wc-title-icon">
+					<TablerIcon name={canToggleExpansion ? (expanded ? 'arrows-minimize' : 'arrows-maximize') : 'calendar-week'} size={18} />
+				</span>
+				<strong>{displayTitle}</strong>
+			</button>
+			<span class="wc-title-sub">{now.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: 'long', day: '2-digit', month: 'long' })} · {now.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
 		</div>
 		{#if visibleSources.length > 0}
 			<div class="wc-people">
@@ -628,11 +877,11 @@
 	{#if visibleSources.length === 0}
 		<div class="wc-empty">{translate('Kies kalender-entiteiten in edit mode.', $selectedLanguageStore)}</div>
 	{:else}
-			<div
-				class="wc-scroll"
-				bind:this={calendarScrollEl}
-				onpointerdown={(event) => event.stopPropagation()}
-			>
+		<div
+			class="wc-scroll"
+			bind:this={calendarScrollEl}
+			onpointerdown={(event) => event.stopPropagation()}
+		>
 			<div class={`wc-grid ${hasAllDayEvents ? 'has-all-day' : ''}`}>
 				<div class="wc-corner"></div>
 				{#each days as day (day.key)}
@@ -647,14 +896,16 @@
 					<div class="wc-all-day-label">{translate('Hele dag', $selectedLanguageStore)}</div>
 					{#each days as day (day.key)}
 						<div class="wc-all-day-cell">
-							{#each allDayEventsForDay(day) as event (event.uid ?? `${event.source.entityId}-${event.summary}-${event.startDate.toISOString()}`)}
-								<div
+							{#each allDayEventsForDay(day) as event (eventKey(event))}
+								<button
+									type="button"
 									class="wc-all-day-event"
 									style={`--event-color: ${event.color};`}
 									title={`${event.summary || translate('Afspraak', $selectedLanguageStore)} · ${translate('Hele dag', $selectedLanguageStore)}`}
+									onclick={(clickEvent) => openEventModal(event, clickEvent)}
 								>
 									<strong>{event.summary || translate('Afspraak', $selectedLanguageStore)}</strong>
-								</div>
+								</button>
 							{/each}
 						</div>
 					{/each}
@@ -673,16 +924,24 @@
 						{#if isNowInDayWindow(day)}
 							<div class="wc-now-line" style={currentLineStyle(day)}></div>
 						{/if}
-						{#each timedEventsForDay(day) as event (event.uid ?? `${event.source.entityId}-${event.summary}-${event.startDate.toISOString()}`)}
+						{#each layoutTimedEventsForDay(day) as layout (eventKey(layout.event))}
+							{@const event = layout.event}
 							{@const eventPerson = personEntityForSource(event.source)}
 							{@const eventAvatar = avatarUrlFor(eventPerson)}
-							<div class="wc-event" style={eventStyle(event, day)} title={`${event.summary} · ${formatEventTime(event)}`}>
+							<button
+								type="button"
+								class="wc-event"
+								class:overlapped={layout.columns > 1}
+								style={eventStyle(event, day, layout)}
+								title={`${event.summary} · ${formatEventTime(event)}`}
+								onclick={(clickEvent) => openEventModal(event, clickEvent)}
+							>
 								<strong>{event.summary || translate('Afspraak', $selectedLanguageStore)}</strong>
 								<span>{formatEventTime(event)}</span>
 								{#if eventAvatar && eventHasAvatarRoom(event, day)}
 									<img class="wc-event-avatar" src={eventAvatar} alt="" loading="lazy" onerror={() => markAvatarFailed(eventAvatar)} />
 								{/if}
-							</div>
+							</button>
 						{/each}
 					</div>
 				{/each}
@@ -695,6 +954,87 @@
 		{/if}
 	{/if}
 </div>
+
+{#if eventModal}
+	{@const primaryDetails = eventPrimaryDetails(eventModal)}
+	{@const notes = eventNotes(eventModal)}
+	{@const additionalDetails = eventAdditionalDetails(eventModal)}
+	<button
+		type="button"
+		class="wc-event-overlay"
+		aria-label={translate('closeOverlay', $selectedLanguageStore)}
+		onclick={(event) => {
+			event.stopPropagation();
+			closeEventModal();
+		}}
+	></button>
+	<section
+		class="wc-event-modal"
+		role="dialog"
+		aria-modal="true"
+		aria-label={eventModal.summary || translate('Afspraak', $selectedLanguageStore)}
+		style={`--event-color: ${eventModal.color};`}
+	>
+		<div class="wc-event-modal-head">
+			<div class="wc-event-modal-title">
+				<div class="wc-event-modal-icon">
+					<TablerIcon name={eventModal.allDay ? 'calendar-event' : 'clock-hour-3'} size={22} />
+				</div>
+				<div>
+					<strong>{eventModal.summary || translate('Afspraak', $selectedLanguageStore)}</strong>
+					<span>{formatEventDateRange(eventModal)}</span>
+				</div>
+			</div>
+			<button
+				type="button"
+				class="wc-event-close"
+				aria-label={translate('close', $selectedLanguageStore)}
+				onclick={(event) => {
+					event.stopPropagation();
+					closeEventModal();
+				}}
+			>
+				<TablerIcon name="x" size={18} />
+			</button>
+		</div>
+
+		<div class="wc-event-detail-body">
+			{#each primaryDetails as detail (detail.label)}
+				<div class="wc-event-detail-row">
+					<span>{detail.label}</span>
+					{#if detail.href}
+						<a href={detail.href} target="_blank" rel="noreferrer" onclick={(event) => event.stopPropagation()}>{detail.value}</a>
+					{:else}
+						<strong>{detail.value}</strong>
+					{/if}
+				</div>
+			{/each}
+
+			{#if notes}
+				<div class="wc-event-notes">
+					<span>{translate('Notities', $selectedLanguageStore)}</span>
+					<p>{notes}</p>
+				</div>
+			{/if}
+
+			{#if additionalDetails.length > 0}
+				<div class="wc-event-extra">
+					<span>{translate('Aanvullend', $selectedLanguageStore)}</span>
+					{#each additionalDetails as detail (`${detail.label}-${detail.value}`)}
+						<div>
+							<em>{detail.label}</em>
+							{#if detail.href}
+								<a href={detail.href} target="_blank" rel="noreferrer" onclick={(event) => event.stopPropagation()}>{detail.value}</a>
+							{:else}
+								<strong>{detail.value}</strong>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</section>
+{/if}
 
 {#if personModal}
 	{@const mapView = mapViewFor(personModal.people)}
@@ -823,28 +1163,67 @@
 		gap: 0.55rem;
 	}
 	.wc-title-row {
-		display: flex;
+		display: grid;
+		justify-items: start;
+		gap: 0.12rem;
+		min-width: 0;
+	}
+	.wc-title-button {
+		display: inline-flex;
 		align-items: center;
 		gap: 0.55rem;
-		min-width: 0;
+		max-width: 100%;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		appearance: none;
+		cursor: default;
+	}
+	.wc-title-button.can-toggle {
+		cursor: zoom-in;
+	}
+	.week-calendar-card.expanded .wc-title-button.can-toggle {
+		cursor: zoom-out;
+	}
+	.wc-title-button:disabled {
+		opacity: 1;
+	}
+	.wc-title-button:focus-visible {
+		outline: 2px solid rgba(56,189,248,0.74);
+		outline-offset: 4px;
+		border-radius: 0.55rem;
+	}
+	.wc-title-icon {
+		width: 1.95rem;
+		height: 1.95rem;
+		display: grid;
+		place-items: center;
+		border-radius: 0.7rem;
+		background: rgba(56,189,248,0.1);
+		box-shadow: inset 0 0 0 1px rgba(125,211,252,0.13);
+		flex: 0 0 auto;
 	}
 	.wc-title-row :global(.tabler-icon) {
 		color: #38bdf8;
 	}
-	.wc-title-row strong,
-	.wc-title-row span {
+	.wc-title-button strong,
+	.wc-title-sub {
 		display: block;
 		min-width: 0;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	.wc-title-row strong {
+	.wc-title-button strong {
 		font-size: 0.94rem;
 		line-height: 1.1;
 	}
-	.wc-title-row span {
-		margin-top: 0.12rem;
+	.wc-title-sub {
+		max-width: calc(100% - 2.5rem);
+		margin-left: 2.5rem;
 		color: rgba(255,255,255,0.56);
 		font-size: 0.72rem;
 	}
@@ -1031,15 +1410,25 @@
 	}
 	.wc-all-day-event {
 		min-width: 0;
+		width: 100%;
+		border: 0;
 		border-radius: 0.42rem;
 		padding: 0.18rem 0.34rem;
 		background: color-mix(in srgb, var(--event-color) 28%, rgba(255,255,255,0.11));
 		color: rgba(255,255,255,0.86);
+		font: inherit;
+		text-align: left;
 		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--event-color) 28%, rgba(255,255,255,0.08));
 		font-size: 0.58rem;
 		font-weight: 800;
 		line-height: 1.08;
 		backdrop-filter: blur(4px);
+		cursor: pointer;
+		appearance: none;
+	}
+	.wc-all-day-event:focus-visible {
+		outline: 2px solid color-mix(in srgb, var(--event-color) 72%, white);
+		outline-offset: 2px;
 	}
 	.wc-all-day-event strong,
 	.wc-all-day-event span {
@@ -1081,18 +1470,33 @@
 	}
 	.wc-event {
 		position: absolute;
-		left: 0.18rem;
-		right: 0.18rem;
 		min-height: 1.75rem;
 		padding: 0.32rem 0.35rem;
+		border: 0;
 		border-radius: 0.48rem;
 		background: color-mix(in srgb, var(--event-color) 34%, rgba(255,255,255,0.14));
 		color: rgba(255,255,255,0.88);
+		font: inherit;
+		text-align: left;
 		box-shadow:
 			inset 0 0 0 1px color-mix(in srgb, var(--event-color) 32%, rgba(255,255,255,0.10)),
 			0 8px 20px rgba(0,0,0,0.12);
 		overflow: hidden;
 		backdrop-filter: blur(4px);
+		cursor: pointer;
+		appearance: none;
+		transition: transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
+	}
+	.wc-event:hover {
+		transform: translateY(-1px);
+		background: color-mix(in srgb, var(--event-color) 42%, rgba(255,255,255,0.15));
+	}
+	.wc-event:focus-visible {
+		outline: 2px solid color-mix(in srgb, var(--event-color) 72%, white);
+		outline-offset: 2px;
+	}
+	.wc-event.overlapped {
+		padding: 0.28rem 0.3rem;
 	}
 	.wc-event strong,
 	.wc-event span {
@@ -1106,12 +1510,22 @@
 		font-size: 0.64rem;
 		line-height: 1.05;
 	}
+	.wc-event.overlapped strong {
+		white-space: normal;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		line-height: 1.08;
+	}
 	.wc-event span {
 		margin-top: 0.12rem;
 		font-size: 0.54rem;
 		font-style: normal;
 		font-weight: 750;
 		opacity: 0.66;
+	}
+	.wc-event.overlapped span {
+		font-size: 0.5rem;
 	}
 	.wc-event-avatar {
 		position: absolute;
@@ -1138,6 +1552,164 @@
 		height: 2px;
 		background: #3b82f6;
 		box-shadow: 0 0 0 1px rgba(59,130,246,0.18), 0 0 14px rgba(59,130,246,0.45);
+	}
+	.wc-event-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 82;
+		display: block;
+		padding: 1.25rem;
+		border: 0;
+		margin: 0;
+		background: rgba(0,0,0,0.38);
+		backdrop-filter: blur(14px);
+	}
+	.wc-event-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		z-index: 83;
+		transform: translate(-50%, -50%);
+		width: min(34rem, calc(100vw - 2rem));
+		max-height: min(38rem, calc(100vh - 2rem));
+		display: grid;
+		grid-template-rows: auto minmax(0, 1fr);
+		gap: 0.85rem;
+		padding: 1rem;
+		border-radius: 22px;
+		background:
+			radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--event-color) 22%, transparent), transparent 42%),
+			rgba(20,28,44,0.96);
+		color: #f8fafc;
+		box-shadow:
+			inset 0 0 0 1px rgba(255,255,255,0.09),
+			0 26px 80px rgba(0,0,0,0.42);
+		overflow: hidden;
+	}
+	.wc-event-modal-head,
+	.wc-event-modal-title {
+		display: flex;
+		align-items: center;
+		min-width: 0;
+	}
+	.wc-event-modal-head {
+		justify-content: space-between;
+		gap: 1rem;
+	}
+	.wc-event-modal-title {
+		gap: 0.75rem;
+	}
+	.wc-event-modal-icon {
+		width: 3rem;
+		height: 3rem;
+		display: grid;
+		place-items: center;
+		border-radius: 1rem;
+		background: color-mix(in srgb, var(--event-color) 24%, rgba(255,255,255,0.08));
+		color: color-mix(in srgb, var(--event-color) 82%, white);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--event-color) 32%, rgba(255,255,255,0.08));
+		flex: 0 0 auto;
+	}
+	.wc-event-modal-title strong,
+	.wc-event-modal-title span {
+		display: block;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.wc-event-modal-title strong {
+		font-size: 1.08rem;
+		line-height: 1.08;
+	}
+	.wc-event-modal-title span {
+		margin-top: 0.18rem;
+		color: rgba(255,255,255,0.62);
+		font-size: 0.78rem;
+		font-weight: 750;
+	}
+	.wc-event-close {
+		width: 2.35rem;
+		height: 2.35rem;
+		border: 0;
+		border-radius: 999px;
+		display: grid;
+		place-items: center;
+		background: rgba(255,255,255,0.08);
+		color: rgba(255,255,255,0.86);
+		cursor: pointer;
+	}
+	.wc-event-detail-body {
+		min-height: 0;
+		display: grid;
+		gap: 0.6rem;
+		overflow: auto;
+	}
+	.wc-event-detail-row,
+	.wc-event-notes,
+	.wc-event-extra {
+		min-width: 0;
+		padding: 0.72rem;
+		border-radius: 0.95rem;
+		background: rgba(255,255,255,0.06);
+		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+	}
+	.wc-event-detail-row span,
+	.wc-event-notes > span,
+	.wc-event-extra > span {
+		display: block;
+		margin-bottom: 0.22rem;
+		color: rgba(255,255,255,0.5);
+		font-size: 0.64rem;
+		font-weight: 850;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.wc-event-detail-row strong,
+	.wc-event-detail-row a {
+		display: block;
+		color: rgba(255,255,255,0.9);
+		font-size: 0.86rem;
+		font-weight: 800;
+		line-height: 1.28;
+		overflow-wrap: anywhere;
+	}
+	.wc-event-detail-row a,
+	.wc-event-extra a {
+		color: color-mix(in srgb, var(--event-color) 74%, white);
+		text-decoration: none;
+	}
+	.wc-event-notes p {
+		margin: 0;
+		color: rgba(255,255,255,0.86);
+		font-size: 0.82rem;
+		font-weight: 650;
+		line-height: 1.42;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.wc-event-extra {
+		display: grid;
+		gap: 0.45rem;
+	}
+	.wc-event-extra div {
+		display: grid;
+		gap: 0.14rem;
+		min-width: 0;
+	}
+	.wc-event-extra em {
+		color: rgba(255,255,255,0.48);
+		font-size: 0.66rem;
+		font-style: normal;
+		font-weight: 800;
+	}
+	.wc-event-extra strong,
+	.wc-event-extra a {
+		min-width: 0;
+		color: rgba(255,255,255,0.86);
+		font-size: 0.76rem;
+		font-weight: 750;
+		line-height: 1.3;
+		overflow-wrap: anywhere;
 	}
 	.wc-person-overlay {
 		position: fixed;
@@ -1396,9 +1968,13 @@
 			grid-template-columns: 2.9rem repeat(7, minmax(0, 1fr));
 		}
 		.wc-event {
-			left: 0.1rem;
-			right: 0.1rem;
 			padding: 0.25rem;
+		}
+		.wc-event-overlay {
+			padding: 0.75rem;
+		}
+		.wc-event-modal {
+			padding: 0.85rem;
 		}
 		.wc-person-overlay {
 			padding: 0.75rem;

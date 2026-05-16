@@ -7,6 +7,7 @@ export type CalendarEvent = {
 	end: string | { date?: string; dateTime?: string };
 	description?: string;
 	location?: string;
+	[key: string]: unknown;
 };
 
 function unwrapEvents(result: unknown): CalendarEvent[] {

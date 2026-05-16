@@ -2162,19 +2162,15 @@ if (browser) {
 	function handleViewCardClick(card: CardDraft) {
 		if (editMode) {
 			openCardEditor('view', card.id);
-			return;
-		}
-		if (card.cardType === 'week_calendar') {
-			toggleWeekCalendarExpansion(card.id);
 		}
 	}
 
 	function handleViewCardKeydown(event: KeyboardEvent, card: CardDraft) {
-		if (editMode || card.cardType !== 'week_calendar') return;
+		if (!editMode) return;
 		if (event.target !== event.currentTarget) return;
 		if (event.key !== 'Enter' && event.key !== ' ') return;
 		event.preventDefault();
-		toggleWeekCalendarExpansion(card.id);
+		openCardEditor('view', card.id);
 	}
 
 	const SECTION_MASONRY_ROW_PX = 8;
@@ -2468,6 +2464,7 @@ if (browser) {
 								>
 									{#each section.cards.filter((card) => shouldRenderViewCard(card)) as card (card.id)}
 										{@const entityButtonKind = entityButtonKindForCard(card.cardType)}
+										<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 										<div
 											class="card-item"
 											class:editable={editMode}
@@ -2476,11 +2473,8 @@ if (browser) {
 											class:week-calendar-card-item={card.cardType === 'week_calendar'}
 											class:week-calendar-expanded={card.cardType === 'week_calendar' && isExpandedWeekCalendarCard(card.id)}
 											class:light-button-card-item={card.cardType === 'light_button' || !!entityButtonKind}
-											role="button"
-											tabindex="0"
-											aria-label={card.cardType === 'week_calendar' && !editMode
-												? `${isExpandedWeekCalendarCard(card.id) ? translate('Maak kleiner', selectedLanguage) : translate('Maak groter', selectedLanguage)}: ${card.title?.trim() || translate('Weekkalender', selectedLanguage)}`
-													: undefined}
+											role={card.cardType === 'week_calendar' && !editMode ? undefined : 'button'}
+											tabindex={card.cardType === 'week_calendar' && !editMode ? undefined : '0'}
 											draggable={editMode}
 											onclick={() => handleViewCardClick(card)}
 											onkeydown={(event) => handleViewCardKeydown(event, card)}
@@ -2526,7 +2520,9 @@ if (browser) {
 													props={{
 														title: card.title,
 														sources: card.cameras,
-														expanded: isExpandedWeekCalendarCard(card.id)
+														expanded: isExpandedWeekCalendarCard(card.id),
+														canToggleExpansion: !editMode && effectiveColumns >= 2,
+														onToggleExpansion: () => toggleWeekCalendarExpansion(card.id)
 													}}
 												/>
 											{:else if card.cardType === 'light_button'}
