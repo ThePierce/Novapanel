@@ -174,6 +174,15 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 			schedulePoll(250);
 			void publishEmbeddedSnapshot();
 		},
+		refresh(delayMs = 0) {
+			if (!isRunning) return;
+			clearPoll();
+			if (delayMs > 0) {
+				schedulePoll(delayMs);
+				return;
+			}
+			void pollSnapshot();
+		},
 		stop() {
 			isRunning = false;
 			log('entity service stop');

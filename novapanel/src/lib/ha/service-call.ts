@@ -4,6 +4,7 @@ import {
 	getNovaApiCandidates,
 	type HassLike
 } from '$lib/ha/entities-service-helpers';
+import { entityStore } from '$lib/ha/entities-store';
 
 let cachedHass: HassLike | null = null;
 let hassLookupDone = false;
@@ -69,7 +70,7 @@ async function callViaNovaWsProxy(payload: Record<string, unknown>) {
 	throw lastError ?? new Error('ha_ws_proxy_unavailable');
 }
 
-export async function callHaService(
+async function callHaServiceTransport(
 	domain: string,
 	service: string,
 	serviceData: Record<string, unknown> = {}
@@ -80,6 +81,14 @@ export async function callHaService(
 		service,
 		service_data: serviceData
 	};
+	let proxyError: unknown = null;
+	try {
+		await callViaSameOriginService(domain, service, serviceData);
+		return;
+	} catch (error) {
+		proxyError = error;
+	}
+
 	const hass = await getEmbeddedHassQuick();
 	cachedHass = hass;
 	if (hass) {
@@ -98,14 +107,6 @@ export async function callHaService(
 			await hass.connection.sendMessagePromise(wsPayload);
 			return;
 		}
-	}
-
-	let proxyError: unknown = null;
-	try {
-		await callViaSameOriginService(domain, service, serviceData);
-		return;
-	} catch (error) {
-		proxyError = error;
 	}
 
 	try {
@@ -142,5 +143,26 @@ export async function callHaService(
 	if (!response.ok) {
 		const text = await response.text();
 		throw new Error(text || `http_${response.status}`);
+	}
+}
+
+export async function callHaService(
+	domain: string,
+	service: string,
+	serviceData: Record<string, unknown> = {}
+) {
+	if (typeof window !== 'undefined') {
+		entityStore.applyServiceOptimism(domain, service, serviceData);
+	}
+	try {
+		await callHaServiceTransport(domain, service, serviceData);
+		if (typeof window !== 'undefined') {
+			entityStore.refreshSoon(120);
+		}
+	} catch (error) {
+		if (typeof window !== 'undefined') {
+			entityStore.clearServiceOptimism(serviceData);
+		}
+		throw error;
 	}
 }
