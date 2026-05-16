@@ -212,10 +212,6 @@
 		return trimmed ? browserSafeHomeAssistantUrl(trimmed) : '';
 	}
 
-	function isHomeAssistantGeneratedImage(url: string): boolean {
-		return /\/?api\/image\/serve\/[^/?#]+\/\d+x\d+/i.test(url);
-	}
-
 	function markDisplayImageFailed(raw: string) {
 		const url = normalizeDisplayImageUrl(raw);
 		if (!url || invalidDisplayImages[url]) return;
@@ -225,8 +221,16 @@
 	function displayImageUrl(raw: string): string {
 		const url = normalizeDisplayImageUrl(raw);
 		if (!url || invalidDisplayImages[url]) return '';
-		if (isHomeAssistantGeneratedImage(url)) return '';
 		return url;
+	}
+
+	function readFirstStringAttribute(attrs: Record<string, unknown> | undefined, keys: string[]): string {
+		if (!attrs) return '';
+		for (const key of keys) {
+			const value = attrs[key];
+			if (typeof value === 'string' && value.trim()) return value;
+		}
+		return '';
 	}
 
 	function readSources(entity: HomeAssistantEntity): string[] {
@@ -257,8 +261,19 @@
 	}
 	function readMediaImage(entity: HomeAssistantEntity): string {
 		const a = (entity as unknown as { attributes?: Record<string, unknown> }).attributes;
-		const direct = (a?.entity_picture_local as string | undefined) ?? (a?.entity_picture as string | undefined);
-		return typeof direct === 'string' ? browserSafeHomeAssistantUrl(direct) : '';
+		const direct = readFirstStringAttribute(a, [
+			'entity_picture_local',
+			'entity_picture',
+			'media_image_url',
+			'media_image_local',
+			'media_image',
+			'media_album_image',
+			'album_art_url',
+			'thumbnail',
+			'media_thumbnail',
+			'image'
+		]);
+		return direct ? browserSafeHomeAssistantUrl(direct) : '';
 	}
 
 	/**
