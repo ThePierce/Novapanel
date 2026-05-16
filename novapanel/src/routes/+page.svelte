@@ -160,12 +160,14 @@
 	let cameraDetailCamera = $state<import('$lib/persistence/panel-state-types').CameraConfig | null>(null);
 	let lightButtonDetailOpen = $state(false);
 	let lightButtonDetailCard = $state<{
+		id?: string;
 		title?: string;
 		entityId?: string;
 		icon?: string;
 	}>({});
 	let entityButtonDetailOpen = $state(false);
 	let entityButtonDetailCard = $state<{
+		id?: string;
 		kind?: EntityButtonKind;
 		title?: string;
 		entityId?: string;
@@ -213,6 +215,38 @@
 	let statusDetailEntityAliases = $state<Record<string, string>>({});
 	let statusDetailEntityIconOverrides = $state<Record<string, string>>({});
 	let statusDetailIgnoredEntityIds = $state<string[]>([]);
+	const statusDetailLiveTitle = $derived((() => {
+		if (!statusDetailCardId) return statusDetailTitle;
+		const fromSidebar = savedSidebarCards.find((card) => card.id === statusDetailCardId);
+		if (fromSidebar) {
+			const title = (fromSidebar.title ?? '').trim();
+			return title.length > 0 ? title : statusDetailTitle;
+		}
+		for (const section of savedViewSections) {
+			const found = section.cards.find((card) => card.id === statusDetailCardId);
+			if (found) {
+				const title = (found.title ?? '').trim();
+				return title.length > 0 ? title : statusDetailTitle;
+			}
+		}
+		return statusDetailTitle;
+	})());
+	function findLiveCardById(id: string | undefined): CardDraft | null {
+		if (!id) return null;
+		const fromSidebar = savedSidebarCards.find((card) => card.id === id);
+		if (fromSidebar) return fromSidebar;
+		for (const section of savedViewSections) {
+			const found = section.cards.find((card) => card.id === id);
+			if (found) return found;
+		}
+		return null;
+	}
+	const lightButtonDetailLiveCard = $derived(
+		findLiveCardById(lightButtonDetailCard.id) ?? null
+	);
+	const entityButtonDetailLiveCard = $derived(
+		findLiveCardById(entityButtonDetailCard.id) ?? null
+	);
 	let weatherDetailEntityId = $state<string | undefined>(undefined);
 	let weatherForecastEntityId = $state<string | undefined>(undefined);
 	let weatherForecastType = $state<'daily' | 'hourly' | 'twice_daily'>('daily');
@@ -2258,6 +2292,7 @@ if (browser) {
 
 	function openLightButtonDetails(card: CardDraft) {
 		lightButtonDetailCard = {
+			id: card.id,
 			title: card.title,
 			entityId: card.entityId,
 			icon: card.statusIcon
@@ -2283,6 +2318,7 @@ if (browser) {
 		const kind = entityButtonKindForCard(card.cardType);
 		if (!kind) return;
 		entityButtonDetailCard = {
+			id: card.id,
 			kind,
 			title: card.title,
 			entityId: card.entityId,
@@ -2932,9 +2968,9 @@ if (browser) {
 			{#await loadLightButtonDetailsModal() then module}
 				{@const LightButtonDetailsModal = module.default}
 				<LightButtonDetailsModal
-					title={lightButtonDetailCard.title}
-					entityId={lightButtonDetailCard.entityId}
-					icon={lightButtonDetailCard.icon}
+					title={lightButtonDetailLiveCard?.title ?? lightButtonDetailCard.title}
+					entityId={lightButtonDetailLiveCard?.entityId ?? lightButtonDetailCard.entityId}
+					icon={lightButtonDetailLiveCard?.statusIcon ?? lightButtonDetailCard.icon}
 					onClose={() => {
 						lightButtonDetailOpen = false;
 						lightButtonDetailCard = {};
@@ -2947,9 +2983,9 @@ if (browser) {
 				{@const EntityButtonDetailsModal = module.default}
 				<EntityButtonDetailsModal
 					kind={entityButtonDetailCard.kind}
-					title={entityButtonDetailCard.title}
-					entityId={entityButtonDetailCard.entityId}
-					icon={entityButtonDetailCard.icon}
+					title={entityButtonDetailLiveCard?.title ?? entityButtonDetailCard.title}
+					entityId={entityButtonDetailLiveCard?.entityId ?? entityButtonDetailCard.entityId}
+					icon={entityButtonDetailLiveCard?.statusIcon ?? entityButtonDetailCard.icon}
 					onClose={() => {
 						entityButtonDetailOpen = false;
 						entityButtonDetailCard = {};
@@ -2963,7 +2999,7 @@ if (browser) {
 				<StatusDetailsModal
 					{t}
 					{editMode}
-					title={statusDetailTitle}
+					title={statusDetailLiveTitle}
 					kind={statusDetailKind}
 					cardId={statusDetailCardId}
 					domains={statusDetailDomains}

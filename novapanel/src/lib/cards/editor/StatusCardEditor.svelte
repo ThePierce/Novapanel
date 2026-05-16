@@ -242,6 +242,14 @@
 		statusLabel={`${aliasRows.length} ${p.t(aliasRows.length === 1 ? 'entiteit' : 'entiteiten')}`}
 	>
 		<div class="np-help">{p.t(supportsEntityIconOverrides ? 'Pas hier de namen en iconen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.' : 'Pas hier de namen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.')}</div>
+		{#if supportsEntityIconOverrides}
+			<div class="np-help np-help-tip">
+				Tip: iconen werken met <code>mdi:naam</code>, zoals <code>mdi:lightbulb</code>,
+				<code>mdi:robot-vacuum-variant</code> of <code>mdi:thermometer</code>.
+				Je kunt ze opzoeken via
+				<a href="https://pictogrammers.com/library/mdi/" target="_blank" rel="noreferrer">pictogrammers.com/library/mdi</a>.
+			</div>
+		{/if}
 		<div class="alias-editor-list">
 			{#each aliasRows as row (row.id)}
 				<div class="alias-editor-row">
@@ -313,6 +321,30 @@
 {/if}
 
 <style>
+	.np-help-tip {
+		background: rgba(96,165,250,0.07);
+		border: 0.5px solid rgba(96,165,250,0.15);
+		border-radius: 8px;
+		padding: 8px 10px;
+		font-size: 11.5px;
+		color: rgba(255,255,255,0.7);
+		margin-bottom: 8px;
+	}
+	.np-help-tip code {
+		font-family: ui-monospace, 'SF Mono', monospace;
+		font-size: 11px;
+		background: rgba(0,0,0,0.25);
+		padding: 1px 5px;
+		border-radius: 4px;
+		color: #93c5fd;
+	}
+	.np-help-tip a {
+		color: #60a5fa;
+		text-decoration: none;
+	}
+	.np-help-tip a:hover {
+		text-decoration: underline;
+	}
 	.alias-editor-list {
 		display: grid;
 		gap: 0.5rem;
