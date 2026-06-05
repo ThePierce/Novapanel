@@ -4,6 +4,7 @@
 	import { entityStore } from '$lib/ha/entities-store';
 	import { callHaService } from '$lib/ha/service-call';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
+	import { browserSafeHomeAssistantUrl, getNovaApiUrl } from '$lib/ha/entities-service-helpers';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
 	import { selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
@@ -24,6 +25,7 @@
 	let draggingTemperature = $state(false);
 	let draggingPosition = $state(false);
 	let draggingVolume = $state(false);
+	let vacuumMapImageFailed = $state(false);
 	let temperatureTimer: ReturnType<typeof setTimeout> | null = null;
 	let positionTimer: ReturnType<typeof setTimeout> | null = null;
 	let volumeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -68,6 +70,38 @@
 	const mediaTitle = $derived(stringAttribute(entity, 'media_title'));
 	const mediaArtist = $derived(stringAttribute(entity, 'media_artist'));
 	const stateLabel = $derived(summaryLabel());
+	const vacuumArea = $derived(numericAttribute(entity, 'cleaned_area') ?? numericAttribute(entity, 'cleaning_area'));
+	const vacuumDuration = $derived(numericAttribute(entity, 'cleaning_time') ?? numericAttribute(entity, 'cleaning_duration'));
+	const vacuumMapCamera = $derived.by(() => {
+		if (kind !== 'vacuum') return null as HomeAssistantEntity | null;
+		const all = $entityStore.entities;
+		const vacuumTokens = tokensForMapMatch(entityId, displayName);
+		const cameras = all.filter((entry) => entry.domain === 'camera' || entry.entityId.toLowerCase().includes('map'));
+		return cameras.find((entry) => isVacuumMapCandidate(entry, vacuumTokens)) ?? null;
+	});
+	const vacuumMapImageUrl = $derived.by(() => {
+		if (kind !== 'vacuum') return '';
+		const direct = firstStringAttribute(entity, [
+			'map_image',
+			'map_url',
+			'map',
+			'map_picture',
+			'map_snapshot',
+			'snapshot_image',
+			'image_url',
+			'entity_picture'
+		]);
+		if (direct) return browserSafeHomeAssistantUrl(direct);
+		const cameraPicture = firstStringAttribute(vacuumMapCamera ?? undefined, ['entity_picture']);
+		if (cameraPicture) return browserSafeHomeAssistantUrl(cameraPicture);
+		return vacuumMapCamera ? getNovaApiUrl(`/api/camera_proxy/${encodeURIComponent(vacuumMapCamera.entityId)}`) : '';
+	});
+	const vacuumMapTitle = $derived(vacuumMapCamera?.friendlyName ?? translate('Kaart', $selectedLanguageStore));
+
+	$effect(() => {
+		vacuumMapImageUrl;
+		vacuumMapImageFailed = false;
+	});
 
 	$effect(() => {
 		if (!draggingTemperature) temperatureDraft = targetTemperature;
@@ -100,7 +134,7 @@
 	function fallbackIcon(value: EntityButtonKind) {
 		if (value === 'device') return 'mdi:power-plug-outline';
 		if (value === 'climate') return 'mdi:thermostat';
-		if (value === 'cover') return 'mdi:curtains';
+		if (value === 'cover') return 'mdi:blinds-horizontal';
 		if (value === 'vacuum') return 'mdi:robot-vacuum';
 		return 'mdi:speaker';
 	}
@@ -120,11 +154,19 @@
 		if (normalized.includes('blinds')) return closed ? 'mdi:blinds' : 'mdi:blinds-open';
 		if (normalized.includes('window-shutter')) return closed ? 'mdi:window-shutter' : 'mdi:window-shutter-open';
 		if (normalized && !normalized.includes('curtains')) return configured;
-		return closed ? 'mdi:curtains-closed' : 'mdi:curtains';
+		if (normalized.includes('curtains')) return closed ? 'mdi:curtains-closed' : 'mdi:curtains';
+		return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
 	}
 
 	function iconForEntity(value: EntityButtonKind, configuredIcon: string | undefined, position: number | null, currentState: string) {
 		if (value === 'cover') return coverIconForState(position, currentState, configuredIcon);
+		if (value === 'device' && serviceDomain === 'lock') {
+			const configured = (configuredIcon ?? '').trim();
+			if (configured.length > 0) return configured;
+			return currentState === 'unlocked' || currentState === 'unlocking'
+				? 'mdi:lock-open-outline'
+				: 'mdi:lock-outline';
+		}
 		return (configuredIcon && configuredIcon.trim().length > 0) ? configuredIcon.trim() : fallbackIcon(value);
 	}
 
@@ -154,6 +196,14 @@
 		return typeof raw === 'string' ? raw : '';
 	}
 
+	function firstStringAttribute(entry: HomeAssistantEntity | undefined, keys: string[]): string {
+		for (const key of keys) {
+			const raw = entry?.attributes?.[key];
+			if (typeof raw === 'string' && raw.trim().length > 0) return raw.trim();
+		}
+		return '';
+	}
+
 	function stringListAttribute(entry: HomeAssistantEntity | undefined, key: string): string[] {
 		const raw = entry?.attributes?.[key];
 		return Array.isArray(raw) ? raw.map(String).filter((value) => value.trim().length > 0) : [];
@@ -161,6 +211,25 @@
 
 	function clampPercent(value: number): number {
 		return Math.max(0, Math.min(100, value));
+	}
+
+	function tokensForMapMatch(id: string | undefined, name: string): string[] {
+		return `${id ?? ''} ${name ?? ''}`
+			.toLowerCase()
+			.replace(/sensor|vacuum|camera|map|kaart|entity|robot|stofzuiger/g, ' ')
+			.split(/[^a-z0-9]+/i)
+			.map((token) => token.trim())
+			.filter((token) => token.length >= 3);
+	}
+
+	function isVacuumMapCandidate(entry: HomeAssistantEntity, vacuumTokens: string[]): boolean {
+		const attrs = entry.attributes ?? {};
+		const haystack = `${entry.entityId} ${entry.friendlyName} ${String(attrs.device_class ?? '')} ${String(attrs.icon ?? '')}`.toLowerCase();
+		const mentionsMap = /\b(map|kaart|plattegrond)\b/.test(haystack);
+		const mentionsVacuum = /\b(vacuum|robo|roborock|robovac|stofzuiger)\b/.test(haystack);
+		if (mentionsMap && (mentionsVacuum || vacuumTokens.some((token) => haystack.includes(token)))) return true;
+		const picture = firstStringAttribute(entry, ['entity_picture', 'map_image', 'map_url', 'image_url']).toLowerCase();
+		return mentionsMap && picture.length > 0;
 	}
 
 	function readableState(value: string) {
@@ -196,6 +265,10 @@
 		} finally {
 			busy = false;
 		}
+	}
+
+	function lockServiceForState(targetUnlocked: boolean): 'lock' | 'unlock' {
+		return targetUnlocked ? 'unlock' : 'lock';
 	}
 
 	function scheduleTemperature(value: number, delay = 140) {
@@ -280,6 +353,7 @@
 <button type="button" class="modal-overlay entity-modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
 <section
 	class="settings-modal app-popup entity-detail-modal np-detail"
+	class:vacuum-detail={kind === 'vacuum'}
 	role="dialog"
 	aria-modal="true"
 	aria-label={displayName}
@@ -312,8 +386,13 @@
 				</div>
 			</div>
 			<div class="action-row">
-				<button type="button" class="np-btn ghost" onclick={() => void callService(serviceDomain || 'switch', 'turn_off')} disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button>
-				<button type="button" class="np-btn primary" onclick={() => void callService(serviceDomain || 'switch', 'turn_on')} disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button>
+				{#if serviceDomain === 'lock'}
+					<button type="button" class="np-btn ghost" onclick={() => void callService('lock', lockServiceForState(false))} disabled={busy || isUnavailable}>{translate('Vergrendelen', $selectedLanguageStore)}</button>
+					<button type="button" class="np-btn primary" onclick={() => void callService('lock', lockServiceForState(true))} disabled={busy || isUnavailable}>{translate('Ontgrendelen', $selectedLanguageStore)}</button>
+				{:else}
+					<button type="button" class="np-btn ghost" onclick={() => void callService(serviceDomain || 'switch', 'turn_off')} disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button>
+					<button type="button" class="np-btn primary" onclick={() => void callService(serviceDomain || 'switch', 'turn_on')} disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button>
+				{/if}
 			</div>
 		{:else if kind === 'climate'}
 			<div class="climate-temp-readout">
@@ -409,6 +488,32 @@
 				</button>
 			</div>
 		{:else if kind === 'vacuum'}
+			<div class="vacuum-map-card">
+				<div class="vacuum-map-head">
+					<span>{vacuumMapTitle}</span>
+					{#if vacuumMapCamera}
+						<strong>{translate('Live', $selectedLanguageStore)}</strong>
+					{/if}
+				</div>
+				{#if vacuumMapImageUrl && !vacuumMapImageFailed}
+					<img
+						class="vacuum-map-image"
+						src={vacuumMapImageUrl}
+						alt={vacuumMapTitle}
+						onerror={() => (vacuumMapImageFailed = true)}
+					/>
+				{:else}
+					<div class="vacuum-map-fallback" aria-hidden="true">
+						<span class="room room-living"></span>
+						<span class="room room-kitchen"></span>
+						<span class="room room-hall"></span>
+						<span class="room room-office"></span>
+						<span class="vacuum-path"></span>
+						<span class="vacuum-dot"></span>
+						<span class="dock-dot"></span>
+					</div>
+				{/if}
+			</div>
 			<div class="vacuum-status">
 				<div>
 					<span>{translate('Status', $selectedLanguageStore)}</span>
@@ -417,6 +522,14 @@
 				<div>
 					<span>{translate('Batterij', $selectedLanguageStore)}</span>
 					<strong>{batteryLevel !== null ? `${Math.round(batteryLevel)}%` : '--'}</strong>
+				</div>
+				<div>
+					<span>{translate('Oppervlak', $selectedLanguageStore)}</span>
+					<strong>{vacuumArea !== null ? `${Math.round(vacuumArea)} m²` : '--'}</strong>
+				</div>
+				<div>
+					<span>{translate('Tijd', $selectedLanguageStore)}</span>
+					<strong>{vacuumDuration !== null ? `${Math.round(vacuumDuration)} min` : '--'}</strong>
 				</div>
 			</div>
 			<div class="action-grid vacuum-action-grid">
@@ -704,6 +817,113 @@
 	.vacuum-action-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
+	.vacuum-map-card {
+		display: grid;
+		gap: 0.55rem;
+		padding: 0.75rem;
+		border-radius: 0.95rem;
+		background: rgba(255,255,255,0.045);
+		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+	}
+	.vacuum-map-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		font-size: 0.78rem;
+		font-weight: 800;
+		color: rgba(255,255,255,0.58);
+	}
+	.vacuum-map-head strong {
+		color: var(--entity-accent);
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.vacuum-map-image,
+	.vacuum-map-fallback {
+		width: 100%;
+		aspect-ratio: 4 / 3;
+		border-radius: 0.75rem;
+		background: #111827;
+		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+		overflow: hidden;
+	}
+	.vacuum-map-image {
+		object-fit: contain;
+		display: block;
+	}
+	.vacuum-map-fallback {
+		position: relative;
+		display: grid;
+		grid-template-columns: 1.2fr 0.85fr;
+		grid-template-rows: 1fr 0.82fr;
+		gap: 0.35rem;
+		padding: 0.45rem;
+		box-sizing: border-box;
+	}
+	.vacuum-map-fallback::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background:
+			linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+			linear-gradient(0deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+		background-size: 32px 32px;
+		pointer-events: none;
+	}
+	.vacuum-map-fallback .room {
+		position: relative;
+		border-radius: 0.55rem;
+		background: rgba(52,211,153,0.10);
+		box-shadow: inset 0 0 0 1px rgba(52,211,153,0.22);
+	}
+	.room-living {
+		grid-row: 1 / 3;
+	}
+	.room-kitchen {
+		background: rgba(96,165,250,0.11) !important;
+		box-shadow: inset 0 0 0 1px rgba(96,165,250,0.24) !important;
+	}
+	.room-hall,
+	.room-office {
+		background: rgba(255,255,255,0.065) !important;
+		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.11) !important;
+	}
+	.vacuum-path {
+		position: absolute;
+		left: 16%;
+		top: 18%;
+		width: 62%;
+		height: 58%;
+		border: 2px dashed rgba(52,211,153,0.65);
+		border-left-color: transparent;
+		border-bottom-color: transparent;
+		border-radius: 999px;
+		transform: rotate(8deg);
+	}
+	.vacuum-dot,
+	.dock-dot {
+		position: absolute;
+		border-radius: 999px;
+		z-index: 2;
+	}
+	.vacuum-dot {
+		left: 58%;
+		top: 56%;
+		width: 1.1rem;
+		height: 1.1rem;
+		background: var(--entity-accent);
+		box-shadow: 0 0 18px rgba(52,211,153,0.55);
+	}
+	.dock-dot {
+		left: 12%;
+		bottom: 13%;
+		width: 0.75rem;
+		height: 0.75rem;
+		background: rgba(255,255,255,0.82);
+		box-shadow: 0 0 12px rgba(255,255,255,0.28);
+	}
 	.control-action {
 		min-height: 3.35rem;
 		display: inline-flex;
@@ -819,6 +1039,27 @@
 		font-size: 0.82rem;
 		font-weight: 700;
 	}
+	.entity-detail-modal.vacuum-detail {
+		--popup-width: var(--np-detail-popup-width, min(850px, calc(100vw - 1.5rem)));
+		--popup-height: min(1140px, calc(100vh - 1.5rem));
+	}
+	.vacuum-detail .entity-detail-body {
+		padding: 1rem;
+		gap: 0.85rem;
+	}
+	.vacuum-detail .vacuum-map-card {
+		padding: 1rem;
+		border-radius: 1rem;
+		background: #0a0e1a;
+		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+	}
+	.vacuum-detail .vacuum-map-image,
+	.vacuum-detail .vacuum-map-fallback {
+		aspect-ratio: 16 / 9;
+		min-height: clamp(18rem, 54vh, 34rem);
+		border-radius: 0.85rem;
+		background: #050812;
+	}
 	@media (max-width: 520px) {
 		.action-grid {
 			grid-template-columns: 1fr;
@@ -826,6 +1067,10 @@
 		.action-row,
 		.vacuum-status {
 			grid-template-columns: 1fr;
+		}
+		.vacuum-detail .vacuum-map-image,
+		.vacuum-detail .vacuum-map-fallback {
+			min-height: clamp(14rem, 42vh, 24rem);
 		}
 	}
 </style>

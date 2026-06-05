@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { filteredEntities } from '$lib/ha/entities-store';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
-	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import IconChoiceField from '$lib/cards/editor/IconChoiceField.svelte';
 	import { isDeviceButtonEntityDomain, type EntityButtonKind } from '$lib/cards/entity-button-types';
 	import EntitySelectPicker from '$lib/cards/editor/EntitySelectPicker.svelte';
 	import { selectedLanguageStore, translate, translateState } from '$lib/i18n';
@@ -36,11 +36,61 @@
 		)
 	);
 	const selectedEntity = $derived(candidates.find((entity) => entity.entityId === entityId));
+	const iconChoices = $derived.by(() => {
+		if (kind === 'device') {
+			return [
+				{ icon: 'mdi:power-plug-outline', label: 'Plug' },
+				{ icon: 'mdi:toggle-switch', label: 'Schakelaar' },
+				{ icon: 'mdi:fan', label: 'Ventilator' },
+				{ icon: 'mdi:television', label: 'TV' },
+				{ icon: 'mdi:lock-outline', label: 'Slot' },
+				{ icon: 'mdi:server-network', label: 'Netwerk' },
+				{ icon: 'mdi:home-outline', label: 'Home' },
+				{ icon: 'mdi:robot', label: 'Robot' }
+			];
+		}
+		if (kind === 'climate') {
+			return [
+				{ icon: 'mdi:thermostat', label: 'Thermostaat' },
+				{ icon: 'mdi:home-thermometer-outline', label: 'Woning' },
+				{ icon: 'mdi:radiator', label: 'Radiator' },
+				{ icon: 'mdi:fan', label: 'Ventilator' },
+				{ icon: 'mdi:snowflake', label: 'Koelen' },
+				{ icon: 'mdi:fire', label: 'Warmte' }
+			];
+		}
+		if (kind === 'cover') {
+			return [
+				{ icon: 'mdi:blinds-horizontal', label: 'Jaloezie' },
+				{ icon: 'mdi:blinds-horizontal-closed', label: 'Dicht' },
+				{ icon: 'mdi:window-shutter', label: 'Rolluik' },
+				{ icon: 'mdi:window-shutter-open', label: 'Open' },
+				{ icon: 'mdi:curtains', label: 'Gordijn' },
+				{ icon: 'mdi:garage', label: 'Garage' }
+			];
+		}
+		if (kind === 'vacuum') {
+			return [
+				{ icon: 'mdi:robot-vacuum', label: 'Vacuum' },
+				{ icon: 'mdi:robot-vacuum-variant', label: 'Variant' },
+				{ icon: 'mdi:robot', label: 'Robot' },
+				{ icon: 'mdi:home-map-marker', label: 'Map' }
+			];
+		}
+		return [
+			{ icon: 'mdi:speaker', label: 'Speaker' },
+			{ icon: 'mdi:speaker-wireless', label: 'Wireless' },
+			{ icon: 'mdi:television', label: 'TV' },
+			{ icon: 'mdi:cast', label: 'Cast' },
+			{ icon: 'mdi:audio-video', label: 'AV' },
+			{ icon: 'mdi:music', label: 'Muziek' }
+		];
+	});
 
 	function fallbackIcon(value: EntityButtonKind) {
 		if (value === 'device') return 'mdi:power-plug-outline';
 		if (value === 'climate') return 'mdi:thermostat';
-		if (value === 'cover') return 'mdi:curtains';
+		if (value === 'cover') return 'mdi:blinds-horizontal';
 		if (value === 'vacuum') return 'mdi:robot-vacuum';
 		return 'mdi:speaker';
 	}
@@ -75,76 +125,22 @@
 		</div>
 	{/if}
 
-	<label class="np-field">
-		<span class="np-label">{translate('MDI icoon', $selectedLanguageStore)}</span>
-		<div class="icon-input-row">
-			<input
-				type="text"
-				class="np-input"
-				list="np-mdi-icon-suggestions"
-				value={statusIcon ?? ''}
-				placeholder={defaultIcon}
-				oninput={(event) => onStatusIconChange((event.currentTarget as HTMLInputElement).value)}
-			/>
-			<datalist id="np-mdi-icon-suggestions">
-				<option value="mdi:sofa-outline"></option>
-				<option value="mdi:power-plug-outline"></option>
-				<option value="mdi:toggle-switch"></option>
-				<option value="mdi:thermostat"></option>
-				<option value="mdi:curtains"></option>
-				<option value="mdi:blinds-horizontal"></option>
-				<option value="mdi:window-shutter"></option>
-				<option value="mdi:robot-vacuum"></option>
-				<option value="mdi:speaker"></option>
-				<option value="mdi:television"></option>
-				<option value="mdi:fan"></option>
-				<option value="mdi:home-outline"></option>
-			</datalist>
-			<span class="icon-preview" aria-hidden="true">
-				{#if iconPreviewSrc}
-					<span class="mdi-preview" style:--icon-url={`url('${iconPreviewSrc}')`}></span>
-				{:else}
-					<StatusIcon icon={effectiveIcon} size={20} />
-				{/if}
-			</span>
-		</div>
-		<span class={`icon-validation ${iconValidationState}`}>
-			<TablerIcon
-				name={iconValidationState === 'ok' ? 'circle-check' : iconValidationState === 'error' ? 'alert-circle' : 'loader-2'}
-				size={13}
-			/>
-			{iconValidationMessage}
-		</span>
-		<span class="icon-help">
-			{translate('Gebruik een Material Design Icon naam, bijvoorbeeld', $selectedLanguageStore)} <code>mdi:sofa-outline</code>. {translate('Sla de kaart daarna op.', $selectedLanguageStore)}
-		</span>
-	</label>
+	<IconChoiceField
+		label={translate('Icoon', $selectedLanguageStore)}
+		value={statusIcon ?? ''}
+		placeholder={defaultIcon}
+		choices={iconChoices}
+		validationState={iconValidationState}
+		validationMessage={iconValidationMessage}
+		help={`${translate('Gebruik een Material Design Icon naam, bijvoorbeeld', $selectedLanguageStore)} mdi:sofa-outline. ${translate('Sla de kaart daarna op.', $selectedLanguageStore)}`}
+		onChange={onStatusIconChange}
+	/>
 </div>
 
 <style>
 	.entity-button-editor {
 		display: grid;
 		gap: 0.7rem;
-	}
-	.np-field {
-		display: grid;
-		gap: 0.4rem;
-	}
-	.np-label {
-		font-size: 0.78rem;
-		font-weight: 700;
-		color: rgba(255,255,255,0.68);
-	}
-	.np-input {
-		width: 100%;
-		height: 2.45rem;
-		border: 1px solid rgba(255,255,255,0.09);
-		border-radius: 0.55rem;
-		background: rgba(255,255,255,0.075);
-		color: #f5f5f5;
-		padding: 0 0.75rem;
-		font: inherit;
-		box-sizing: border-box;
 	}
 	.entity-selected {
 		display: flex;
@@ -176,56 +172,5 @@
 		margin-top: 0.12rem;
 		font-size: 0.75rem;
 		color: rgba(255,255,255,0.52);
-	}
-	.icon-input-row {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.5rem;
-		align-items: center;
-	}
-	.icon-preview {
-		width: 2.45rem;
-		height: 2.45rem;
-		display: grid;
-		place-items: center;
-		border-radius: 0.55rem;
-		color: #93c5fd;
-		background: rgba(147,197,253,0.13);
-	}
-	.mdi-preview {
-		width: 20px;
-		height: 20px;
-		display: block;
-		background: currentColor;
-		-webkit-mask: var(--icon-url) center / contain no-repeat;
-		mask: var(--icon-url) center / contain no-repeat;
-	}
-	.icon-validation {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		min-height: 1.1rem;
-		font-size: 0.76rem;
-		color: rgba(255,255,255,0.58);
-	}
-	.icon-validation.ok {
-		color: #86efac;
-	}
-	.icon-validation.error {
-		color: #fca5a5;
-	}
-	.icon-validation.checking {
-		color: #fde68a;
-	}
-	.icon-help {
-		font-size: 0.72rem;
-		line-height: 1.25;
-		color: rgba(255,255,255,0.48);
-	}
-	.icon-help code {
-		color: rgba(255,255,255,0.78);
-		background: rgba(255,255,255,0.08);
-		border-radius: 0.3rem;
-		padding: 0.06rem 0.24rem;
 	}
 </style>

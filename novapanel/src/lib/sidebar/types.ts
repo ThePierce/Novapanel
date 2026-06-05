@@ -30,12 +30,24 @@ export type SidebarItemBase = {
 	// Kosten vandaag (EUR, Utility Meter helpers)
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	// Kosten fallback: piek/dal dagtellers en tarieven
+	importPeakTodayEntityId?: string;
+	importOffPeakTodayEntityId?: string;
+	importTariffEntityId?: string;
+	exportTariffEntityId?: string;
+	importPeakTariff?: number;
+	importOffPeakTariff?: number;
+	exportTariff?: number;
 	// Optioneel: zelfvoorzienend % als template-sensor bestaat
 	selfSufficiencyEntityId?: string;
 	// Auto aan de lader (binary_sensor of soortgelijk) en laadvermogen
 	carChargingEntityId?: string;
 	carCableEntityId?: string;
 	carChargingPowerEntityId?: string;
+	energyDeviceEntityIds?: string[];
+	energyDeviceTodayEntityIds?: string[];
+	energyDeviceAliases?: Record<string, string>;
+	energyDeviceSnapshot?: { date: string; values: Record<string, number> };
 	// Per-scenario flags voor eigen geüploade foto's
 	hasCustomDayNoCar?: boolean;
 	hasCustomDayWithCar?: boolean;

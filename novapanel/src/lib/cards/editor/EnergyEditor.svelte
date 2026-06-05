@@ -19,6 +19,13 @@
 		homeTodayEntityId?: string;
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		importPeakTodayEntityId?: string;
+		importOffPeakTodayEntityId?: string;
+		importTariffEntityId?: string;
+		exportTariffEntityId?: string;
+		importPeakTariff?: string | number;
+		importOffPeakTariff?: string | number;
+		exportTariff?: string | number;
 		selfSufficiencyEntityId?: string;
 		carChargingEntityId?: string;
 		carCableEntityId?: string;
@@ -56,6 +63,13 @@
 		onHomeTodayEntityIdChange: (value: string) => void;
 		onCostTodayEntityIdChange: (value: string) => void;
 		onCompensationTodayEntityIdChange: (value: string) => void;
+		onImportPeakTodayEntityIdChange: (value: string) => void;
+		onImportOffPeakTodayEntityIdChange: (value: string) => void;
+		onImportTariffEntityIdChange: (value: string) => void;
+		onExportTariffEntityIdChange: (value: string) => void;
+		onImportPeakTariffChange: (value: string) => void;
+		onImportOffPeakTariffChange: (value: string) => void;
+		onExportTariffChange: (value: string) => void;
 		onSelfSufficiencyEntityIdChange: (value: string) => void;
 		onCarChargingEntityIdChange: (value: string) => void;
 		onCarCableEntityIdChange: (value: string) => void;
@@ -72,6 +86,12 @@
 
 	function nonEmpty(v: string | undefined): boolean {
 		return typeof v === 'string' && v.trim().length > 0;
+	}
+	function tariffFilled(v: string | number | undefined): boolean {
+		if (typeof v === 'number') return Number.isFinite(v) && v >= 0;
+		if (typeof v !== 'string') return false;
+		const n = Number(v.trim().replace(',', '.'));
+		return Number.isFinite(n) && n >= 0;
 	}
 	function fillStatus(filled: number, total: number): { status: 'filled' | 'partial' | 'empty'; label: string } {
 		if (filled === 0) return { status: 'empty', label: translate('leeg', $selectedLanguageStore) };
@@ -91,8 +111,16 @@
 		return fillStatus(fields.filter(nonEmpty).length, fields.length);
 	})());
 	const costsStatus = $derived((() => {
-		const fields = [p.costTodayEntityId, p.compensationTodayEntityId];
-		return fillStatus(fields.filter(nonEmpty).length, fields.length);
+		if (nonEmpty(p.costTodayEntityId) || nonEmpty(p.compensationTodayEntityId)) {
+			return { status: 'filled' as const, label: translate('kostensensor', $selectedLanguageStore) };
+		}
+		const hasPeakOffPeak =
+			(nonEmpty(p.importPeakTodayEntityId) && tariffFilled(p.importPeakTariff)) ||
+			(nonEmpty(p.importOffPeakTodayEntityId) && tariffFilled(p.importOffPeakTariff));
+		if (hasPeakOffPeak) return { status: 'filled' as const, label: translate('piek/dal ingesteld', $selectedLanguageStore) };
+		const hasTariffSensor = nonEmpty(p.importTariffEntityId) || nonEmpty(p.exportTariffEntityId);
+		if (hasTariffSensor) return { status: 'partial' as const, label: translate('tariefsensor', $selectedLanguageStore) };
+		return { status: 'empty' as const, label: translate('leeg', $selectedLanguageStore) };
 	})());
 	const carStatus = $derived((() => {
 		const fields = [p.carChargingEntityId, p.carCableEntityId, p.carChargingPowerEntityId];
@@ -138,7 +166,12 @@
 				const entity = $filteredEntities.find((entry) => entry.entityId.toLowerCase() === id.toLowerCase());
 				const originalName = entity?.friendlyName?.trim() || id;
 				const canonicalId = entity?.entityId ?? id;
-				const alias = p.energyDeviceAliases?.[canonicalId] ?? p.energyDeviceAliases?.[id] ?? '';
+				const alias =
+					p.energyDeviceAliases?.[canonicalId] ??
+					p.energyDeviceAliases?.[canonicalId.toLowerCase()] ??
+					p.energyDeviceAliases?.[id] ??
+					p.energyDeviceAliases?.[id.toLowerCase()] ??
+					'';
 				return {
 					id: canonicalId,
 					originalName,
@@ -150,7 +183,10 @@
 	function updateDeviceAlias(entityId: string, value: string) {
 		const next = { ...(p.energyDeviceAliases ?? {}) };
 		if (value.trim().length > 0) next[entityId] = value;
-		else delete next[entityId];
+		else {
+			delete next[entityId];
+			delete next[entityId.toLowerCase()];
+		}
 		p.onEnergyDeviceAliasesChange(next);
 	}
 </script>
@@ -228,7 +264,7 @@
 </EditorSection>
 
 <EditorSection title={`${translate('Kosten', $selectedLanguageStore)} ${translate('vandaag', $selectedLanguageStore)}`} icon="currency-euro" tone="green" status={costsStatus.status} statusLabel={costsStatus.label}>
-	<div class="np-help">{translate('Optioneel. Bedragen in euro per kWh-stand vandaag.', $selectedLanguageStore)}</div>
+	<div class="np-help">{translate('Optioneel. Gebruik eerst exacte kostensensoren uit Home Assistant. Zonder die sensoren rekent Nova Panel met piek/dal of met actuele tariefsensoren.', $selectedLanguageStore)}</div>
 	<div class="np-grid-2">
 		<div class="np-field">
 			<span class="np-label">{translate('Kosten', $selectedLanguageStore)} import</span>
@@ -241,6 +277,54 @@
 			<input type="text" class="np-input mono" value={p.compensationTodayEntityId ?? ''}
 				placeholder="sensor.compensatie_export_vandaag"
 				oninput={(e) => p.onCompensationTodayEntityIdChange((e.currentTarget as HTMLInputElement).value)} />
+		</div>
+	</div>
+	<div class="np-help">{translate('Piek/dal berekening', $selectedLanguageStore)}</div>
+	<div class="np-grid-2">
+		<div class="np-field">
+			<span class="np-label">{translate('Afname piek', $selectedLanguageStore)} {translate('vandaag', $selectedLanguageStore)}</span>
+			<input type="text" class="np-input mono" value={p.importPeakTodayEntityId ?? ''}
+				placeholder="sensor.energie_import_piek_vandaag"
+				oninput={(e) => p.onImportPeakTodayEntityIdChange((e.currentTarget as HTMLInputElement).value)} />
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Afname dal', $selectedLanguageStore)} {translate('vandaag', $selectedLanguageStore)}</span>
+			<input type="text" class="np-input mono" value={p.importOffPeakTodayEntityId ?? ''}
+				placeholder="sensor.energie_import_dal_vandaag"
+				oninput={(e) => p.onImportOffPeakTodayEntityIdChange((e.currentTarget as HTMLInputElement).value)} />
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Piek tarief', $selectedLanguageStore)} euro/kWh</span>
+			<input type="text" inputmode="decimal" class="np-input mono" value={p.importPeakTariff ?? ''}
+				placeholder="0.39"
+				oninput={(e) => p.onImportPeakTariffChange((e.currentTarget as HTMLInputElement).value)} />
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Dal tarief', $selectedLanguageStore)} euro/kWh</span>
+			<input type="text" inputmode="decimal" class="np-input mono" value={p.importOffPeakTariff ?? ''}
+				placeholder="0.32"
+				oninput={(e) => p.onImportOffPeakTariffChange((e.currentTarget as HTMLInputElement).value)} />
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Teruglever tarief', $selectedLanguageStore)} euro/kWh</span>
+			<input type="text" inputmode="decimal" class="np-input mono" value={p.exportTariff ?? ''}
+				placeholder="0.13"
+				oninput={(e) => p.onExportTariffChange((e.currentTarget as HTMLInputElement).value)} />
+		</div>
+	</div>
+	<div class="np-help">{translate('Variabel contract', $selectedLanguageStore)}</div>
+	<div class="np-grid-2">
+		<div class="np-field">
+			<span class="np-label">{translate('Import tarief sensor', $selectedLanguageStore)}</span>
+			<input type="text" class="np-input mono" value={p.importTariffEntityId ?? ''}
+				placeholder="sensor.energie_import_tarief"
+				oninput={(e) => p.onImportTariffEntityIdChange((e.currentTarget as HTMLInputElement).value)} />
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Teruglever tarief sensor', $selectedLanguageStore)}</span>
+			<input type="text" class="np-input mono" value={p.exportTariffEntityId ?? ''}
+				placeholder="sensor.energie_export_tarief"
+				oninput={(e) => p.onExportTariffEntityIdChange((e.currentTarget as HTMLInputElement).value)} />
 		</div>
 	</div>
 </EditorSection>

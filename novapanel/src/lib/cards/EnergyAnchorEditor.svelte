@@ -442,9 +442,13 @@
 	}
 
 	.frame {
-		flex: 1;
+		flex: 1 1 auto;
 		position: relative;
 		margin: 0.7rem 1.4rem;
+		aspect-ratio: 1536 / 1024;
+		width: min(calc(100vw - 2.8rem), 1180px);
+		max-height: calc(100vh - 14rem);
+		align-self: center;
 		border-radius: 0.75rem;
 		overflow: hidden;
 		background: #000;
@@ -455,7 +459,7 @@
 	.bg {
 		position: absolute; inset: 0;
 		width: 100%; height: 100%;
-		object-fit: contain;
+		object-fit: fill;
 		display: block;
 		pointer-events: none;
 	}

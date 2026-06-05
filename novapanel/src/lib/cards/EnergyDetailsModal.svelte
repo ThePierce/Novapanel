@@ -21,6 +21,13 @@
 		// Kosten vandaag (EUR)
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		importPeakTodayEntityId?: string;
+		importOffPeakTodayEntityId?: string;
+		importTariffEntityId?: string;
+		exportTariffEntityId?: string;
+		importPeakTariff?: number;
+		importOffPeakTariff?: number;
+		exportTariff?: number;
 		// Optioneel: zelfvoorzienend %
 		selfSufficiencyEntityId?: string;
 		// Auto aan de lader (optioneel)
@@ -61,6 +68,13 @@
 		homeTodayEntityId = '',
 		costTodayEntityId = '',
 		compensationTodayEntityId = '',
+		importPeakTodayEntityId = '',
+		importOffPeakTodayEntityId = '',
+		importTariffEntityId = '',
+		exportTariffEntityId = '',
+		importPeakTariff,
+		importOffPeakTariff,
+		exportTariff,
 		selfSufficiencyEntityId = '',
 		carChargingEntityId = '',
 		carCableEntityId = '',
@@ -116,6 +130,13 @@
 		if (unit === 'wh') return v / 1000;
 		return v;
 	}
+	function tariffNumber(value: number | undefined): number | null {
+		return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+	}
+	function tariffEntityValue(id: string): number | null {
+		const value = getNumeric(id);
+		return value !== null && value >= 0 ? value : null;
+	}
 
 	// Live waardes
 	const netW = $derived(powerW(netEntityId));
@@ -132,6 +153,10 @@
 	const homeTodayKwh = $derived(kwhToday(homeTodayEntityId));
 	const costToday = $derived(getNumeric(costTodayEntityId));
 	const compensationToday = $derived(getNumeric(compensationTodayEntityId));
+	const importPeakToday = $derived(kwhToday(importPeakTodayEntityId));
+	const importOffPeakToday = $derived(kwhToday(importOffPeakTodayEntityId));
+	const importTariffLive = $derived(tariffEntityValue(importTariffEntityId));
+	const exportTariffLive = $derived(tariffEntityValue(exportTariffEntityId));
 	const selfSufficiency = $derived(getNumeric(selfSufficiencyEntityId));
 
 	const selfSufficiencyComputed = $derived((() => {
@@ -144,10 +169,33 @@
 	})());
 
 	const netCostToday = $derived((() => {
-		if (costToday === null && compensationToday === null) return null;
-		const c = costToday ?? 0;
-		const comp = compensationToday ?? 0;
-		return c - comp;
+		const peakTariff = tariffNumber(importPeakTariff);
+		const offPeakTariff = tariffNumber(importOffPeakTariff);
+		const exportFallbackTariff = exportTariffLive ?? tariffNumber(exportTariff);
+
+		let computedImportCost: number | null = null;
+		let peakOffPeakCost = 0;
+		let hasPeakOffPeakCost = false;
+		if (importPeakToday !== null && peakTariff !== null) {
+			peakOffPeakCost += importPeakToday * peakTariff;
+			hasPeakOffPeakCost = true;
+		}
+		if (importOffPeakToday !== null && offPeakTariff !== null) {
+			peakOffPeakCost += importOffPeakToday * offPeakTariff;
+			hasPeakOffPeakCost = true;
+		}
+		if (hasPeakOffPeakCost) {
+			computedImportCost = peakOffPeakCost;
+		} else if (importToday !== null && importTariffLive !== null) {
+			computedImportCost = importToday * importTariffLive;
+		}
+
+		const computedExportCompensation =
+			exportToday !== null && exportFallbackTariff !== null ? exportToday * exportFallbackTariff : null;
+		const importCost = costToday ?? computedImportCost;
+		const exportCompensation = compensationToday ?? computedExportCompensation;
+		if (importCost === null && exportCompensation === null) return null;
+		return (importCost ?? 0) - (exportCompensation ?? 0);
 	})());
 
 	function fmtPowerW(w: number | null): string {
@@ -283,8 +331,8 @@
 		return anchorsNightWithCar ?? DEFAULT_ANCHORS;
 	})());
 
-	// ViewBox is 1x1 (genormaliseerd) zodat coords direct werken
-	const VB = 1000;
+	// Zelfde 1x1 coördinatenstelsel als EnergyAnchorEditor, zodat ingestelde punten exact overeenkomen.
+	const VB = 1;
 	const P_SOLAR = $derived({ x: currentAnchors.solar.x * VB, y: currentAnchors.solar.y * VB });
 	const P_BATTERY = $derived({ x: currentAnchors.battery.x * VB, y: currentAnchors.battery.y * VB });
 	const P_DOOR = $derived({ x: currentAnchors.door.x * VB, y: currentAnchors.door.y * VB });
@@ -499,10 +547,33 @@
 			.replace(/^_+|_+$/g, '');
 	}
 
-	function resolveDisplayName(entityId: string, friendlyName: string): string {
+	function resolveDisplayName(entityId: string, friendlyName: string, kwhEntityId?: string | null): string {
+		const candidates = [
+			entityId,
+			entityId.toLowerCase(),
+			kwhEntityId ?? '',
+			(kwhEntityId ?? '').toLowerCase()
+		].filter((id) => id.length > 0);
+		for (const id of candidates) {
+			const alias = energyDeviceAliases?.[id];
+			if (typeof alias === 'string' && alias.trim().length > 0) return alias.trim();
+		}
 		const alias = energyDeviceAliases?.[entityId];
 		if (typeof alias === 'string' && alias.trim().length > 0) return alias.trim();
-		return friendlyName || entityId;
+		const cleaned = cleanDisplayName(friendlyName || entityId);
+		return cleaned || friendlyName || entityId;
+	}
+
+	function cleanDisplayName(value: string): string {
+		const raw = String(value || '').trim();
+		if (!raw) return '';
+		const noDomain = raw.replace(/^[a-z_]+\./i, '');
+		return noDomain
+			.replace(/[_-]+/g, ' ')
+			.replace(/\s*\((?:power|vermogen|energy|energie|kwh|today|vandaag)\)\s*$/i, '')
+			.replace(/\s+(?:power|vermogen|energy|energie|kwh|today|vandaag)\s*$/i, '')
+			.replace(/\s+/g, ' ')
+			.trim();
 	}
 
 	const deviceRows = $derived((() => {
@@ -542,7 +613,7 @@
 			const friendly = (ent?.attributes as { friendly_name?: string } | undefined)?.friendly_name ?? pid;
 			rows.push({
 				entityId: pid,
-				name: resolveDisplayName(pid, friendly),
+				name: resolveDisplayName(pid, friendly, tid),
 				friendlyName: friendly,
 				powerW: powerW(pid),
 				kwhToday: tid ? kwhTodayFromSnapshot(tid) : null,
@@ -627,13 +698,13 @@
 
 		<div class="hero-frame">
 			<img class="hero-bg" src={bgImage} alt="" aria-hidden="true" />
-			<svg class="flow-overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+			<svg class="flow-overlay" viewBox="0 0 1 1" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
 				{#each activeFlows as f (f.key)}
 					<!-- Donkergrijze rail -->
-					<path d={f.d} fill="none" stroke={COLOR_RAIL} stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+					<path d={f.d} fill="none" stroke={COLOR_RAIL} stroke-width="0.004" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
 					<!-- Bewegend gekleurd segment overheen -->
-					<path d={f.d} fill="none" stroke={f.color} stroke-width="3" stroke-linejoin="round" stroke-linecap="round" pathLength="1000" stroke-dasharray="140 860" stroke-dashoffset="1000">
-						<animate attributeName="stroke-dashoffset" from="1000" to="0" dur="{f.dur}" repeatCount="indefinite" />
+					<path d={f.d} fill="none" stroke={f.color} stroke-width="0.004" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1000" stroke-dasharray="140 860" stroke-dashoffset="1000">
+						<animate attributeName="stroke-dashoffset" from="1000" to="0" dur={f.dur} repeatCount="indefinite" />
 					</path>
 				{/each}
 			</svg>
@@ -754,60 +825,22 @@
 						{/if}
 					</div>
 				{:else}
-					<svg class="chart-svg" viewBox="0 0 {Math.max(320, visibleRows.length * 60)} 220" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-						<!-- Achtergrond grid lines -->
-						{#each [0.25, 0.5, 0.75, 1] as ratio (ratio)}
-							<line x1="0" y1={180 - ratio * 160} x2={Math.max(320, visibleRows.length * 60)} y2={180 - ratio * 160} stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2 4" />
-						{/each}
-						<!-- Bars -->
-						{#each visibleRows as row, idx (row.entityId)}
+					<div class="device-bars" role="list">
+						{#each visibleRows as row (row.entityId)}
 							{@const v = valueFor(row)}
-							{@const h = chartMax > 0 ? (v / chartMax) * 160 : 0}
-							{@const barW = 40}
-							{@const gap = 60}
-							{@const x = idx * gap + 10}
+							{@const pct = chartMax > 0 ? Math.max(3, (v / chartMax) * 100) : 0}
 							{@const color = colorFor(row.entityId)}
-							<g>
-								<defs>
-									<linearGradient id="bar-grad-{idx}" x1="0" y1="0" x2="0" y2="1">
-										<stop offset="0%" stop-color={color} stop-opacity="0.95"/>
-										<stop offset="100%" stop-color={color} stop-opacity="0.45"/>
-									</linearGradient>
-								</defs>
-								<rect
-									x={x}
-									y={180 - h}
-									width={barW}
-									height={h}
-									rx="4"
-									fill="url(#bar-grad-{idx})"
-								>
-									<title>{row.name}: {fmtValue(v)}</title>
-								</rect>
-								<!-- Value label boven de bar -->
-								{#if v > 0}
-									<text
-										x={x + barW / 2}
-										y={180 - h - 6}
-										text-anchor="middle"
-										font-size="10"
-										font-weight="600"
-										fill="rgba(255,255,255,0.85)"
-									>{fmtValue(v)}</text>
-								{/if}
-								<!-- Naam onder de bar (afgekort) -->
-								<text
-									x={x + barW / 2}
-									y="200"
-									text-anchor="middle"
-									font-size="10"
-									fill="rgba(255,255,255,0.55)"
-								>{row.name.length > 9 ? row.name.slice(0, 8) + '…' : row.name}</text>
-							</g>
+							<div class="device-bar-row" role="listitem" title={`${row.name}: ${fmtValue(v)}`}>
+								<div class="device-bar-head">
+									<span class="device-bar-name">{row.name}</span>
+									<span class="device-bar-value">{fmtValue(v)}</span>
+								</div>
+								<div class="device-bar-track">
+									<span class="device-bar-fill" style={`--bar-color: ${color}; width: ${pct}%;`}></span>
+								</div>
+							</div>
 						{/each}
-						<!-- Baseline -->
-						<line x1="0" y1="180" x2={Math.max(320, visibleRows.length * 60)} y2="180" stroke="rgba(255,255,255,0.18)" stroke-width="1" />
-					</svg>
+					</div>
 				{/if}
 			</div>
 
@@ -962,7 +995,7 @@
 	.hero-bg {
 		position: absolute; inset: 0;
 		width: 100%; height: 100%;
-		object-fit: contain;
+		object-fit: fill;
 		display: block;
 	}
 	.flow-overlay {
@@ -1147,21 +1180,64 @@
 		color: #fb923c;
 	}
 
-	/* Staafgrafiek SVG container */
+	/* Staafgrafiek */
 	.chart-wrap {
 		background: rgba(0,0,0,0.20);
 		border: 0.5px solid rgba(255,255,255,0.05);
 		border-radius: 12px;
-		padding: 16px 14px 10px;
+		padding: 14px;
 		flex-shrink: 0;
-		overflow-x: auto;
-		overflow-y: hidden;
+		overflow: hidden;
 	}
-	.chart-svg {
-		display: block;
-		width: 100%;
-		min-width: 320px;
-		height: 220px;
+	.device-bars {
+		display: grid;
+		gap: 12px;
+	}
+	.device-bar-row {
+		display: grid;
+		gap: 7px;
+		min-width: 0;
+	}
+	.device-bar-head {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 12px;
+		align-items: baseline;
+	}
+	.device-bar-name {
+		min-width: 0;
+		overflow: hidden;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		white-space: normal;
+		line-height: 1.15;
+		font-size: 12.5px;
+		font-weight: 600;
+		color: rgba(255,255,255,0.82);
+	}
+	.device-bar-value {
+		font-size: 12px;
+		font-weight: 700;
+		color: rgba(255,255,255,0.92);
+		font-variant-numeric: tabular-nums;
+	}
+	.device-bar-track {
+		position: relative;
+		height: 12px;
+		overflow: hidden;
+		border-radius: 999px;
+		background: rgba(255,255,255,0.06);
+		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.06);
+	}
+	.device-bar-fill {
+		position: absolute;
+		inset: 0 auto 0 0;
+		min-width: 0;
+		border-radius: inherit;
+		background:
+			linear-gradient(90deg, var(--bar-color), color-mix(in srgb, var(--bar-color) 62%, #ffffff 38%));
+		box-shadow: 0 0 18px color-mix(in srgb, var(--bar-color) 45%, transparent);
 	}
 	.chart-empty {
 		text-align: center;
@@ -1173,8 +1249,8 @@
 	/* Legenda — klikbaar */
 	.chart-legend {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-		gap: 6px 10px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px 10px;
 		padding-top: 4px;
 	}
 	.legend-item {
@@ -1185,11 +1261,12 @@
 	}
 	.legend-btn {
 		display: inline-flex;
-		align-items: center;
+		align-items: flex-start;
 		gap: 8px;
 		flex: 1;
 		min-width: 0;
-		padding: 6px 10px;
+		min-height: 42px;
+		padding: 7px 10px;
 		background: rgba(255,255,255,0.025);
 		border: 0.5px solid rgba(255,255,255,0.06);
 		border-radius: 8px;
@@ -1212,6 +1289,7 @@
 		width: 10px; height: 10px;
 		border-radius: 3px;
 		flex-shrink: 0;
+		margin-top: 3px;
 		transition: opacity 0.15s;
 	}
 	.legend-name {
@@ -1220,8 +1298,11 @@
 		font-size: 12.5px;
 		font-weight: 500;
 		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		white-space: normal;
+		line-height: 1.15;
 		letter-spacing: -0.01em;
 	}
 	.legend-live-dot {
@@ -1243,6 +1324,12 @@
 		font-variant-numeric: tabular-nums;
 		flex-shrink: 0;
 		letter-spacing: -0.01em;
+		padding-top: 1px;
+	}
+	@media (max-width: 560px) {
+		.chart-legend {
+			grid-template-columns: 1fr;
+		}
 	}
 	/* === BELANGRIJK: scrollen in modal body === */
 	.devices-body {

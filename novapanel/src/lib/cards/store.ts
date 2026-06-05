@@ -91,7 +91,7 @@ export const cardCatalog: CardDefinition[] = [
 	{
 		id: 'openings_status',
 		type: 'openings_status',
-		label: 'Ramen/deuren',
+		label: 'Deuren en Ramen',
 		target: 'sidebar',
 		preview: { kind: 'openings_status' }
 	},

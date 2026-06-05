@@ -5,6 +5,7 @@ export const DEVICE_BUTTON_DOMAINS = [
 	'fan',
 	'input_boolean',
 	'humidifier',
+	'lock',
 	'remote',
 	'siren',
 	'water_heater'

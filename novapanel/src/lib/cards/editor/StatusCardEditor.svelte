@@ -1,6 +1,7 @@
 <script lang="ts">
 	import EditorSection from '$lib/cards/editor/EditorSection.svelte';
 	import AreaPicker from '$lib/cards/editor/AreaPicker.svelte';
+	import IconChoiceField from '$lib/cards/editor/IconChoiceField.svelte';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
 	import { filteredEntities } from '$lib/ha/entities-store';
 
@@ -68,7 +69,7 @@
 		if (sel > 0) return { status: 'filled' as Status, label: `${sel} geselecteerd` };
 		return { status: 'filled' as Status, label: `${dom} domein${dom === 1 ? '' : 'en'}` };
 	})());
-	const openingsClassesStatus = $derived((() => {
+	const deviceClassesStatus = $derived((() => {
 		const n = (p.statusDeviceClasses ?? []).filter(v => v.trim().length > 0).length;
 		if (n === 0) return { status: 'empty' as Status, label: 'auto' };
 		return { status: 'filled' as Status, label: `${n} ingesteld` };
@@ -85,10 +86,67 @@
 		return m[p.cardType];
 	})());
 
-	const showsIconField = $derived(
-		p.cardType === 'lights_status' || p.cardType === 'devices_status' || p.cardType === 'media_players_status'
-	);
+	const showsIconField = $derived(true);
+	const statusIconPlaceholder = $derived((() => {
+		if (p.cardType === 'lights_status') return 'mdi:lightbulb-outline';
+		if (p.cardType === 'openings_status') return 'mdi:door-closed';
+		if (p.cardType === 'devices_status') return 'mdi:power-plug-outline';
+		if (p.cardType === 'availability_status') return 'mdi:lan-check';
+		return 'mdi:speaker';
+	})());
+	const statusIconChoices = $derived.by(() => {
+		if (p.cardType === 'lights_status') {
+			return [
+				{ icon: 'mdi:lightbulb-outline', label: 'Lamp' },
+				{ icon: 'mdi:lightbulb-group-outline', label: 'Groep' },
+				{ icon: 'mdi:ceiling-light-outline', label: 'Plafond' },
+				{ icon: 'mdi:floor-lamp-outline', label: 'Staand' },
+				{ icon: 'mdi:lamp-outline', label: 'Tafel' },
+				{ icon: 'mdi:led-strip-variant', label: 'Ledstrip' }
+			];
+		}
+		if (p.cardType === 'openings_status') {
+			return [
+				{ icon: 'mdi:door-closed', label: 'Deur' },
+				{ icon: 'mdi:door-open', label: 'Open' },
+				{ icon: 'mdi:window-closed-variant', label: 'Raam' },
+				{ icon: 'mdi:window-open', label: 'Open raam' },
+				{ icon: 'mdi:garage', label: 'Garage' },
+				{ icon: 'mdi:lock-outline', label: 'Slot' }
+			];
+		}
+		if (p.cardType === 'devices_status') {
+			return [
+				{ icon: 'mdi:power-plug-outline', label: 'Plug' },
+				{ icon: 'mdi:toggle-switch', label: 'Schakelaar' },
+				{ icon: 'mdi:fan', label: 'Ventilator' },
+				{ icon: 'mdi:television', label: 'TV' },
+				{ icon: 'mdi:router-wireless', label: 'Router' },
+				{ icon: 'mdi:lock-outline', label: 'Slot' },
+				{ icon: 'mdi:robot', label: 'Robot' }
+			];
+		}
+		if (p.cardType === 'availability_status') {
+			return [
+				{ icon: 'mdi:lan-check', label: 'Online' },
+				{ icon: 'mdi:lan-disconnect', label: 'Offline' },
+				{ icon: 'mdi:wifi', label: 'Wifi' },
+				{ icon: 'mdi:wifi-alert', label: 'Wifi alert' },
+				{ icon: 'mdi:access-point', label: 'Access point' },
+				{ icon: 'mdi:server-network', label: 'Netwerk' }
+			];
+		}
+		return [
+			{ icon: 'mdi:speaker', label: 'Speaker' },
+			{ icon: 'mdi:speaker-wireless', label: 'Wireless' },
+			{ icon: 'mdi:television', label: 'TV' },
+			{ icon: 'mdi:cast', label: 'Cast' },
+			{ icon: 'mdi:audio-video', label: 'AV' },
+			{ icon: 'mdi:music', label: 'Muziek' }
+		];
+	});
 	const supportsEntityIconOverrides = $derived(p.cardType !== 'media_players_status');
+	const supportsDeviceClassFilter = $derived(p.cardType !== 'media_players_status');
 
 	function normalizeIconValue(value: string | undefined): string {
 		const raw = typeof value === 'string' ? value.trim() : '';
@@ -200,22 +258,16 @@
 		/>
 	</div>
 	{#if showsIconField}
-		<div class="np-field">
-			<span class="np-label">{p.t('Icoon')} <span class="np-hint">({p.t('MDI naam, bv. lightbulb')})</span></span>
-			<input
-				type="text"
-				class="np-input mono"
-				value={p.statusIcon ?? ''}
-				placeholder={p.t('mdiIconPlaceholderLight')}
-				oninput={(event) => p.onStatusIconChange((event.currentTarget as HTMLInputElement).value)}
-			/>
-			<div class={`icon-validation ${p.iconValidationState}`}>
-				{#if p.iconPreviewSrc && p.iconValidationState !== 'error'}
-					<img class="icon-preview" src={p.iconPreviewSrc} alt="" width="18" height="18" />
-				{/if}
-				<span>{p.iconValidationMessage}</span>
-			</div>
-		</div>
+		<IconChoiceField
+			label={p.t('Icoon')}
+			value={p.statusIcon ?? ''}
+			placeholder={statusIconPlaceholder}
+			choices={statusIconChoices}
+			validationState={p.iconValidationState}
+			validationMessage={p.iconValidationMessage}
+			help={`${p.t('Gebruik een Material Design Icon naam, bijvoorbeeld')} ${statusIconPlaceholder}. ${p.t('Sla de kaart daarna op.')}`}
+			onChange={p.onStatusIconChange}
+		/>
 	{/if}
 	{#if p.usesScopedEntityPicker}
 		<AreaPicker
@@ -292,13 +344,13 @@
 	</EditorSection>
 {/if}
 
-{#if p.cardType === 'openings_status'}
+{#if supportsDeviceClassFilter}
 	<EditorSection
 		title="Device classes"
 		icon="filter"
-		tone="blue"
-		status={openingsClassesStatus.status}
-		statusLabel={openingsClassesStatus.label}
+		tone={statusTone}
+		status={deviceClassesStatus.status}
+		statusLabel={deviceClassesStatus.label}
 	>
 		<div class="np-help">{p.t('Optioneel. Beperk tot specifieke device classes (door, window, garage…).')}</div>
 		<div class="np-field">

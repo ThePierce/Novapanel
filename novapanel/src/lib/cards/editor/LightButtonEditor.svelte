@@ -3,8 +3,13 @@
 	import { areaById, areaStore } from '$lib/ha/area-store';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
-	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import IconChoiceField from '$lib/cards/editor/IconChoiceField.svelte';
 	import EntitySelectPicker from '$lib/cards/editor/EntitySelectPicker.svelte';
+	import {
+		isLightGroupEntityId,
+		loadAllLightGroups,
+		resolveLightGroupEntityId
+	} from '$lib/cards/light-groups';
 	import { localeFor, selectedLanguageStore, translate, translateState } from '$lib/i18n';
 
 	type Props = {
@@ -77,22 +82,72 @@
 		}
 		return sortLikeSidebar(entities);
 	});
+	const lightGroupOptions = $derived.by(() => {
+		if (typeof window === 'undefined') return [] as Array<{ entityId: string; friendlyName: string }>;
+		return loadAllLightGroups()
+			.filter((group) => group.entityIds.length > 0)
+			.map((group) => ({
+				entityId: group.syntheticEntityId,
+				friendlyName: `${group.name} (${translate('Groep', $selectedLanguageStore)})`
+			}))
+			.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName, localeFor($selectedLanguageStore), {
+				numeric: true,
+				sensitivity: 'base'
+			}));
+	});
+	const lightPickerOptions = $derived.by(() => {
+		const options: Array<{ entityId: string; friendlyName: string }> = [
+			...lightGroupOptions,
+			...lightEntities
+		];
+		if (entityId && isLightGroupEntityId(entityId) && !options.some((option) => option.entityId === entityId)) {
+			const group = resolveLightGroupEntityId(entityId);
+			if (group) {
+				options.unshift({
+					entityId,
+					friendlyName: `${group.name} (${translate('Groep', $selectedLanguageStore)})`
+				});
+			}
+		}
+		return options;
+	});
 	const selectedEntity = $derived(
 		$filteredEntities.find((entity) => entity.entityId === entityId && isLightControlEntity(entity)) ??
 			allLightEntities.find((entity) => entity.entityId === entityId)
 	);
+	const selectedGroup = $derived(resolveLightGroupEntityId(entityId));
+	const iconChoices = [
+		{ icon: 'mdi:lightbulb-outline', label: 'Lamp' },
+		{ icon: 'mdi:lightbulb-group-outline', label: 'Groep' },
+		{ icon: 'mdi:ceiling-light-outline', label: 'Plafond' },
+		{ icon: 'mdi:floor-lamp-outline', label: 'Staand' },
+		{ icon: 'mdi:lamp-outline', label: 'Tafel' },
+		{ icon: 'mdi:led-strip-variant', label: 'Ledstrip' },
+		{ icon: 'mdi:sofa-outline', label: 'Bank' },
+		{ icon: 'mdi:table-chair', label: 'Eettafel' }
+	];
 </script>
 
 <div class="light-button-editor">
 	<EntitySelectPicker
 		label={translate('Lamp entiteit', $selectedLanguageStore)}
 		value={entityId ?? ''}
-		options={lightEntities}
-		placeholder={translate('Kies een lamp', $selectedLanguageStore)}
+		options={lightPickerOptions}
+		placeholder={translate('Kies een lamp of groep', $selectedLanguageStore)}
 		onChange={onEntityIdChange}
 	/>
 
-	{#if selectedEntity}
+	{#if selectedGroup}
+		<div class="light-selected">
+			<div class="light-selected-icon">
+				<StatusIcon icon="mdi:lightbulb-group-outline" size={22} />
+			</div>
+			<div>
+				<strong>{selectedGroup.name}</strong>
+				<span>{selectedGroup.entityIds.length} {translate('lampen', $selectedLanguageStore)}</span>
+			</div>
+		</div>
+	{:else if selectedEntity}
 		<div class="light-selected">
 			<div class="light-selected-icon">
 				<StatusIcon icon={statusIcon} size={22} />
@@ -104,72 +159,22 @@
 		</div>
 	{/if}
 
-	<label class="np-field">
-		<span class="np-label">{translate('MDI icoon', $selectedLanguageStore)}</span>
-		<div class="icon-input-row">
-			<input
-				type="text"
-				class="np-input"
-				list="np-mdi-icon-suggestions"
-				value={statusIcon ?? ''}
-				placeholder="mdi:lightbulb-outline"
-				oninput={(event) => onStatusIconChange((event.currentTarget as HTMLInputElement).value)}
-			/>
-			<datalist id="np-mdi-icon-suggestions">
-				<option value="mdi:lightbulb-outline"></option>
-				<option value="mdi:floor-lamp-outline"></option>
-				<option value="mdi:ceiling-light-outline"></option>
-				<option value="mdi:led-strip-variant"></option>
-				<option value="mdi:sofa-outline"></option>
-				<option value="mdi:table-chair"></option>
-				<option value="mdi:home-outline"></option>
-				<option value="mdi:lamp-outline"></option>
-			</datalist>
-			<span class="icon-preview" aria-hidden="true">
-				{#if iconPreviewSrc}
-					<span class="mdi-preview" style:--icon-url={`url('${iconPreviewSrc}')`}></span>
-				{:else}
-					<StatusIcon icon={statusIcon} size={20} />
-				{/if}
-			</span>
-		</div>
-		<span class={`icon-validation ${iconValidationState}`}>
-			<TablerIcon
-				name={iconValidationState === 'ok' ? 'circle-check' : iconValidationState === 'error' ? 'alert-circle' : 'loader-2'}
-				size={13}
-			/>
-			{iconValidationMessage}
-		</span>
-		<span class="icon-help">
-			{translate('Gebruik een Material Design Icon naam, bijvoorbeeld', $selectedLanguageStore)} <code>mdi:sofa-outline</code>. {translate('Sla de kaart daarna op.', $selectedLanguageStore)}
-		</span>
-	</label>
+	<IconChoiceField
+		label={translate('Icoon', $selectedLanguageStore)}
+		value={statusIcon ?? ''}
+		placeholder="mdi:lightbulb-outline"
+		choices={iconChoices}
+		validationState={iconValidationState}
+		validationMessage={iconValidationMessage}
+		help={`${translate('Gebruik een Material Design Icon naam, bijvoorbeeld', $selectedLanguageStore)} mdi:sofa-outline. ${translate('Sla de kaart daarna op.', $selectedLanguageStore)}`}
+		onChange={onStatusIconChange}
+	/>
 </div>
 
 <style>
 	.light-button-editor {
 		display: grid;
 		gap: 0.7rem;
-	}
-	.np-field {
-		display: grid;
-		gap: 0.4rem;
-	}
-	.np-label {
-		font-size: 0.78rem;
-		font-weight: 700;
-		color: rgba(255,255,255,0.68);
-	}
-	.np-input {
-		width: 100%;
-		height: 2.45rem;
-		border: 1px solid rgba(255,255,255,0.09);
-		border-radius: 0.55rem;
-		background: rgba(255,255,255,0.075);
-		color: #f5f5f5;
-		padding: 0 0.75rem;
-		font: inherit;
-		box-sizing: border-box;
 	}
 	.light-selected {
 		display: flex;
@@ -201,56 +206,5 @@
 		margin-top: 0.12rem;
 		font-size: 0.75rem;
 		color: rgba(255,255,255,0.52);
-	}
-	.icon-input-row {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.5rem;
-		align-items: center;
-	}
-	.icon-preview {
-		width: 2.45rem;
-		height: 2.45rem;
-		display: grid;
-		place-items: center;
-		border-radius: 0.55rem;
-		color: #ffd338;
-		background: rgba(255,211,56,0.13);
-	}
-	.mdi-preview {
-		width: 20px;
-		height: 20px;
-		display: block;
-		background: currentColor;
-		-webkit-mask: var(--icon-url) center / contain no-repeat;
-		mask: var(--icon-url) center / contain no-repeat;
-	}
-	.icon-validation {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		min-height: 1.1rem;
-		font-size: 0.76rem;
-		color: rgba(255,255,255,0.58);
-	}
-	.icon-validation.ok {
-		color: #86efac;
-	}
-	.icon-validation.error {
-		color: #fca5a5;
-	}
-	.icon-validation.checking {
-		color: #fde68a;
-	}
-	.icon-help {
-		font-size: 0.72rem;
-		line-height: 1.25;
-		color: rgba(255,255,255,0.48);
-	}
-	.icon-help code {
-		color: rgba(255,255,255,0.78);
-		background: rgba(255,255,255,0.08);
-		border-radius: 0.3rem;
-		padding: 0.06rem 0.24rem;
 	}
 </style>

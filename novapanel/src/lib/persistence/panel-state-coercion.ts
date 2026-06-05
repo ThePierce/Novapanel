@@ -20,6 +20,20 @@ function coerceCamerasFromUnknown(value: unknown): CameraConfig[] | undefined {
 	return out.length > 0 ? out : undefined;
 }
 
+function coerceEntityIdFromUnknown(value: unknown): string | undefined {
+	return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function coerceTariffFromUnknown(value: unknown): number | undefined {
+	const n =
+		typeof value === 'number'
+			? value
+			: typeof value === 'string'
+				? Number(value.trim().replace(',', '.'))
+				: NaN;
+	return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
 function clampCoord(n: number): number {
 	if (!Number.isFinite(n)) return 0;
 	// Allow anchors to extend just outside the frame (e.g. street going off-screen)
@@ -270,6 +284,13 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 		homeTodayEntityId: typeof item.homeTodayEntityId === 'string' && item.homeTodayEntityId.length > 0 ? item.homeTodayEntityId : undefined,
 		costTodayEntityId: typeof item.costTodayEntityId === 'string' && item.costTodayEntityId.length > 0 ? item.costTodayEntityId : undefined,
 		compensationTodayEntityId: typeof item.compensationTodayEntityId === 'string' && item.compensationTodayEntityId.length > 0 ? item.compensationTodayEntityId : undefined,
+		importPeakTodayEntityId: coerceEntityIdFromUnknown(item.importPeakTodayEntityId),
+		importOffPeakTodayEntityId: coerceEntityIdFromUnknown(item.importOffPeakTodayEntityId),
+		importTariffEntityId: coerceEntityIdFromUnknown(item.importTariffEntityId),
+		exportTariffEntityId: coerceEntityIdFromUnknown(item.exportTariffEntityId),
+		importPeakTariff: coerceTariffFromUnknown(item.importPeakTariff),
+		importOffPeakTariff: coerceTariffFromUnknown(item.importOffPeakTariff),
+		exportTariff: coerceTariffFromUnknown(item.exportTariff),
 		selfSufficiencyEntityId: typeof item.selfSufficiencyEntityId === 'string' && item.selfSufficiencyEntityId.length > 0 ? item.selfSufficiencyEntityId : undefined,
 		carChargingEntityId: typeof item.carChargingEntityId === 'string' && item.carChargingEntityId.length > 0 ? item.carChargingEntityId : undefined,
 		carCableEntityId: typeof item.carCableEntityId === 'string' && item.carCableEntityId.length > 0 ? item.carCableEntityId : undefined,
@@ -499,6 +520,13 @@ export function withCardType(card: CardDraft): CardDraft {
 			typeof card.compensationTodayEntityId === 'string' && card.compensationTodayEntityId.trim().length > 0
 				? card.compensationTodayEntityId.trim()
 				: undefined,
+		importPeakTodayEntityId: coerceEntityIdFromUnknown(card.importPeakTodayEntityId),
+		importOffPeakTodayEntityId: coerceEntityIdFromUnknown(card.importOffPeakTodayEntityId),
+		importTariffEntityId: coerceEntityIdFromUnknown(card.importTariffEntityId),
+		exportTariffEntityId: coerceEntityIdFromUnknown(card.exportTariffEntityId),
+		importPeakTariff: coerceTariffFromUnknown(card.importPeakTariff),
+		importOffPeakTariff: coerceTariffFromUnknown(card.importOffPeakTariff),
+		exportTariff: coerceTariffFromUnknown(card.exportTariff),
 		selfSufficiencyEntityId:
 			typeof card.selfSufficiencyEntityId === 'string' && card.selfSufficiencyEntityId.trim().length > 0
 				? card.selfSufficiencyEntityId.trim()

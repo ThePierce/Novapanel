@@ -4,6 +4,7 @@ import {
 	normalizeStates,
 	type HomeAssistantEntity
 } from './entities-service-helpers';
+import { createDemoHomeAssistantEntities } from './demo-entities';
 
 export type EntityStatus = 'connecting' | 'ready' | 'error';
 export type { HomeAssistantEntity } from './entities-service-helpers';
@@ -19,6 +20,7 @@ const HA_ENTITY_DEBUG = false;
 const ENTITY_POLL_INTERVAL_MS = 1500;
 const ENTITY_POLL_HIDDEN_INTERVAL_MS = 10000;
 const ENTITY_POLL_MAX_ERROR_INTERVAL_MS = 30000;
+const DEMO_RETRY_INTERVAL_MS = 15000;
 
 function log(message: string, details?: unknown) {
 	if (!HA_ENTITY_DEBUG) return;
@@ -29,12 +31,25 @@ function log(message: string, details?: unknown) {
 	console.log(`${HA_ENTITY_LOG_PREFIX} ${message}`, details);
 }
 
+function canUseDemoEntities(): boolean {
+	if (typeof window === 'undefined') return false;
+	try {
+		const params = new URLSearchParams(window.location.search || '');
+		if (params.get('demoEntities') === '1') return true;
+		if (params.get('demoEntities') === '0') return false;
+		const host = window.location.hostname;
+		return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+	} catch {
+		return false;
+	}
+}
 
 export function createHomeAssistantEntitiesService(options: EntityServiceOptions) {
 	let isRunning = false;
 	let pollTimer: ReturnType<typeof setTimeout> | null = null;
 	let pollInFlight = false;
 	let pollErrorCount = 0;
+	let demoRetryAt = 0;
 
 	const clearPoll = () => {
 		if (!pollTimer) return;
@@ -47,6 +62,16 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 		options.onSnapshot(normalizeStates(states));
 		options.onStatus('ready');
 		options.onError('');
+	};
+
+	const publishDemoSnapshot = () => {
+		if (!canUseDemoEntities()) return false;
+		const entities = createDemoHomeAssistantEntities();
+		log('publish demo entities snapshot', { count: entities.length });
+		options.onSnapshot(entities);
+		options.onStatus('ready');
+		options.onError('');
+		return true;
 	};
 
 	const statesArrayToMap = (items: Array<Record<string, unknown>>) => {
@@ -140,12 +165,22 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 			schedulePoll();
 			return;
 		}
+		if (demoRetryAt > Date.now() && publishDemoSnapshot()) {
+			schedulePoll();
+			return;
+		}
 		pollInFlight = true;
 		try {
 			const nextStates = await fetchPolledStates();
 			pollErrorCount = 0;
+			demoRetryAt = 0;
 			publishSnapshot(nextStates);
 		} catch (error) {
+			if (publishDemoSnapshot()) {
+				pollErrorCount = 0;
+				demoRetryAt = Date.now() + DEMO_RETRY_INTERVAL_MS;
+				return;
+			}
 			pollErrorCount += 1;
 			log('state poll failed', error);
 		} finally {

@@ -39,7 +39,7 @@
 	const second = $derived(now.getSeconds());
 	const hourDeg = $derived(hour * 30 + minute * 0.5);
 	const minuteDeg = $derived(minute * 6 + second * 0.1);
-	const secondDeg = $derived(second * 6);
+	const secondDeg = $derived(second * 6 + 0.02);
 
 	function getLocale() {
 		if (locale && locale.length > 0) return locale;

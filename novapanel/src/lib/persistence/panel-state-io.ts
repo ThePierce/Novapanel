@@ -1,4 +1,5 @@
 import type { LanguageCode } from '$lib/i18n';
+import { DEFAULT_PANEL_THEME, isPanelTheme, type PanelTheme } from '$lib/panel/theme';
 import type { PanelDashboard } from './panel-state-types';
 import { parseDashboardValue } from './panel-state-coercion';
 
@@ -8,6 +9,7 @@ export type NovaPanelExportedBundle = {
 	dashboard: PanelDashboard;
 	configuration: {
 		language: LanguageCode;
+		theme: PanelTheme;
 		cardLibraryTab: 'sidebar' | 'view';
 		titles: { cardLibrary?: string; homeviewPreview?: string };
 		oauth?: {
@@ -46,6 +48,7 @@ function parseConfiguration(raw: unknown): NovaPanelExportedBundle['configuratio
 			: undefined;
 	const cardLibraryTab =
 		c.cardLibraryTab === 'sidebar' || c.cardLibraryTab === 'view' ? c.cardLibraryTab : undefined;
+	const theme = isPanelTheme(c.theme) ? c.theme : DEFAULT_PANEL_THEME;
 	const titlesRaw = c.titles;
 	const titles =
 		titlesRaw && typeof titlesRaw === 'object'
@@ -105,7 +108,7 @@ function parseConfiguration(raw: unknown): NovaPanelExportedBundle['configuratio
 				})()
 			: undefined;
 	if (!language || !cardLibraryTab) return undefined;
-	return { language, cardLibraryTab, titles, oauth, mediaHub };
+	return { language, theme, cardLibraryTab, titles, oauth, mediaHub };
 }
 
 /**

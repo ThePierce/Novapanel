@@ -1,4 +1,5 @@
 import type { LanguageCode } from '$lib/i18n';
+import type { PanelTheme } from '$lib/panel/theme';
 import type { CardDraft, PanelDashboard, ViewSectionDraft } from '$lib/persistence/panel-state';
 import { ensurePanelAuthorityReady } from '$lib/panel/page-helpers';
 import { mergeAddonDashboardState } from '$lib/panel/page-addon-merge';
@@ -28,6 +29,7 @@ type AddonStatePayload = {
 	};
 	configuration?: {
 		language?: string;
+		theme?: string;
 		cardLibraryTab?: 'sidebar' | 'view';
 		titles?: { cardLibrary?: string; homeviewPreview?: string };
 		oauth?: OAuthBlock;
@@ -41,6 +43,7 @@ export async function persistDashboardStateRuntime(input: {
 	savedViewSections: ViewSectionDraft[];
 	savedSidebarCards: CardDraft[];
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: OAuthBlock;
@@ -55,6 +58,7 @@ export async function persistDashboardStateRuntime(input: {
 			dashboard?: PanelDashboard;
 			configuration?: {
 				language: string;
+				theme: PanelTheme;
 				cardLibraryTab: 'sidebar' | 'view';
 				titles: { cardLibrary?: string; homeviewPreview?: string };
 				oauth?: OAuthBlock;
@@ -71,6 +75,7 @@ export async function persistDashboardStateRuntime(input: {
 		savedViewSections: input.savedViewSections,
 		savedSidebarCards: input.savedSidebarCards,
 		selectedLanguage: input.selectedLanguage,
+		selectedTheme: input.selectedTheme,
 		activeCardLibraryTab: input.activeCardLibraryTab,
 		customTitles: input.customTitles,
 		oauth: input.oauth,
@@ -103,6 +108,7 @@ export async function hydrateFromAddonStateOnlyRuntime(input: {
 	savedSidebarCards: CardDraft[];
 	currentUpdatedAt?: number;
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: OAuthBlock;
@@ -167,6 +173,7 @@ export async function hydrateFromAddonStateOnlyRuntime(input: {
 	}
 
 	let nextSelectedLanguage = input.selectedLanguage;
+	let nextSelectedTheme = input.selectedTheme;
 	let nextActiveCardLibraryTab = input.activeCardLibraryTab;
 	let nextCustomTitles = input.customTitles;
 	let nextOauth = input.oauth;
@@ -175,6 +182,7 @@ export async function hydrateFromAddonStateOnlyRuntime(input: {
 		const nextConfig = applyAddonConfigurationState({
 			addonConfiguration: addonState.configuration,
 			selectedLanguage: input.selectedLanguage,
+			selectedTheme: input.selectedTheme,
 			activeCardLibraryTab: input.activeCardLibraryTab,
 			customTitles: input.customTitles,
 			oauth: input.oauth,
@@ -182,6 +190,7 @@ export async function hydrateFromAddonStateOnlyRuntime(input: {
 			isValidLanguage: input.isValidLanguage
 		});
 		nextSelectedLanguage = nextConfig.selectedLanguage;
+		nextSelectedTheme = nextConfig.selectedTheme;
 		nextActiveCardLibraryTab = nextConfig.activeCardLibraryTab;
 		nextCustomTitles = nextConfig.customTitles;
 		nextOauth = nextConfig.oauth;
@@ -200,6 +209,7 @@ export async function hydrateFromAddonStateOnlyRuntime(input: {
 			: input.currentUpdatedAt,
 		activeViewSectionId: nextActiveViewSectionId,
 		selectedLanguage: nextSelectedLanguage,
+		selectedTheme: nextSelectedTheme,
 		activeCardLibraryTab: nextActiveCardLibraryTab,
 		customTitles: nextCustomTitles,
 		oauth: nextOauth,

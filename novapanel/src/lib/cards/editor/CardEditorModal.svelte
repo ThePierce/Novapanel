@@ -171,6 +171,13 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorHomeTodayEntityId?: string;
 		cardEditorCostTodayEntityId?: string;
 		cardEditorCompensationTodayEntityId?: string;
+		cardEditorImportPeakTodayEntityId?: string;
+		cardEditorImportOffPeakTodayEntityId?: string;
+		cardEditorImportTariffEntityId?: string;
+		cardEditorExportTariffEntityId?: string;
+		cardEditorImportPeakTariff?: string;
+		cardEditorImportOffPeakTariff?: string;
+		cardEditorExportTariff?: string;
 		cardEditorSelfSufficiencyEntityId?: string;
 		cardEditorCarChargingEntityId?: string;
 		cardEditorCarCableEntityId?: string;
@@ -198,6 +205,13 @@ let availabilityIgnoredOpen = $state(false);
 		onHomeTodayEntityIdChange: (value: string) => void;
 		onCostTodayEntityIdChange: (value: string) => void;
 		onCompensationTodayEntityIdChange: (value: string) => void;
+		onImportPeakTodayEntityIdChange: (value: string) => void;
+		onImportOffPeakTodayEntityIdChange: (value: string) => void;
+		onImportTariffEntityIdChange: (value: string) => void;
+		onExportTariffEntityIdChange: (value: string) => void;
+		onImportPeakTariffChange: (value: string) => void;
+		onImportOffPeakTariffChange: (value: string) => void;
+		onExportTariffChange: (value: string) => void;
 		onSelfSufficiencyEntityIdChange: (value: string) => void;
 		onCarChargingEntityIdChange: (value: string) => void;
 		onCarCableEntityIdChange: (value: string) => void;
@@ -283,6 +297,13 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorHomeTodayEntityId = '',
 		cardEditorCostTodayEntityId = '',
 		cardEditorCompensationTodayEntityId = '',
+		cardEditorImportPeakTodayEntityId = '',
+		cardEditorImportOffPeakTodayEntityId = '',
+		cardEditorImportTariffEntityId = '',
+		cardEditorExportTariffEntityId = '',
+		cardEditorImportPeakTariff = '',
+		cardEditorImportOffPeakTariff = '',
+		cardEditorExportTariff = '',
 		cardEditorSelfSufficiencyEntityId = '',
 		cardEditorCarChargingEntityId = '',
 		cardEditorCarCableEntityId = '',
@@ -310,6 +331,13 @@ let availabilityIgnoredOpen = $state(false);
 		onHomeTodayEntityIdChange,
 		onCostTodayEntityIdChange,
 		onCompensationTodayEntityIdChange,
+		onImportPeakTodayEntityIdChange,
+		onImportOffPeakTodayEntityIdChange,
+		onImportTariffEntityIdChange,
+		onExportTariffEntityIdChange,
+		onImportPeakTariffChange,
+		onImportOffPeakTariffChange,
+		onExportTariffChange,
 		onSelfSufficiencyEntityIdChange,
 		onCarChargingEntityIdChange,
 		onCarCableEntityIdChange,
@@ -393,7 +421,7 @@ let availabilityIgnoredOpen = $state(false);
 		if (type === 'light_button') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: t('Lampknop met helderheid en kleur') };
 		if (type === 'device_button') return { icon: 'plug', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Apparaatknop met aan/uit bediening') };
 		if (type === 'climate_button') return { icon: 'temperature', tone: 'orange', tint: 'rgba(251,146,60,0.18)', color: '#fb923c', subtitle: t('Thermostaatknop met temperatuur en modus') };
-		if (type === 'cover_button') return { icon: 'curtains', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Gordijnknop met positiebediening') };
+		if (type === 'cover_button') return { icon: 'blinds', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Gordijnknop met positiebediening') };
 		if (type === 'vacuum_button') return { icon: 'robot', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Robotstofzuiger met start, pauze en dock') };
 		if (type === 'media_player_button') return { icon: 'device-speaker', tone: 'purple', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: t('Media player met afspelen en volume') };
 		if (type === 'alarm_panel') return { icon: 'shield-lock', tone: 'rose', tint: 'rgba(248,113,113,0.18)', color: '#f87171', subtitle: t('Koppel aan een alarm-entiteit') };
@@ -541,8 +569,10 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorType === 'vacuum_button' ||
 		cardEditorType === 'media_player_button' ||
 		cardEditorType === 'lights_status' ||
-			cardEditorType === 'devices_status' ||
-			cardEditorType === 'media_players_status'
+		cardEditorType === 'openings_status' ||
+		cardEditorType === 'devices_status' ||
+		cardEditorType === 'availability_status' ||
+		cardEditorType === 'media_players_status'
 	);
 
 	function normalizeDiscoveredKeys(ids: string[] | undefined): Set<string> {
@@ -762,6 +792,13 @@ let availabilityIgnoredOpen = $state(false);
 				homeTodayEntityId={cardEditorHomeTodayEntityId}
 				costTodayEntityId={cardEditorCostTodayEntityId}
 				compensationTodayEntityId={cardEditorCompensationTodayEntityId}
+				importPeakTodayEntityId={cardEditorImportPeakTodayEntityId}
+				importOffPeakTodayEntityId={cardEditorImportOffPeakTodayEntityId}
+				importTariffEntityId={cardEditorImportTariffEntityId}
+				exportTariffEntityId={cardEditorExportTariffEntityId}
+				importPeakTariff={cardEditorImportPeakTariff}
+				importOffPeakTariff={cardEditorImportOffPeakTariff}
+				exportTariff={cardEditorExportTariff}
 				selfSufficiencyEntityId={cardEditorSelfSufficiencyEntityId}
 				carChargingEntityId={cardEditorCarChargingEntityId}
 				carCableEntityId={cardEditorCarCableEntityId}
@@ -788,6 +825,13 @@ let availabilityIgnoredOpen = $state(false);
 				{onHomeTodayEntityIdChange}
 				{onCostTodayEntityIdChange}
 				{onCompensationTodayEntityIdChange}
+				{onImportPeakTodayEntityIdChange}
+				{onImportOffPeakTodayEntityIdChange}
+				{onImportTariffEntityIdChange}
+				{onExportTariffEntityIdChange}
+				{onImportPeakTariffChange}
+				{onImportOffPeakTariffChange}
+				{onExportTariffChange}
 				{onSelfSufficiencyEntityIdChange}
 				{onCarChargingEntityIdChange}
 				{onCarCableEntityIdChange}

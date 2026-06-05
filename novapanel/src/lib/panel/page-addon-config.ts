@@ -1,7 +1,9 @@
 import type { LanguageCode } from '$lib/i18n';
+import { isPanelTheme, type PanelTheme } from '$lib/panel/theme';
 
 export type AddonConfigurationPayload = {
 	language?: string;
+	theme?: string;
 	cardLibraryTab?: 'sidebar' | 'view';
 	titles?: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: {
@@ -20,6 +22,7 @@ export type AddonConfigurationPayload = {
 type Input = {
 	addonConfiguration: AddonConfigurationPayload;
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: AddonConfigurationPayload['oauth'];
@@ -29,6 +32,7 @@ type Input = {
 
 export type Output = {
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: AddonConfigurationPayload['oauth'];
@@ -37,6 +41,7 @@ export type Output = {
 
 export function applyAddonConfigurationState(input: Input): Output {
 	let selectedLanguage = input.selectedLanguage;
+	let selectedTheme = input.selectedTheme;
 	let activeCardLibraryTab = input.activeCardLibraryTab;
 	let customTitles = input.customTitles;
 	let oauth = input.oauth;
@@ -46,6 +51,9 @@ export function applyAddonConfigurationState(input: Input): Output {
 		input.isValidLanguage(input.addonConfiguration.language)
 	) {
 		selectedLanguage = input.addonConfiguration.language;
+	}
+	if (isPanelTheme(input.addonConfiguration.theme)) {
+		selectedTheme = input.addonConfiguration.theme;
 	}
 	if (
 		input.addonConfiguration.cardLibraryTab === 'sidebar' ||
@@ -62,5 +70,5 @@ export function applyAddonConfigurationState(input: Input): Output {
 	if (input.addonConfiguration.mediaHub && typeof input.addonConfiguration.mediaHub === 'object') {
 		mediaHub = input.addonConfiguration.mediaHub;
 	}
-	return { selectedLanguage, activeCardLibraryTab, customTitles, oauth, mediaHub };
+	return { selectedLanguage, selectedTheme, activeCardLibraryTab, customTitles, oauth, mediaHub };
 }

@@ -1,3 +1,5 @@
+import type { PanelTheme } from '$lib/panel/theme';
+
 export type ClockStyle =
 	| 'digital'
 	| 'classic'
@@ -58,6 +60,20 @@ export type CardDraft = {
 	homeTodayEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	/** Energy: kWh-vandaag teller voor piek/hoog tarief */
+	importPeakTodayEntityId?: string;
+	/** Energy: kWh-vandaag teller voor dal/laag tarief */
+	importOffPeakTodayEntityId?: string;
+	/** Energy: optionele actuele importtarief-sensor voor variabele/dynamische contracten */
+	importTariffEntityId?: string;
+	/** Energy: optionele actuele teruglevertarief-sensor */
+	exportTariffEntityId?: string;
+	/** Energy: handmatig piek/hoog tarief in euro per kWh */
+	importPeakTariff?: number;
+	/** Energy: handmatig dal/laag tarief in euro per kWh */
+	importOffPeakTariff?: number;
+	/** Energy: handmatig teruglevertarief in euro per kWh */
+	exportTariff?: number;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
 	carCableEntityId?: string;
@@ -147,6 +163,7 @@ export type MediaHubConfig = {
 
 export type PanelConfiguration = {
 	language: string;
+	theme?: PanelTheme;
 	cardLibraryTab?: 'sidebar' | 'view';
 	titles?: {
 		cardLibrary?: string;

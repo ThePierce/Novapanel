@@ -21,7 +21,7 @@ function defaultEntityButtonIcon(cardType: string): string | undefined {
 	if (cardType === 'light_button') return 'mdi:lightbulb-outline';
 	if (cardType === 'device_button') return 'mdi:power-plug-outline';
 	if (cardType === 'climate_button') return 'mdi:thermostat';
-	if (cardType === 'cover_button') return 'mdi:curtains';
+	if (cardType === 'cover_button') return 'mdi:blinds-horizontal';
 	if (cardType === 'vacuum_button') return 'mdi:robot-vacuum';
 	if (cardType === 'media_player_button') return 'mdi:speaker';
 	return undefined;
@@ -35,6 +35,15 @@ function isEntityButtonType(cardType: string): boolean {
 		cardType === 'cover_button' ||
 		cardType === 'vacuum_button' ||
 		cardType === 'media_player_button'
+	);
+}
+
+function supportsStatusDeviceClassFilter(cardType: string): boolean {
+	return (
+		cardType === 'lights_status' ||
+		cardType === 'openings_status' ||
+		cardType === 'devices_status' ||
+		cardType === 'availability_status'
 	);
 }
 
@@ -56,6 +65,16 @@ function cleanIconMap(value?: Record<string, string>): Record<string, string> | 
 		})
 		.filter(([key, icon]) => key.length > 0 && icon.length > 4);
 	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function cleanTariff(value: unknown): number | undefined {
+	const n =
+		typeof value === 'number'
+			? value
+			: typeof value === 'string'
+				? Number(value.trim().replace(',', '.'))
+				: NaN;
+	return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
 export function addCatalogCardToSidebar(
@@ -243,6 +262,13 @@ export function saveCardEdits(
 	homeTodayEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	importPeakTodayEntityId?: string,
+	importOffPeakTodayEntityId?: string,
+	importTariffEntityId?: string,
+	exportTariffEntityId?: string,
+	importPeakTariff?: string,
+	importOffPeakTariff?: string,
+	exportTariff?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
 	carCableEntityId?: string,
@@ -291,7 +317,7 @@ export function saveCardEdits(
 			cardType === 'media_players_status'
 				? statusDomains
 				: undefined,
-		statusDeviceClasses: cardType === 'openings_status' ? statusDeviceClasses : undefined,
+		statusDeviceClasses: supportsStatusDeviceClassFilter(cardType) ? statusDeviceClasses : undefined,
 		statusEntityIds:
 			cardType === 'lights_status' ||
 			cardType === 'openings_status' ||
@@ -386,6 +412,25 @@ export function saveCardEdits(
 			cardType === 'energy' && typeof compensationTodayEntityId === 'string' && compensationTodayEntityId.trim().length > 0
 				? compensationTodayEntityId.trim()
 				: undefined,
+		importPeakTodayEntityId:
+			cardType === 'energy' && typeof importPeakTodayEntityId === 'string' && importPeakTodayEntityId.trim().length > 0
+				? importPeakTodayEntityId.trim()
+				: undefined,
+		importOffPeakTodayEntityId:
+			cardType === 'energy' && typeof importOffPeakTodayEntityId === 'string' && importOffPeakTodayEntityId.trim().length > 0
+				? importOffPeakTodayEntityId.trim()
+				: undefined,
+		importTariffEntityId:
+			cardType === 'energy' && typeof importTariffEntityId === 'string' && importTariffEntityId.trim().length > 0
+				? importTariffEntityId.trim()
+				: undefined,
+		exportTariffEntityId:
+			cardType === 'energy' && typeof exportTariffEntityId === 'string' && exportTariffEntityId.trim().length > 0
+				? exportTariffEntityId.trim()
+				: undefined,
+		importPeakTariff: cardType === 'energy' ? cleanTariff(importPeakTariff) : undefined,
+		importOffPeakTariff: cardType === 'energy' ? cleanTariff(importOffPeakTariff) : undefined,
+		exportTariff: cardType === 'energy' ? cleanTariff(exportTariff) : undefined,
 		selfSufficiencyEntityId:
 			cardType === 'energy' && typeof selfSufficiencyEntityId === 'string' && selfSufficiencyEntityId.trim().length > 0
 				? selfSufficiencyEntityId.trim()
@@ -467,6 +512,13 @@ export function saveCardInSidebar(
 	homeTodayEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	importPeakTodayEntityId?: string,
+	importOffPeakTodayEntityId?: string,
+	importTariffEntityId?: string,
+	exportTariffEntityId?: string,
+	importPeakTariff?: string,
+	importOffPeakTariff?: string,
+	exportTariff?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
 	carCableEntityId?: string,
@@ -524,6 +576,13 @@ export function saveCardInSidebar(
 					homeTodayEntityId,
 					costTodayEntityId,
 					compensationTodayEntityId,
+					importPeakTodayEntityId,
+					importOffPeakTodayEntityId,
+					importTariffEntityId,
+					exportTariffEntityId,
+					importPeakTariff,
+					importOffPeakTariff,
+					exportTariff,
 					selfSufficiencyEntityId,
 					carChargingEntityId,
 					carCableEntityId,
@@ -584,6 +643,13 @@ export function saveCardInSections(
 	homeTodayEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	importPeakTodayEntityId?: string,
+	importOffPeakTodayEntityId?: string,
+	importTariffEntityId?: string,
+	exportTariffEntityId?: string,
+	importPeakTariff?: string,
+	importOffPeakTariff?: string,
+	exportTariff?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
 	carCableEntityId?: string,
@@ -643,6 +709,13 @@ export function saveCardInSections(
 						homeTodayEntityId,
 						costTodayEntityId,
 						compensationTodayEntityId,
+						importPeakTodayEntityId,
+						importOffPeakTodayEntityId,
+						importTariffEntityId,
+						exportTariffEntityId,
+						importPeakTariff,
+						importOffPeakTariff,
+						exportTariff,
 						selfSufficiencyEntityId,
 						carChargingEntityId,
 						carCableEntityId,

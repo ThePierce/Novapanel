@@ -50,7 +50,7 @@ export function filterEntitiesForStatusCard(input: {
 		if (!includeAllDomains && domainsSet.size > 0 && !domainsSet.has(entity.domain.toLowerCase())) {
 			continue;
 		}
-		if (input.kind === 'openings_status' && classesSet.size > 0) {
+		if (input.kind !== 'media_players_status' && classesSet.size > 0) {
 			const deviceClass = (entity.deviceClass ?? '').toLowerCase();
 			if (!classesSet.has(deviceClass) && !classesSet.has(entity.domain.toLowerCase())) {
 				continue;
@@ -73,7 +73,15 @@ export function isEntityActive(entity: HomeAssistantEntity, kind: StatusCardKind
 		return state === 'on' || state === 'open' || state === 'opening';
 	}
 	if (kind === 'lights_status' || kind === 'devices_status') {
-		return state === 'on' || state === 'playing' || state === 'heat' || state === 'cool' || state === 'auto';
+		return (
+			state === 'on' ||
+			state === 'playing' ||
+			state === 'heat' ||
+			state === 'cool' ||
+			state === 'auto' ||
+			state === 'unlocked' ||
+			state === 'unlocking'
+		);
 	}
 	if (kind === 'media_players_status') {
 		return (

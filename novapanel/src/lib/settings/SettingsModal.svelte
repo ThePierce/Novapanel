@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { translate, type TranslationKey } from '$lib/i18n';
+	import type { PanelTheme } from '$lib/panel/theme';
 	import LanguageConfig from '$lib/LanguageConfig.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 
@@ -10,6 +11,7 @@
 		activeSettingsTab: SettingsTab;
 		selectedColumns: 1 | 2 | 3;
 		selectedLanguage: 'nl' | 'en' | 'de' | 'fr' | 'es';
+		selectedTheme: PanelTheme;
 		spotifyClientId: string;
 		spotifyClientSecret: string;
 		spotifyRedirectUri: string;
@@ -17,6 +19,7 @@
 		onSetSettingsTab: (tab: SettingsTab) => void;
 		onSetColumns: (value: 1 | 2 | 3) => void;
 		onSetLanguage: (value: 'nl' | 'en' | 'de' | 'fr' | 'es') => void;
+		onSetTheme: (value: PanelTheme) => void;
 		onSetSpotifyClientId: (value: string) => void;
 		onSetSpotifyClientSecret: (value: string) => void;
 		onSetSpotifyRedirectUri: (value: string) => void;
@@ -30,6 +33,7 @@
 		activeSettingsTab,
 		selectedColumns,
 		selectedLanguage,
+		selectedTheme,
 		spotifyClientId,
 		spotifyClientSecret,
 		spotifyRedirectUri,
@@ -37,6 +41,7 @@
 		onSetSettingsTab,
 		onSetColumns,
 		onSetLanguage,
+		onSetTheme,
 		onSetSpotifyClientId,
 		onSetSpotifyClientSecret,
 		onSetSpotifyRedirectUri,
@@ -51,6 +56,16 @@
 	let spotifyExpanded = $state(true);
 	let spotifyAuthStatus = $state<'unknown' | 'connected' | 'not_connected' | 'checking'>('unknown');
 	let spotifyAuthError = $state('');
+	const themeOptions: Array<{
+		value: PanelTheme;
+		label: string;
+		swatches: [string, string, string];
+	}> = [
+		{ value: 'midnight', label: 'Midnight', swatches: ['#0f1115', '#20293a', '#68d8a3'] },
+		{ value: 'graphite', label: 'Graphite', swatches: ['#141414', '#2d3034', '#e5b958'] },
+		{ value: 'daylight', label: 'Daylight', swatches: ['#f5f5f7', '#ffffff', '#007aff'] },
+		{ value: 'forest', label: 'Forest', swatches: ['#0c1915', '#17332b', '#c6a15b'] }
+	];
 
 	// Bereken redirect URI van huidige locatie als hint
 	const detectedRedirectUri = $derived.by(() => {
@@ -525,9 +540,29 @@
 					<TablerIcon name="palette" size={16} />
 					<h4>{t('theme')}</h4>
 				</div>
-				<div class="settings-empty">
-					<TablerIcon name="paint" size={32} />
-					<div class="settings-empty-text">{translate('Thema-opties komen binnenkort', selectedLanguage)}</div>
+				<div class="theme-grid" role="radiogroup" aria-label={t('theme')}>
+					{#each themeOptions as option (option.value)}
+						<button
+							type="button"
+							class={`theme-option theme-${option.value}`}
+							class:active={selectedTheme === option.value}
+							role="radio"
+							aria-checked={selectedTheme === option.value}
+							onclick={() => onSetTheme(option.value)}
+						>
+							<span class="theme-preview" aria-hidden="true">
+								<span style={`background: ${option.swatches[0]}`}></span>
+								<span style={`background: ${option.swatches[1]}`}></span>
+								<span style={`background: ${option.swatches[2]}`}></span>
+							</span>
+							<span class="theme-option-name">
+								<span>{option.label}</span>
+								{#if selectedTheme === option.value}
+									<TablerIcon name="check" size={14} />
+								{/if}
+							</span>
+						</button>
+					{/each}
 				</div>
 			</div>
 		</div>
@@ -710,6 +745,67 @@
 	.settings-empty-text {
 		font-size: 12.5px;
 		font-weight: 500;
+	}
+
+	.theme-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.theme-option {
+		min-width: 0;
+		min-height: 68px;
+		padding: 10px;
+		border-radius: 11px;
+		border: 0.5px solid rgba(255,255,255,0.08);
+		background: rgba(255,255,255,0.03);
+		color: #f5f5f5;
+		display: grid;
+		grid-template-columns: 4.5rem minmax(0, 1fr);
+		align-items: center;
+		gap: 10px;
+		cursor: pointer;
+		font: inherit;
+		text-align: left;
+		transition: border-color 0.15s, background 0.15s, transform 0.15s;
+	}
+	.theme-option:hover {
+		border-color: rgba(255,255,255,0.16);
+		background: rgba(255,255,255,0.05);
+	}
+	.theme-option.active {
+		border-color: rgba(167,139,250,0.42);
+		background: linear-gradient(135deg, rgba(167,139,250,0.14), rgba(255,255,255,0.035));
+		box-shadow: 0 0 0 1px rgba(167,139,250,0.08) inset;
+	}
+	.theme-preview {
+		height: 44px;
+		border-radius: 8px;
+		overflow: hidden;
+		display: grid;
+		grid-template-columns: 1.2fr 1fr 0.75fr;
+		border: 0.5px solid rgba(255,255,255,0.10);
+		box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+	}
+	.theme-option-name {
+		min-width: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		font-size: 13px;
+		font-weight: 650;
+		letter-spacing: 0;
+	}
+	.theme-option-name > span {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.theme-option-name :global(i) {
+		color: #c4b5fd;
+		flex: 0 0 auto;
 	}
 
 	/* Integration toggle (Spotify) */
@@ -1008,6 +1104,16 @@
 		transition: opacity 0.15s;
 	}
 	.column-controls button.active .col-pick-vis i { opacity: 0.85; }
+
+	@media (max-width: 520px) {
+		.theme-grid,
+		.column-controls {
+			grid-template-columns: 1fr;
+		}
+		.theme-option {
+			grid-template-columns: 4rem minmax(0, 1fr);
+		}
+	}
 
 	/* Sticky footer with save button */
 	.settings-actions {

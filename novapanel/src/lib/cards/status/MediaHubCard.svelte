@@ -18,7 +18,13 @@
 		entities: HomeAssistantEntity[];
 		/** Volledige media_player lijst uit HA, ongefilterd door card-config. Nodig voor Spotify-controller. */
 		allEntities?: HomeAssistantEntity[];
-		callService: (domain: string, service: string, entityId: string, data?: Record<string, unknown>) => Promise<void>;
+		callService: (
+			domain: string,
+			service: string,
+			entityId: string,
+			data?: Record<string, unknown>,
+			options?: { silent?: boolean }
+		) => Promise<boolean | void>;
 		labelFor?: (entityId: string, friendlyName: string) => string;
 		actionBusyEntityId?: string;
 		spotifyConfigured?: boolean;
@@ -59,7 +65,8 @@
 	const TUNEIN_PLAYBACK_TARGET_KEY = 'np_media_hub_tunein_playback_target';
 
 	function getPlayerName(id: string, fallback: string): string {
-		return playerAliases[id] || labelFor(id, fallback);
+		const alias = playerAliases[id] ?? playerAliases[id.toLowerCase()];
+		return typeof alias === 'string' && alias.trim().length > 0 ? alias.trim() : labelFor(id, fallback);
 	}
 
 	function setOnkyoBridges(value: OnkyoBridge[]) {
@@ -403,6 +410,14 @@
 		const s = (entity.state ?? '').toLowerCase();
 		return s !== 'off' && s !== 'unavailable' && s !== 'unknown' && s !== '';
 	}
+	function isGoogleCastPlayer(entity: HomeAssistantEntity): boolean {
+		const id = entity.entityId.toLowerCase();
+		const name = (entity.friendlyName ?? '').toLowerCase();
+		const appName = String(entity.attributes?.app_name ?? '').toLowerCase();
+		const manufacturer = String(entity.attributes?.manufacturer ?? '').toLowerCase();
+		const haystack = `${id} ${name} ${appName} ${manufacturer}`;
+		return /google|nest|home hub|chromecast|\bcast\b|youtube/.test(haystack);
+	}
 	function isPlaying(entity: HomeAssistantEntity): boolean {
 		return (entity.state ?? '').toLowerCase() === 'playing';
 	}
@@ -676,6 +691,15 @@
 	}
 
 	async function togglePower(entity: HomeAssistantEntity) {
+		if (isOn(entity) && isGoogleCastPlayer(entity)) {
+			const turnedOff = await callService('media_player', 'turn_off', entity.entityId);
+			if (turnedOff === false) {
+				await callService('media_player', 'media_stop', entity.entityId);
+			} else {
+				await callService('media_player', 'media_stop', entity.entityId, {}, { silent: true });
+			}
+			return;
+		}
 		await callService('media_player', isOn(entity) ? 'turn_off' : 'turn_on', entity.entityId);
 	}
 
@@ -2188,6 +2212,9 @@
 					<div
 						class={`player-tile ${isActive ? 'active' : ''} ${!on ? 'off' : ''} ${isDragging ? 'dragging' : ''} ${isDragTarget ? 'drag-target' : ''} ${playing ? 'playing' : ''}`}
 						role="group"
+						draggable="true"
+						ondragstart={(e) => handleDragStart(e, entity.entityId)}
+						ondragend={handleDragEnd}
 						ondragover={(e) => handleDragOver(e, entity.entityId)}
 						ondragleave={() => handleDragLeave(entity.entityId)}
 						ondrop={(e) => handleDrop(e, entity.entityId)}
@@ -2240,18 +2267,6 @@
 							<button type="button" class="ptile-btn ptile-btn-play" disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePlayPause(entity))(__e); }} aria-label={playing ? _t('Pauzeren') : _t('Afspelen')}><StatusIcon icon={!on ? 'mdi:power' : playing ? 'mdi:pause' : 'mdi:play'} size={20} /></button>
 							<button type="button" class="ptile-btn" disabled={!on || actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void nextTrack(entity))(__e); }} aria-label={_t('Volgende')}><StatusIcon icon="mdi:skip-next" size={18} /></button>
 							<button type="button" class={`ptile-btn small ${on ? 'on' : ''}`} disabled={actionBusyEntityId === entity.entityId} onclick={(__e) => { __e.stopPropagation(); (() => void togglePower(entity))(__e); }} aria-label={_t('Aan/uit')}><StatusIcon icon="mdi:power" size={14} /></button>
-							<button
-								type="button"
-								class="ptile-drag"
-								aria-label={_t('Verslepen om te herordenen')}
-								title={_t('Sleep om volgorde te wijzigen')}
-								draggable="true"
-								ondragstart={(e) => handleDragStart(e, entity.entityId)}
-								ondragend={handleDragEnd}
-								onclick={(__e) => __e.stopPropagation()}
-							>
-								<StatusIcon icon="mdi:drag-horizontal-variant" size={14} />
-							</button>
 						</div>
 					</div>
 				{/each}
@@ -3147,7 +3162,9 @@
 		overflow: hidden;
 		transition: all 0.2s ease;
 		isolation: isolate;
+		cursor: grab;
 	}
+	.player-tile:active { cursor: grabbing; }
 	.player-tile:hover {
 		border-color: rgba(255,255,255,0.16);
 		transform: translateY(-2px);
@@ -3376,23 +3393,6 @@
 		color: #4ade80;
 		border-color: rgba(74,222,128,0.32);
 	}
-	.ptile-drag {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 22px; height: 28px;
-		background: transparent;
-		color: rgba(255,255,255,0.4);
-		cursor: grab;
-		border-radius: 6px;
-		opacity: 0;
-		transition: opacity 0.12s, background 0.12s, color 0.12s;
-		user-select: none;
-		touch-action: none;
-	}
-	.ptile-drag:active { cursor: grabbing; }
-	.player-tile:hover .ptile-drag { opacity: 1; }
-	.ptile-drag:hover { color: #fff; background: rgba(255,255,255,0.08); }
 
 	/* Custom radio modal */
 	.np-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); border: 0; z-index: 70; cursor: default; }

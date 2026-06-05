@@ -109,8 +109,10 @@ function applyDragCursorIndicatorOnly(event: DragEvent) {
 		<LightsStatusCard
 			cardId={item.id}
 			domains={item.statusDomains}
+			deviceClasses={item.statusDeviceClasses}
 			ignoredEntityIds={item.ignoredEntityIds}
 			statusEntityIds={item.statusEntityIds}
+			statusEntityAliases={item.statusEntityAliases}
 			icon={item.statusIcon}
 		/>
 	{:else if item.type === 'openings_status'}
@@ -119,20 +121,25 @@ function applyDragCursorIndicatorOnly(event: DragEvent) {
 			deviceClasses={item.statusDeviceClasses}
 			ignoredEntityIds={item.ignoredEntityIds}
 			statusEntityIds={item.statusEntityIds}
+			statusEntityAliases={item.statusEntityAliases}
 			icon={item.statusIcon}
 		/>
 	{:else if item.type === 'devices_status'}
 		<DevicesStatusCard
 			domains={item.statusDomains}
+			deviceClasses={item.statusDeviceClasses}
 			ignoredEntityIds={item.ignoredEntityIds}
 			statusEntityIds={item.statusEntityIds}
+			statusEntityAliases={item.statusEntityAliases}
 			icon={item.statusIcon}
 		/>
 	{:else if item.type === 'availability_status'}
 		<AvailabilityStatusCard
 			domains={item.statusDomains}
+			deviceClasses={item.statusDeviceClasses}
 			ignoredEntityIds={item.ignoredEntityIds}
 			statusEntityIds={item.statusEntityIds}
+			statusEntityAliases={item.statusEntityAliases}
 			icon={item.statusIcon}
 		/>
 	{:else if item.type === 'media_players_status'}
@@ -140,6 +147,7 @@ function applyDragCursorIndicatorOnly(event: DragEvent) {
 			domains={item.statusDomains}
 			ignoredEntityIds={item.ignoredEntityIds}
 			statusEntityIds={item.statusEntityIds}
+			statusEntityAliases={item.statusEntityAliases}
 			icon={item.statusIcon}
 		/>
 	{:else if item.type === 'energy'}

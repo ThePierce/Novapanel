@@ -3,6 +3,7 @@
 	import { entityStore } from '$lib/ha/entities-store';
 	import { callHaService } from '$lib/ha/service-call';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
+	import { resolveLightGroupEntityId } from '$lib/cards/light-groups';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
@@ -24,19 +25,44 @@
 	const entity = $derived(
 		$entityStore.entities.find((entry: HomeAssistantEntity) => entry.entityId === (entityId ?? ''))
 	);
-	const isOn = $derived((entity?.state ?? '').toLowerCase() === 'on');
-	const isUnavailable = $derived(!entity || entity.state === 'unavailable' || entity.state === 'unknown');
+	const lightGroup = $derived(resolveLightGroupEntityId(entityId));
+	const groupEntities = $derived.by(() => {
+		if (!lightGroup) return [] as HomeAssistantEntity[];
+		const wanted = new Set(lightGroup.entityIds.map((id) => id.trim().toLowerCase()).filter(Boolean));
+		return $entityStore.entities.filter((entry: HomeAssistantEntity) => wanted.has(entry.entityId.toLowerCase()));
+	});
+	const groupLightEntities = $derived(groupEntities.filter((entry) => entry.domain === 'light'));
+	const hasTarget = $derived(lightGroup ? groupEntities.length > 0 : Boolean(entity));
+	const isOn = $derived(
+		lightGroup
+			? groupEntities.some((entry) => (entry.state ?? '').toLowerCase() === 'on')
+			: (entity?.state ?? '').toLowerCase() === 'on'
+	);
+	const isUnavailable = $derived(
+		lightGroup
+			? groupEntities.length === 0 || groupEntities.every((entry) => entry.state === 'unavailable' || entry.state === 'unknown')
+			: !entity || entity.state === 'unavailable' || entity.state === 'unknown'
+	);
 	const serviceDomain = $derived(
 		(entity?.domain || entityId?.split('.')[0] || 'light').toLowerCase()
 	);
 	const displayName = $derived(
 		(title && title.trim().length > 0)
 			? title.trim()
-			: entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
+			: lightGroup?.name ?? entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
 	);
-	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : 'mdi:lightbulb-outline');
+	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : lightGroup ? 'mdi:lightbulb-group-outline' : 'mdi:lightbulb-outline');
 	const brightnessPct = $derived(
 		(() => {
+			if (lightGroup) {
+				const lit = groupLightEntities.filter((entry) => (entry.state ?? '').toLowerCase() === 'on');
+				if (lit.length === 0) return 0;
+				const total = lit.reduce((sum, entry) => {
+					const raw = entry.attributes?.brightness;
+					return sum + (typeof raw === 'number' && Number.isFinite(raw) ? Math.round((raw / 255) * 100) : 100);
+				}, 0);
+				return Math.max(0, Math.min(100, Math.round(total / lit.length)));
+			}
 			const raw = entity?.attributes?.brightness;
 			if (typeof raw !== 'number' || !Number.isFinite(raw)) return isOn ? 100 : 0;
 			return Math.max(0, Math.min(100, Math.round((raw / 255) * 100)));
@@ -44,17 +70,23 @@
 	);
 	const supportedModes = $derived(
 		(() => {
+			if (lightGroup) {
+				return Array.from(new Set(groupLightEntities.flatMap((entry) => {
+					const raw = entry.attributes?.supported_color_modes;
+					return Array.isArray(raw) ? raw.map(String) : [];
+				})));
+			}
 			const raw = entity?.attributes?.supported_color_modes;
 			return Array.isArray(raw) ? raw.map(String) : [];
 		})()
 	);
 	const supportsBrightness = $derived(
-		serviceDomain === 'light' &&
+		(lightGroup ? groupLightEntities.length > 0 : serviceDomain === 'light') &&
 			(
 				supportedModes.some((mode) =>
 					['brightness', 'color_temp', 'hs', 'rgb', 'rgbw', 'rgbww', 'xy', 'white'].includes(mode)
 				) ||
-				typeof entity?.attributes?.brightness === 'number' ||
+				(lightGroup ? groupLightEntities.some((entry) => typeof entry.attributes?.brightness === 'number') : typeof entity?.attributes?.brightness === 'number') ||
 				(typeof entity?.attributes?.supported_features === 'number' &&
 					(entity.attributes.supported_features & 1) === 1)
 			)
@@ -64,19 +96,25 @@
 	);
 	const supportsTemperature = $derived(supportedModes.includes('color_temp'));
 	const minKelvin = $derived(
-		typeof entity?.attributes?.min_color_temp_kelvin === 'number'
-			? Math.round(entity.attributes.min_color_temp_kelvin)
+		typeof (lightGroup ? groupLightEntities[0]?.attributes?.min_color_temp_kelvin : entity?.attributes?.min_color_temp_kelvin) === 'number'
+			? Math.round((lightGroup ? groupLightEntities[0]?.attributes?.min_color_temp_kelvin : entity?.attributes?.min_color_temp_kelvin) as number)
 			: 2000
 	);
 	const maxKelvin = $derived(
-		typeof entity?.attributes?.max_color_temp_kelvin === 'number'
-			? Math.round(entity.attributes.max_color_temp_kelvin)
+		typeof (lightGroup ? groupLightEntities[0]?.attributes?.max_color_temp_kelvin : entity?.attributes?.max_color_temp_kelvin) === 'number'
+			? Math.round((lightGroup ? groupLightEntities[0]?.attributes?.max_color_temp_kelvin : entity?.attributes?.max_color_temp_kelvin) as number)
 			: 6500
 	);
 	const currentKelvin = $derived(
-		typeof entity?.attributes?.color_temp_kelvin === 'number'
-			? Math.round(entity.attributes.color_temp_kelvin)
-			: Math.round((minKelvin + maxKelvin) / 2)
+		(() => {
+			const source = lightGroup
+				? groupLightEntities.find((entry) => typeof entry.attributes?.color_temp_kelvin === 'number')
+				: entity;
+			const raw = source?.attributes?.color_temp_kelvin;
+			return typeof raw === 'number' && Number.isFinite(raw)
+				? Math.round(raw)
+				: Math.round((minKelvin + maxKelvin) / 2);
+		})()
 	);
 	const stateLabel = $derived(
 		isUnavailable
@@ -116,12 +154,33 @@
 		return { entity_id: entityId, ...extra };
 	}
 
+	function groupEntityIdsByDomain(): Map<string, string[]> {
+		const byDomain = new Map<string, string[]>();
+		for (const entry of groupEntities) {
+			const domain = (entry.domain || entry.entityId.split('.')[0] || '').toLowerCase();
+			if (domain !== 'light' && domain !== 'switch') continue;
+			byDomain.set(domain, [...(byDomain.get(domain) ?? []), entry.entityId]);
+		}
+		return byDomain;
+	}
+
 	async function callLight(service: 'turn_on' | 'turn_off', data: Record<string, unknown> = {}) {
-		if (!entityId || busy) return;
+		if ((!entityId && !lightGroup) || busy) return;
 		busy = true;
 		error = '';
 		try {
-			await callHaService(serviceDomain, service, serviceData(data));
+			if (lightGroup) {
+				if (Object.keys(data).length > 0) {
+					const lightIds = groupLightEntities.map((entry) => entry.entityId);
+					if (lightIds.length > 0) await callHaService('light', service, { entity_id: lightIds, ...data });
+				} else {
+					for (const [domain, ids] of groupEntityIdsByDomain().entries()) {
+						if (ids.length > 0) await callHaService(domain, service, { entity_id: ids });
+					}
+				}
+			} else {
+				await callHaService(serviceDomain, service, serviceData(data));
+			}
 		} catch (err) {
 			error = err instanceof Error && err.message ? err.message : translate('Actie mislukt', $selectedLanguageStore);
 		} finally {
@@ -216,7 +275,7 @@
 	</div>
 
 	<div class="light-detail-body">
-		{#if !entity}
+		{#if !hasTarget}
 			<div class="light-empty">
 				<StatusIcon icon={cardIcon} size={46} />
 				<span>{translate('Geen lamp gekoppeld', $selectedLanguageStore)}</span>

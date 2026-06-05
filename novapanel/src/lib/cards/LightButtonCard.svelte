@@ -3,6 +3,7 @@
 	import { entityStore } from '$lib/ha/entities-store';
 	import { callHaService } from '$lib/ha/service-call';
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
+	import { resolveLightGroupEntityId } from '$lib/cards/light-groups';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
@@ -19,13 +20,36 @@
 	const entity = $derived(
 		$entityStore.entities.find((entry: HomeAssistantEntity) => entry.entityId === (entityId ?? ''))
 	);
-	const isUnavailable = $derived(!entity || entity.state === 'unavailable' || entity.state === 'unknown');
-	const isOn = $derived((entity?.state ?? '').toLowerCase() === 'on');
+	const lightGroup = $derived(resolveLightGroupEntityId(entityId));
+	const groupEntities = $derived.by(() => {
+		if (!lightGroup) return [] as HomeAssistantEntity[];
+		const wanted = new Set(lightGroup.entityIds.map((id) => id.trim().toLowerCase()).filter(Boolean));
+		return $entityStore.entities.filter((entry: HomeAssistantEntity) => wanted.has(entry.entityId.toLowerCase()));
+	});
+	const isUnavailable = $derived(
+		lightGroup
+			? groupEntities.length === 0 || groupEntities.every((entry) => entry.state === 'unavailable' || entry.state === 'unknown')
+			: !entity || entity.state === 'unavailable' || entity.state === 'unknown'
+	);
+	const isOn = $derived(
+		lightGroup
+			? groupEntities.some((entry) => (entry.state ?? '').toLowerCase() === 'on')
+			: (entity?.state ?? '').toLowerCase() === 'on'
+	);
 	const serviceDomain = $derived(
 		(entity?.domain || entityId?.split('.')[0] || 'light').toLowerCase()
 	);
 	const brightnessPct = $derived(
 		(() => {
+			if (lightGroup) {
+				const lit = groupEntities.filter((entry) => (entry.state ?? '').toLowerCase() === 'on');
+				if (lit.length === 0) return 0;
+				const total = lit.reduce((sum, entry) => {
+					const raw = entry.attributes?.brightness;
+					return sum + (typeof raw === 'number' && Number.isFinite(raw) ? Math.round((raw / 255) * 100) : 100);
+				}, 0);
+				return Math.max(0, Math.min(100, Math.round(total / lit.length)));
+			}
 			const raw = entity?.attributes?.brightness;
 			if (typeof raw !== 'number' || !Number.isFinite(raw)) return isOn ? 100 : 0;
 			return Math.max(0, Math.min(100, Math.round((raw / 255) * 100)));
@@ -34,14 +58,20 @@
 	const displayName = $derived(
 		(title && title.trim().length > 0)
 			? title.trim()
-			: entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
+			: lightGroup?.name ?? entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
 	);
 	const stateLabel = $derived(
-		isUnavailable ? translate('Niet beschikbaar', $selectedLanguageStore) : isOn ? `${brightnessPct}%` : translate('Uit', $selectedLanguageStore)
+		isUnavailable
+			? translate('Niet beschikbaar', $selectedLanguageStore)
+			: lightGroup
+				? isOn
+					? `${groupEntities.filter((entry) => (entry.state ?? '').toLowerCase() === 'on').length}/${groupEntities.length} ${translate('aan', $selectedLanguageStore)}`
+					: translate('Uit', $selectedLanguageStore)
+				: isOn ? `${brightnessPct}%` : translate('Uit', $selectedLanguageStore)
 	);
 	const accent = $derived(isOn ? '#ffd338' : '#8d98aa');
 	const accentSoft = $derived(isOn ? 'rgba(255,211,56,0.22)' : 'rgba(141,152,170,0.16)');
-	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : 'mdi:lightbulb-outline');
+	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : lightGroup ? 'mdi:lightbulb-group-outline' : 'mdi:lightbulb-outline');
 
 	function handleOpen(event: MouseEvent | KeyboardEvent) {
 		if (editMode) return;
@@ -52,13 +82,25 @@
 	async function toggleLight(event: MouseEvent) {
 		if (editMode) return;
 		event.stopPropagation();
-		if (!entityId || busy) {
+		if (busy || (lightGroup ? groupEntities.length === 0 : !entityId || !entity)) {
 			onOpen();
 			return;
 		}
 		busy = true;
 		try {
-			await callHaService(serviceDomain, isOn ? 'turn_off' : 'turn_on', { entity_id: entityId });
+			if (lightGroup) {
+				const byDomain = new Map<string, string[]>();
+				for (const entry of groupEntities) {
+					const domain = (entry.domain || entry.entityId.split('.')[0] || '').toLowerCase();
+					if (domain !== 'light' && domain !== 'switch') continue;
+					byDomain.set(domain, [...(byDomain.get(domain) ?? []), entry.entityId]);
+				}
+				for (const [domain, ids] of byDomain.entries()) {
+					if (ids.length > 0) await callHaService(domain, isOn ? 'turn_off' : 'turn_on', { entity_id: ids });
+				}
+			} else {
+				await callHaService(serviceDomain, isOn ? 'turn_off' : 'turn_on', { entity_id: entityId });
+			}
 		} catch (error) {
 			console.error('Light toggle failed', error);
 		} finally {
@@ -151,6 +193,10 @@
 		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.07);
 		cursor: pointer;
 		transition: transform 140ms ease, background 160ms ease;
+		line-height: 0;
+	}
+	.light-icon-button :global(svg) {
+		display: block;
 	}
 	.light-icon-button :global(.status-icon) {
 		font-size: 1.25rem !important;

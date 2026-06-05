@@ -6,16 +6,20 @@
 	type Props = {
 		cardId?: string;
 		domains?: string[];
+		deviceClasses?: string[];
 		ignoredEntityIds?: string[];
 		statusEntityIds?: string[];
+		statusEntityAliases?: Record<string, string>;
 		icon?: string;
 	};
 
 	let {
 		cardId = '',
 		domains = ['light'],
+		deviceClasses = [],
 		ignoredEntityIds = [],
 		statusEntityIds = [],
+		statusEntityAliases = {},
 		icon = 'lightbulb'
 	}: Props = $props();
 
@@ -30,8 +34,10 @@
 <StatusSummaryCard
 	kind="lights_status"
 	{domains}
+	{deviceClasses}
 	{ignoredEntityIds}
 	{statusEntityIds}
+	{statusEntityAliases}
 	{icon}
 	{cardId}
 	{lightGroups}

@@ -61,6 +61,13 @@ type EditorUiState = {
 	cardEditorHomeTodayEntityId?: string;
 	cardEditorCostTodayEntityId?: string;
 	cardEditorCompensationTodayEntityId?: string;
+	cardEditorImportPeakTodayEntityId?: string;
+	cardEditorImportOffPeakTodayEntityId?: string;
+	cardEditorImportTariffEntityId?: string;
+	cardEditorExportTariffEntityId?: string;
+	cardEditorImportPeakTariff?: string;
+	cardEditorImportOffPeakTariff?: string;
+	cardEditorExportTariff?: string;
 	cardEditorSelfSufficiencyEntityId?: string;
 	cardEditorCarChargingEntityId?: string;
 	cardEditorCarCableEntityId?: string;
@@ -88,6 +95,13 @@ type EditorUiState = {
 	cardEditorInitialHomeTodayEntityId?: string;
 	cardEditorInitialCostTodayEntityId?: string;
 	cardEditorInitialCompensationTodayEntityId?: string;
+	cardEditorInitialImportPeakTodayEntityId?: string;
+	cardEditorInitialImportOffPeakTodayEntityId?: string;
+	cardEditorInitialImportTariffEntityId?: string;
+	cardEditorInitialExportTariffEntityId?: string;
+	cardEditorInitialImportPeakTariff?: string;
+	cardEditorInitialImportOffPeakTariff?: string;
+	cardEditorInitialExportTariff?: string;
 	cardEditorInitialSelfSufficiencyEntityId?: string;
 	cardEditorInitialCarChargingEntityId?: string;
 	cardEditorInitialCarCableEntityId?: string;
@@ -167,6 +181,10 @@ function resolveEditingCardDraft(
 	return undefined;
 }
 
+function tariffInputValue(value: number | undefined): string {
+	return typeof value === 'number' && Number.isFinite(value) ? String(value) : '';
+}
+
 type CreatePageEditorUiRuntimeParams = {
 	getState: () => EditorUiState;
 	setState: (patch: Partial<EditorUiState>) => void;
@@ -242,6 +260,13 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 				cardEditorHomeTodayEntityId: next.homeTodayEntityId ?? '',
 				cardEditorCostTodayEntityId: next.costTodayEntityId ?? '',
 				cardEditorCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
+				cardEditorImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
+				cardEditorImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
+				cardEditorImportTariffEntityId: next.importTariffEntityId ?? '',
+				cardEditorExportTariffEntityId: next.exportTariffEntityId ?? '',
+				cardEditorImportPeakTariff: tariffInputValue(next.importPeakTariff),
+				cardEditorImportOffPeakTariff: tariffInputValue(next.importOffPeakTariff),
+				cardEditorExportTariff: tariffInputValue(next.exportTariff),
 				cardEditorSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
 				cardEditorCarChargingEntityId: next.carChargingEntityId ?? '',
 				cardEditorCarCableEntityId: next.carCableEntityId ?? '',
@@ -268,6 +293,13 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 				cardEditorInitialHomeTodayEntityId: next.homeTodayEntityId ?? '',
 				cardEditorInitialCostTodayEntityId: next.costTodayEntityId ?? '',
 				cardEditorInitialCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
+				cardEditorInitialImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
+				cardEditorInitialImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
+				cardEditorInitialImportTariffEntityId: next.importTariffEntityId ?? '',
+				cardEditorInitialExportTariffEntityId: next.exportTariffEntityId ?? '',
+				cardEditorInitialImportPeakTariff: tariffInputValue(next.importPeakTariff),
+				cardEditorInitialImportOffPeakTariff: tariffInputValue(next.importOffPeakTariff),
+				cardEditorInitialExportTariff: tariffInputValue(next.exportTariff),
 				cardEditorInitialSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
 				cardEditorInitialCarChargingEntityId: next.carChargingEntityId ?? '',
 				cardEditorInitialCarCableEntityId: next.carCableEntityId ?? '',
@@ -432,6 +464,13 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			homeTodayEntityId: state.cardEditorHomeTodayEntityId,
 			costTodayEntityId: state.cardEditorCostTodayEntityId,
 			compensationTodayEntityId: state.cardEditorCompensationTodayEntityId,
+			importPeakTodayEntityId: state.cardEditorImportPeakTodayEntityId,
+			importOffPeakTodayEntityId: state.cardEditorImportOffPeakTodayEntityId,
+			importTariffEntityId: state.cardEditorImportTariffEntityId,
+			exportTariffEntityId: state.cardEditorExportTariffEntityId,
+			importPeakTariff: state.cardEditorImportPeakTariff,
+			importOffPeakTariff: state.cardEditorImportOffPeakTariff,
+			exportTariff: state.cardEditorExportTariff,
 			selfSufficiencyEntityId: state.cardEditorSelfSufficiencyEntityId,
 			carChargingEntityId: state.cardEditorCarChargingEntityId,
 			carCableEntityId: state.cardEditorCarCableEntityId,

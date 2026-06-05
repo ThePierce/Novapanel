@@ -6,6 +6,7 @@
 		deviceClasses?: string[];
 		ignoredEntityIds?: string[];
 		statusEntityIds?: string[];
+		statusEntityAliases?: Record<string, string>;
 		icon?: string;
 	};
 
@@ -14,6 +15,7 @@
 		deviceClasses = ['door', 'window', 'opening'],
 		ignoredEntityIds = [],
 		statusEntityIds = [],
+		statusEntityAliases = {},
 		icon = 'door_open'
 	}: Props = $props();
 </script>
@@ -24,5 +26,6 @@
 	{deviceClasses}
 	{ignoredEntityIds}
 	{statusEntityIds}
+	{statusEntityAliases}
 	{icon}
 />

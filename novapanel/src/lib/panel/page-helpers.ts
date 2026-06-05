@@ -22,6 +22,16 @@ function coerceCamerasInPageHelpers(value: unknown): CameraConfig[] | undefined 
 	return out.length > 0 ? out : undefined;
 }
 
+function coerceTariffInPageHelpers(value: unknown): number | undefined {
+	const n =
+		typeof value === 'number'
+			? value
+			: typeof value === 'string'
+				? Number(value.trim().replace(',', '.'))
+				: NaN;
+	return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
 export type CardLibraryTab = 'sidebar' | 'view';
 
 type PanelStatePayload = {
@@ -195,6 +205,13 @@ export function toCardDraft(value: unknown, index: number): CardDraft | null {
 	const rawHomeTodayEntityId = item.homeTodayEntityId;
 	const rawCostTodayEntityId = item.costTodayEntityId;
 	const rawCompensationTodayEntityId = item.compensationTodayEntityId;
+	const rawImportPeakTodayEntityId = item.importPeakTodayEntityId;
+	const rawImportOffPeakTodayEntityId = item.importOffPeakTodayEntityId;
+	const rawImportTariffEntityId = item.importTariffEntityId;
+	const rawExportTariffEntityId = item.exportTariffEntityId;
+	const rawImportPeakTariff = item.importPeakTariff;
+	const rawImportOffPeakTariff = item.importOffPeakTariff;
+	const rawExportTariff = item.exportTariff;
 	const rawSelfSufficiencyEntityId = item.selfSufficiencyEntityId;
 	const rawCarChargingEntityId = item.carChargingEntityId;
 	const rawCarCableEntityId = item.carCableEntityId;
@@ -371,6 +388,28 @@ export function toCardDraft(value: unknown, index: number): CardDraft | null {
 			typeof rawCompensationTodayEntityId === 'string' && rawCompensationTodayEntityId.length > 0
 				? rawCompensationTodayEntityId
 				: undefined,
+		importPeakTodayEntityId:
+			typeof rawImportPeakTodayEntityId === 'string' && rawImportPeakTodayEntityId.length > 0
+				? rawImportPeakTodayEntityId
+				: undefined,
+		importOffPeakTodayEntityId:
+			typeof rawImportOffPeakTodayEntityId === 'string' && rawImportOffPeakTodayEntityId.length > 0
+				? rawImportOffPeakTodayEntityId
+				: undefined,
+		importTariffEntityId:
+			typeof rawImportTariffEntityId === 'string' && rawImportTariffEntityId.length > 0
+				? rawImportTariffEntityId
+				: undefined,
+		exportTariffEntityId:
+			typeof rawExportTariffEntityId === 'string' && rawExportTariffEntityId.length > 0
+				? rawExportTariffEntityId
+				: undefined,
+		importPeakTariff:
+			coerceTariffInPageHelpers(rawImportPeakTariff),
+		importOffPeakTariff:
+			coerceTariffInPageHelpers(rawImportOffPeakTariff),
+		exportTariff:
+			coerceTariffInPageHelpers(rawExportTariff),
 		selfSufficiencyEntityId:
 			typeof rawSelfSufficiencyEntityId === 'string' && rawSelfSufficiencyEntityId.length > 0
 				? rawSelfSufficiencyEntityId

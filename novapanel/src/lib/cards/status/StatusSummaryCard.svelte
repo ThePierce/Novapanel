@@ -16,6 +16,7 @@
 		deviceClasses?: string[];
 		ignoredEntityIds?: string[];
 		statusEntityIds?: string[];
+		statusEntityAliases?: Record<string, string>;
 		icon: string;
 		cardId?: string;
 		lightGroups?: LightGroup[];
@@ -28,6 +29,7 @@
 		deviceClasses = [],
 		ignoredEntityIds = [],
 		statusEntityIds = [],
+		statusEntityAliases = {},
 		icon,
 		cardId = '',
 		lightGroups = []
@@ -50,10 +52,17 @@
 			? $entityStore.entities.filter((entity) => selectedEntityIdSet.has(entity.entityId.toLowerCase()))
 			: $entityStore.entities
 	);
+	const labeledEntities = $derived(
+		scopedEntities.map((entity) => {
+			const alias = statusEntityAliases?.[entity.entityId] ?? statusEntityAliases?.[entity.entityId.toLowerCase()];
+			if (typeof alias !== 'string' || alias.trim().length === 0) return entity;
+			return { ...entity, friendlyName: alias.trim() };
+		})
+	);
 
 	const result = $derived(
 		filterEntitiesForStatusCard({
-			entities: scopedEntities,
+			entities: labeledEntities,
 			kind,
 			domains,
 			deviceClasses,

@@ -37,6 +37,13 @@ export type CardEditorOpenState = {
 	homeTodayEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	importPeakTodayEntityId?: string;
+	importOffPeakTodayEntityId?: string;
+	importTariffEntityId?: string;
+	exportTariffEntityId?: string;
+	importPeakTariff?: number;
+	importOffPeakTariff?: number;
+	exportTariff?: number;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
 	carCableEntityId?: string;
@@ -65,6 +72,13 @@ export type CardEditorOpenState = {
 	initialHomeTodayEntityId?: string;
 	initialCostTodayEntityId?: string;
 	initialCompensationTodayEntityId?: string;
+	initialImportPeakTodayEntityId?: string;
+	initialImportOffPeakTodayEntityId?: string;
+	initialImportTariffEntityId?: string;
+	initialExportTariffEntityId?: string;
+	initialImportPeakTariff?: number;
+	initialImportOffPeakTariff?: number;
+	initialExportTariff?: number;
 	initialSelfSufficiencyEntityId?: string;
 	initialCarChargingEntityId?: string;
 	initialCarCableEntityId?: string;
@@ -128,7 +142,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 				: card.cardType === 'climate_button'
 					? 'mdi:thermostat'
 					: card.cardType === 'cover_button'
-						? 'mdi:curtains'
+						? 'mdi:blinds-horizontal'
 						: card.cardType === 'vacuum_button'
 							? 'mdi:robot-vacuum'
 							: card.cardType === 'media_player_button'
@@ -170,6 +184,13 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		homeTodayEntityId: card.homeTodayEntityId,
 		costTodayEntityId: card.costTodayEntityId,
 		compensationTodayEntityId: card.compensationTodayEntityId,
+		importPeakTodayEntityId: card.importPeakTodayEntityId,
+		importOffPeakTodayEntityId: card.importOffPeakTodayEntityId,
+		importTariffEntityId: card.importTariffEntityId,
+		exportTariffEntityId: card.exportTariffEntityId,
+		importPeakTariff: card.importPeakTariff,
+		importOffPeakTariff: card.importOffPeakTariff,
+		exportTariff: card.exportTariff,
 		selfSufficiencyEntityId: card.selfSufficiencyEntityId,
 		carChargingEntityId: card.carChargingEntityId,
 		carCableEntityId: card.carCableEntityId,
@@ -221,6 +242,13 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		initialHomeTodayEntityId: card.homeTodayEntityId,
 		initialCostTodayEntityId: card.costTodayEntityId,
 		initialCompensationTodayEntityId: card.compensationTodayEntityId,
+		initialImportPeakTodayEntityId: card.importPeakTodayEntityId,
+		initialImportOffPeakTodayEntityId: card.importOffPeakTodayEntityId,
+		initialImportTariffEntityId: card.importTariffEntityId,
+		initialExportTariffEntityId: card.exportTariffEntityId,
+		initialImportPeakTariff: card.importPeakTariff,
+		initialImportOffPeakTariff: card.importOffPeakTariff,
+		initialExportTariff: card.exportTariff,
 		initialSelfSufficiencyEntityId: card.selfSufficiencyEntityId,
 		initialCarChargingEntityId: card.carChargingEntityId,
 		initialCarCableEntityId: card.carCableEntityId,

@@ -576,8 +576,11 @@
 			if (video instanceof HTMLVideoElement) {
 				video.setAttribute('playsinline', '');
 				video.autoplay = true;
-				video.muted = true;
-				video.play().catch(() => {});
+				video.muted = false;
+				video.play().catch(() => {
+					video.muted = true;
+					video.controls = true;
+				});
 				if (video !== watchedVideo) {
 					watchedVideo = video;
 					if (videoProgressTimer !== null) window.clearTimeout(videoProgressTimer);
@@ -702,6 +705,8 @@
 								fallbackSrc={snapshotUrl}
 								fallbackStreamSrc={cameraProxyStreamUrl}
 								alt={name}
+								muted={false}
+								audioToggle={true}
 								fit="contain"
 								onAspectRatio={handleAspectRatio}
 							/>
@@ -716,6 +721,8 @@
 					fallbackSrc={snapshotUrl}
 					fallbackStreamSrc={cameraProxyStreamUrl}
 					alt={name}
+					muted={false}
+					audioToggle={true}
 					fit="contain"
 					onAspectRatio={handleAspectRatio}
 				/>

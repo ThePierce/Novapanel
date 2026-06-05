@@ -1,8 +1,10 @@
 import type { LanguageCode } from '$lib/i18n';
+import { DEFAULT_PANEL_THEME, isPanelTheme, type PanelTheme } from '$lib/panel/theme';
 import type { CardDraft, PanelConfiguration, PanelDashboard, PanelDashboardLayout, ViewSectionDraft } from '$lib/persistence/panel-state';
 
 type LocalBootstrapInput = {
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	selectedColumns: 1 | 2 | 3;
 	savedViewSections: ViewSectionDraft[];
 	savedSidebarCards: CardDraft[];
@@ -20,6 +22,7 @@ type LocalBootstrapInput = {
 
 export type LocalBootstrapOutput = {
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: {
@@ -43,12 +46,15 @@ export type LocalBootstrapOutput = {
 };
 
 export function buildLocalBootstrapState(input: LocalBootstrapInput): LocalBootstrapOutput {
-	input.migrateLegacyPanelState({ language: input.selectedLanguage });
-	const configuration = input.loadConfiguration({ language: input.selectedLanguage });
+	input.migrateLegacyPanelState({ language: input.selectedLanguage, theme: input.selectedTheme });
+	const configuration = input.loadConfiguration({ language: input.selectedLanguage, theme: input.selectedTheme });
 	const nextLanguage =
 		typeof configuration.language === 'string' && input.isValidLanguage(configuration.language)
 			? configuration.language
 			: input.selectedLanguage;
+	const nextTheme = isPanelTheme(configuration.theme)
+		? configuration.theme
+		: input.selectedTheme ?? DEFAULT_PANEL_THEME;
 	const activeCardLibraryTab = configuration.cardLibraryTab ?? 'sidebar';
 	const customTitles = configuration.titles ?? {};
 	const oauth = configuration.oauth;
@@ -80,6 +86,7 @@ export function buildLocalBootstrapState(input: LocalBootstrapInput): LocalBoots
 	};
 	return {
 		selectedLanguage: nextLanguage,
+		selectedTheme: nextTheme,
 		activeCardLibraryTab,
 		customTitles,
 		oauth,

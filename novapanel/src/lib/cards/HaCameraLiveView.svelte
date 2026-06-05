@@ -5,6 +5,7 @@
 		getNovaApiCandidates,
 		getNovaWebSocketCandidates
 	} from '$lib/ha/entities-service-helpers';
+	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 
 	type Props = {
 		entityId: string;
@@ -13,6 +14,8 @@
 		fallbackStreamSrc?: string;
 		alt?: string;
 		controls?: boolean;
+		muted?: boolean;
+		audioToggle?: boolean;
 		fit?: 'cover' | 'contain';
 		onAspectRatio?: (ratio: number) => void;
 		onWebRtcState?: (state: 'starting' | 'playing' | 'failed') => void;
@@ -25,6 +28,8 @@
 		fallbackStreamSrc = '',
 		alt = '',
 		controls = false,
+		muted = false,
+		audioToggle = false,
 		fit = 'cover',
 		onAspectRatio,
 		onWebRtcState
@@ -37,6 +42,8 @@
 	let hlsInstance: HlsType | null = null;
 	let peerConnection: RTCPeerConnection | null = null;
 	let remoteStream: MediaStream | null = null;
+	let audioEnabled = $state(!muted);
+	let needsAudioGesture = $state(false);
 	let webRtcUnsubscribe: (() => void) | null = null;
 	let streamTimeout: number | null = null;
 	let bufferingTimer: number | null = null;
@@ -231,6 +238,37 @@
 		}
 	}
 
+	$effect(() => {
+		audioEnabled = !muted;
+		needsAudioGesture = false;
+		if (videoEl) videoEl.muted = !audioEnabled;
+	});
+
+	function applyAudioPreference() {
+		if (!videoEl) return;
+		videoEl.muted = !audioEnabled;
+		if (audioEnabled) videoEl.volume = 1;
+	}
+
+	function playVideo() {
+		if (!videoEl) return;
+		applyAudioPreference();
+		videoEl.play().catch(() => {
+			if (!videoEl || !audioEnabled) return;
+			audioEnabled = false;
+			needsAudioGesture = true;
+			videoEl.muted = true;
+			videoEl.play().catch(() => {});
+		});
+	}
+
+	function enableAudio() {
+		audioEnabled = true;
+		needsAudioGesture = false;
+		applyAudioPreference();
+		playVideo();
+	}
+
 	function fallbackToImage() {
 		cleanupPlayback();
 		mode = fallbackStreamSrc && !fallbackStreamFailed ? 'mjpeg' : 'snapshot';
@@ -327,7 +365,7 @@
 			peerConnection = pc;
 			remoteStream = stream;
 			videoEl.srcObject = stream;
-			videoEl.muted = true;
+			applyAudioPreference();
 
 			const sendCandidate = (candidate: RTCIceCandidate) => {
 				if (!sessionId) {
@@ -359,7 +397,7 @@
 				stream.addTrack(event.track);
 				if (event.track.kind === 'video') {
 					markMediaReady();
-					videoEl?.play().catch(() => {});
+					playVideo();
 				}
 			};
 			if (dataChannel) pc.createDataChannel(dataChannel);
@@ -394,7 +432,7 @@
 							type: 'answer',
 							sdp: answer
 						})).then(() => {
-							if (token === cleanedToken) videoEl?.play().catch(() => {});
+							if (token === cleanedToken) playVideo();
 						}).catch((error) => {
 							console.warn('[NovaPanel] WebRTC answer fallback:', entity, error);
 							void fallbackToHlsOrImage(entity, token);
@@ -418,7 +456,7 @@
 			);
 			if (token !== cleanedToken) return false;
 			setLoadWatch(token, () => void fallbackToHlsOrImage(entity, token), 18000);
-			videoEl.play().catch(() => {});
+			playVideo();
 			return true;
 		} catch (error) {
 			console.warn('[NovaPanel] WebRTC camera fallback:', entity, error);
@@ -456,7 +494,7 @@
 				hls.attachMedia(videoEl);
 				hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(playableUrl));
 				hls.on(Hls.Events.FRAG_LOADED, () => {
-					videoEl?.play().catch(() => {});
+					playVideo();
 				});
 				hls.on(Hls.Events.ERROR, (_event, data) => {
 					if (!data.fatal) return;
@@ -476,7 +514,7 @@
 			} else {
 				return false;
 			}
-			videoEl.play().catch(() => {});
+			playVideo();
 			return true;
 		} catch (error) {
 			console.warn('[NovaPanel] HLS camera fallback:', entity, error);
@@ -527,7 +565,7 @@
 			class="ha-camera-video"
 			class:ready={mediaReady}
 			autoplay
-			muted
+			muted={!audioEnabled}
 			playsinline
 			preload="auto"
 			poster={fallbackSrc}
@@ -556,6 +594,13 @@
 				}
 			}}
 		/>
+	{/if}
+
+	{#if audioToggle && needsAudioGesture && active && mode !== 'mjpeg' && mode !== 'snapshot'}
+		<button type="button" class="camera-audio-btn" onclick={enableAudio} aria-label="Geluid aanzetten">
+			<TablerIcon name="volume" size={16} />
+			<span>Geluid</span>
+		</button>
 	{/if}
 </div>
 
@@ -587,5 +632,30 @@
 	}
 	.ha-camera-fallback {
 		z-index: 1;
+	}
+	.camera-audio-btn {
+		position: absolute;
+		right: 14px;
+		bottom: 14px;
+		z-index: 4;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.42rem;
+		height: 2.25rem;
+		padding: 0 0.78rem;
+		border: 0;
+		border-radius: 999px;
+		color: #f8fafc;
+		background: rgba(15,23,42,0.78);
+		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 10px 30px rgba(0,0,0,0.28);
+		backdrop-filter: blur(14px);
+		font: inherit;
+		font-size: 0.78rem;
+		font-weight: 800;
+		cursor: pointer;
+	}
+	.camera-audio-btn:hover {
+		background: rgba(30,41,59,0.86);
 	}
 </style>

@@ -1,4 +1,5 @@
 import type { LanguageCode } from '$lib/i18n';
+import type { PanelTheme } from '$lib/panel/theme';
 import type { CardDraft, PanelDashboard, ViewSectionDraft } from '$lib/persistence/panel-state';
 import { countViewCards } from '$lib/panel/page-debug';
 
@@ -22,6 +23,7 @@ export type PersistDraftInput = {
 	savedViewSections: ViewSectionDraft[];
 	savedSidebarCards: CardDraft[];
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: OAuthState;
@@ -33,6 +35,7 @@ export type PersistDraftData = {
 	dashboard: PanelDashboard;
 	configuration: {
 		language: LanguageCode;
+		theme: PanelTheme;
 		cardLibraryTab: 'sidebar' | 'view';
 		titles: { cardLibrary?: string; homeviewPreview?: string };
 		oauth?: OAuthState;
@@ -55,6 +58,7 @@ export function buildPersistDraftData(input: PersistDraftInput): PersistDraftDat
 	});
 	const configuration = input.cloneForPersistence({
 		language: input.selectedLanguage,
+		theme: input.selectedTheme,
 		cardLibraryTab: input.activeCardLibraryTab,
 		titles: input.customTitles,
 		oauth: input.oauth,

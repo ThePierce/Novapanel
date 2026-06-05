@@ -88,7 +88,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 
 	const cardTypeMeta = $derived((() => {
 		if (kind === 'lights_status') return { title: translate('Lampen', $selectedLanguageStore), icon: 'bulb', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: translate('Welke lampen zijn aan', $selectedLanguageStore) };
-		if (kind === 'openings_status') return { title: translate('Openingen', $selectedLanguageStore), icon: 'door', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: translate('Welke deuren en ramen zijn open', $selectedLanguageStore) };
+		if (kind === 'openings_status') return { title: translate('cardTypeOpeningsStatus', $selectedLanguageStore), icon: 'door', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: translate('Welke deuren en ramen zijn open', $selectedLanguageStore) };
 		if (kind === 'devices_status') return { title: translate('Apparaten', $selectedLanguageStore), icon: 'plug', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: translate('Welke apparaten staan aan', $selectedLanguageStore) };
 		if (kind === 'availability_status') return { title: translate('Beschikbaarheid', $selectedLanguageStore), icon: 'wifi', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: translate('Bereikbaarheid en batterijen', $selectedLanguageStore) };
 		if (kind === 'media_players_status') return { title: 'Media', icon: 'device-speaker', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: translate('Spelers en queue', $selectedLanguageStore) };
@@ -106,17 +106,18 @@ const EMPTY_RECORD: Record<string, string> = {};
 	type StatusDetailEntity = (typeof result.relevant)[number];
 
 	function popupLabelForEntity(entityId: string, friendlyName: string): string {
+		const normalizedEntityId = entityId.trim().toLowerCase();
 		if (
 			kind === 'lights_status' ||
 			kind === 'availability_status' ||
 			kind === 'devices_status' ||
 			kind === 'openings_status'
 		) {
-			const value = statusEntityAliases?.[entityId];
+			const value = statusEntityAliases?.[entityId] ?? statusEntityAliases?.[normalizedEntityId];
 			if (typeof value === 'string' && value.trim().length > 0) return value.trim();
 		}
 		if (kind === 'media_players_status') {
-			const value = mediaHubPlayerAliases?.[entityId];
+			const value = mediaHubPlayerAliases?.[entityId] ?? mediaHubPlayerAliases?.[normalizedEntityId];
 			if (typeof value === 'string' && value.trim().length > 0) return value.trim();
 		}
 		return friendlyName;
@@ -381,21 +382,24 @@ const EMPTY_RECORD: Record<string, string> = {};
 		domain: string,
 		service: string,
 		entityId: string,
-		serviceData: Record<string, unknown> = {}
+		serviceData: Record<string, unknown> = {},
+		options: { silent?: boolean } = {}
 	) {
-		actionError = '';
+		if (!options.silent) actionError = '';
 		actionBusyEntityId = entityId;
 		try {
 			await callHaService(domain, service, {
 				entity_id: entityId,
 				...serviceData
 			});
+			return true;
 		} catch (error) {
 			const message =
 				error instanceof Error && error.message.trim().length > 0
 					? error.message
 					: t('unknownError');
-			actionError = `${t('actionFailedPrefix')}: ${message}`;
+			if (!options.silent) actionError = `${t('actionFailedPrefix')}: ${message}`;
+			return false;
 		} finally {
 			actionBusyEntityId = '';
 		}
@@ -1104,6 +1108,9 @@ const EMPTY_RECORD: Record<string, string> = {};
 	.availability-grid {
 		grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
 		align-items: start;
+	}
+	.status-detail-modal[data-kind="openings_status"] .availability-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 	.media-players-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));

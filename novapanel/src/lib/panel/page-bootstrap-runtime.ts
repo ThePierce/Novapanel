@@ -1,4 +1,5 @@
 import type { LanguageCode } from '$lib/i18n';
+import type { PanelTheme } from '$lib/panel/theme';
 import type { CardDraft, ViewSectionDraft } from '$lib/persistence/panel-state';
 import { seedDefaultViewIfEmpty } from '$lib/panel/page-default-view';
 import {
@@ -21,6 +22,7 @@ type BootstrapState = {
 	savedUpdatedAt: number;
 	activeViewSectionId: string;
 	selectedLanguage: LanguageCode;
+	selectedTheme: PanelTheme;
 	activeCardLibraryTab: CardLibraryTab;
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: {
@@ -85,6 +87,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 		};
 		configuration?: {
 			language?: string;
+			theme?: string;
 			cardLibraryTab?: CardLibraryTab;
 			titles?: { cardLibrary?: string; homeviewPreview?: string };
 			oauth?: {
@@ -109,6 +112,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			};
 			configuration?: {
 				language?: string;
+				theme?: string;
 				cardLibraryTab?: CardLibraryTab;
 				titles?: { cardLibrary?: string; homeviewPreview?: string };
 				oauth?: {
@@ -135,6 +139,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			savedSidebarCards: state.savedSidebarCards,
 			currentUpdatedAt: state.savedUpdatedAt,
 			selectedLanguage: state.selectedLanguage,
+			selectedTheme: state.selectedTheme,
 			activeCardLibraryTab: state.activeCardLibraryTab,
 			customTitles: state.customTitles,
 			oauth: state.oauth,
@@ -164,6 +169,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			savedUpdatedAt: next.savedUpdatedAt ?? state.savedUpdatedAt,
 			activeViewSectionId: next.activeViewSectionId,
 			selectedLanguage: next.selectedLanguage,
+			selectedTheme: next.selectedTheme,
 			activeCardLibraryTab: next.activeCardLibraryTab,
 			customTitles: next.customTitles,
 			oauth: next.oauth,
@@ -180,6 +186,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 		};
 		configuration?: {
 			language?: string;
+			theme?: string;
 			cardLibraryTab?: CardLibraryTab;
 			titles?: { cardLibrary?: string; homeviewPreview?: string };
 			oauth?: {
@@ -204,6 +211,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			savedViewSections: state.savedViewSections,
 			savedSidebarCards: state.savedSidebarCards,
 			selectedLanguage: state.selectedLanguage,
+			selectedTheme: state.selectedTheme,
 			activeCardLibraryTab: state.activeCardLibraryTab,
 			customTitles: state.customTitles,
 			oauth: state.oauth,
@@ -223,6 +231,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			savedLayout: next.savedLayout,
 			activeViewSectionId: next.activeViewSectionId,
 			selectedLanguage: next.selectedLanguage,
+			selectedTheme: next.selectedTheme,
 			activeCardLibraryTab: next.activeCardLibraryTab,
 			customTitles: next.customTitles,
 			oauth: next.oauth,

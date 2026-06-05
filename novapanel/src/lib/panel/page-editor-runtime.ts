@@ -103,6 +103,13 @@ export function saveCardEditorRuntime(input: {
 	homeTodayEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	importPeakTodayEntityId?: string;
+	importOffPeakTodayEntityId?: string;
+	importTariffEntityId?: string;
+	exportTariffEntityId?: string;
+	importPeakTariff?: string;
+	importOffPeakTariff?: string;
+	exportTariff?: string;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
 	carCableEntityId?: string;
@@ -161,6 +168,13 @@ export function saveCardEditorRuntime(input: {
 				input.homeTodayEntityId,
 				input.costTodayEntityId,
 				input.compensationTodayEntityId,
+				input.importPeakTodayEntityId,
+				input.importOffPeakTodayEntityId,
+				input.importTariffEntityId,
+				input.exportTariffEntityId,
+				input.importPeakTariff,
+				input.importOffPeakTariff,
+				input.exportTariff,
 				input.selfSufficiencyEntityId,
 				input.carChargingEntityId,
 				input.carCableEntityId,
@@ -222,6 +236,13 @@ export function saveCardEditorRuntime(input: {
 			input.homeTodayEntityId,
 			input.costTodayEntityId,
 			input.compensationTodayEntityId,
+			input.importPeakTodayEntityId,
+			input.importOffPeakTodayEntityId,
+			input.importTariffEntityId,
+			input.exportTariffEntityId,
+			input.importPeakTariff,
+			input.importOffPeakTariff,
+			input.exportTariff,
 			input.selfSufficiencyEntityId,
 			input.carChargingEntityId,
 			input.carCableEntityId,

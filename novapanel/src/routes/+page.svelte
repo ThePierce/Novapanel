@@ -62,6 +62,7 @@
 	import {
 		persistDashboardStateRuntime
 	} from '$lib/panel/page-runtime';
+	import { DEFAULT_PANEL_THEME, type PanelTheme } from '$lib/panel/theme';
 	import { cloneForPersistence, safeCompareJson } from '$lib/panel/page-state-utils';
 	import { countViewCards, createDebugLogger, PAGE_DEBUG_BUILD, setupGlobalDebug } from '$lib/panel/page-debug';
 	import './+page.css';
@@ -123,6 +124,7 @@
 	let activeCardLibraryTab = $state<CardLibraryTab>('sidebar');
 	let activeSettingsTab = $state<SettingsTab>('general');
 	let selectedLanguage = $state<LanguageCode>('nl');
+	let selectedTheme = $state<PanelTheme>(DEFAULT_PANEL_THEME);
 	let customTitles = $state<{ cardLibrary?: string; homeviewPreview?: string }>({});
 	let oauthSpotifyClientId = $state('');
 	let oauthSpotifyClientSecret = $state('');
@@ -186,6 +188,13 @@
 		homeTodayEntityId?: string;
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		importPeakTodayEntityId?: string;
+		importOffPeakTodayEntityId?: string;
+		importTariffEntityId?: string;
+		exportTariffEntityId?: string;
+		importPeakTariff?: number;
+		importOffPeakTariff?: number;
+		exportTariff?: number;
 		selfSufficiencyEntityId?: string;
 		carChargingEntityId?: string;
 		carCableEntityId?: string;
@@ -326,6 +335,13 @@
 	let cardEditorHomeTodayEntityId = $state('');
 	let cardEditorCostTodayEntityId = $state('');
 	let cardEditorCompensationTodayEntityId = $state('');
+	let cardEditorImportPeakTodayEntityId = $state('');
+	let cardEditorImportOffPeakTodayEntityId = $state('');
+	let cardEditorImportTariffEntityId = $state('');
+	let cardEditorExportTariffEntityId = $state('');
+	let cardEditorImportPeakTariff = $state('');
+	let cardEditorImportOffPeakTariff = $state('');
+	let cardEditorExportTariff = $state('');
 	let cardEditorSelfSufficiencyEntityId = $state('');
 	let cardEditorCarChargingEntityId = $state('');
 	let cardEditorCarCableEntityId = $state('');
@@ -378,6 +394,13 @@
 	let cardEditorInitialHomeTodayEntityId = $state('');
 	let cardEditorInitialCostTodayEntityId = $state('');
 	let cardEditorInitialCompensationTodayEntityId = $state('');
+	let cardEditorInitialImportPeakTodayEntityId = $state('');
+	let cardEditorInitialImportOffPeakTodayEntityId = $state('');
+	let cardEditorInitialImportTariffEntityId = $state('');
+	let cardEditorInitialExportTariffEntityId = $state('');
+	let cardEditorInitialImportPeakTariff = $state('');
+	let cardEditorInitialImportOffPeakTariff = $state('');
+	let cardEditorInitialExportTariff = $state('');
 	let cardEditorInitialSelfSufficiencyEntityId = $state('');
 	let cardEditorInitialCarChargingEntityId = $state('');
 	let cardEditorInitialCarCableEntityId = $state('');
@@ -578,6 +601,13 @@ if (browser) {
 		homeTodayEntityId?: string;
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		importPeakTodayEntityId?: string;
+		importOffPeakTodayEntityId?: string;
+		importTariffEntityId?: string;
+		exportTariffEntityId?: string;
+		importPeakTariff?: number;
+		importOffPeakTariff?: number;
+		exportTariff?: number;
 		selfSufficiencyEntityId?: string;
 		carChargingEntityId?: string;
 		carCableEntityId?: string;
@@ -639,6 +669,13 @@ if (browser) {
 				homeTodayEntityId: item.homeTodayEntityId ?? '',
 				costTodayEntityId: item.costTodayEntityId ?? '',
 				compensationTodayEntityId: item.compensationTodayEntityId ?? '',
+				importPeakTodayEntityId: item.importPeakTodayEntityId ?? '',
+				importOffPeakTodayEntityId: item.importOffPeakTodayEntityId ?? '',
+				importTariffEntityId: item.importTariffEntityId ?? '',
+				exportTariffEntityId: item.exportTariffEntityId ?? '',
+				importPeakTariff: item.importPeakTariff,
+				importOffPeakTariff: item.importOffPeakTariff,
+				exportTariff: item.exportTariff,
 				selfSufficiencyEntityId: item.selfSufficiencyEntityId ?? '',
 				carChargingEntityId: item.carChargingEntityId ?? '',
 				carCableEntityId: item.carCableEntityId ?? '',
@@ -775,6 +812,7 @@ function getBootstrapState() {
 		savedUpdatedAt,
 		activeViewSectionId,
 		selectedLanguage,
+		selectedTheme,
 		activeCardLibraryTab,
 		customTitles,
 		oauth: {
@@ -803,6 +841,7 @@ function setBootstrapState(
 	if (patch.savedUpdatedAt !== undefined) savedUpdatedAt = patch.savedUpdatedAt;
 	if (patch.activeViewSectionId !== undefined) activeViewSectionId = patch.activeViewSectionId;
 	if (patch.selectedLanguage !== undefined) selectedLanguage = patch.selectedLanguage;
+	if (patch.selectedTheme !== undefined) selectedTheme = patch.selectedTheme;
 	if (patch.activeCardLibraryTab !== undefined) activeCardLibraryTab = patch.activeCardLibraryTab;
 	if (patch.customTitles !== undefined) customTitles = patch.customTitles;
 	if (patch.oauth !== undefined && patch.oauth) {
@@ -887,6 +926,13 @@ function getEditorUiState() {
 			cardEditorHomeTodayEntityId,
 			cardEditorCostTodayEntityId,
 			cardEditorCompensationTodayEntityId,
+			cardEditorImportPeakTodayEntityId,
+			cardEditorImportOffPeakTodayEntityId,
+			cardEditorImportTariffEntityId,
+			cardEditorExportTariffEntityId,
+			cardEditorImportPeakTariff,
+			cardEditorImportOffPeakTariff,
+			cardEditorExportTariff,
 			cardEditorSelfSufficiencyEntityId,
 			cardEditorCarChargingEntityId,
 			cardEditorCarCableEntityId,
@@ -914,6 +960,13 @@ function getEditorUiState() {
 			cardEditorInitialHomeTodayEntityId,
 			cardEditorInitialCostTodayEntityId,
 			cardEditorInitialCompensationTodayEntityId,
+			cardEditorInitialImportPeakTodayEntityId,
+			cardEditorInitialImportOffPeakTodayEntityId,
+			cardEditorInitialImportTariffEntityId,
+			cardEditorInitialExportTariffEntityId,
+			cardEditorInitialImportPeakTariff,
+			cardEditorInitialImportOffPeakTariff,
+			cardEditorInitialExportTariff,
 			cardEditorInitialSelfSufficiencyEntityId,
 			cardEditorInitialCarChargingEntityId,
 			cardEditorInitialCarCableEntityId,
@@ -1024,6 +1077,13 @@ function setEditorUiState(
 		if (patch.cardEditorHomeTodayEntityId !== undefined) cardEditorHomeTodayEntityId = patch.cardEditorHomeTodayEntityId;
 		if (patch.cardEditorCostTodayEntityId !== undefined) cardEditorCostTodayEntityId = patch.cardEditorCostTodayEntityId;
 		if (patch.cardEditorCompensationTodayEntityId !== undefined) cardEditorCompensationTodayEntityId = patch.cardEditorCompensationTodayEntityId;
+		if (patch.cardEditorImportPeakTodayEntityId !== undefined) cardEditorImportPeakTodayEntityId = patch.cardEditorImportPeakTodayEntityId;
+		if (patch.cardEditorImportOffPeakTodayEntityId !== undefined) cardEditorImportOffPeakTodayEntityId = patch.cardEditorImportOffPeakTodayEntityId;
+		if (patch.cardEditorImportTariffEntityId !== undefined) cardEditorImportTariffEntityId = patch.cardEditorImportTariffEntityId;
+		if (patch.cardEditorExportTariffEntityId !== undefined) cardEditorExportTariffEntityId = patch.cardEditorExportTariffEntityId;
+		if (patch.cardEditorImportPeakTariff !== undefined) cardEditorImportPeakTariff = patch.cardEditorImportPeakTariff;
+		if (patch.cardEditorImportOffPeakTariff !== undefined) cardEditorImportOffPeakTariff = patch.cardEditorImportOffPeakTariff;
+		if (patch.cardEditorExportTariff !== undefined) cardEditorExportTariff = patch.cardEditorExportTariff;
 		if (patch.cardEditorSelfSufficiencyEntityId !== undefined) cardEditorSelfSufficiencyEntityId = patch.cardEditorSelfSufficiencyEntityId;
 		if (patch.cardEditorCarChargingEntityId !== undefined) cardEditorCarChargingEntityId = patch.cardEditorCarChargingEntityId;
 		if (patch.cardEditorCarCableEntityId !== undefined) cardEditorCarCableEntityId = patch.cardEditorCarCableEntityId;
@@ -1080,6 +1140,13 @@ function setEditorUiState(
 		if (patch.cardEditorInitialHomeTodayEntityId !== undefined) cardEditorInitialHomeTodayEntityId = patch.cardEditorInitialHomeTodayEntityId;
 		if (patch.cardEditorInitialCostTodayEntityId !== undefined) cardEditorInitialCostTodayEntityId = patch.cardEditorInitialCostTodayEntityId;
 		if (patch.cardEditorInitialCompensationTodayEntityId !== undefined) cardEditorInitialCompensationTodayEntityId = patch.cardEditorInitialCompensationTodayEntityId;
+		if (patch.cardEditorInitialImportPeakTodayEntityId !== undefined) cardEditorInitialImportPeakTodayEntityId = patch.cardEditorInitialImportPeakTodayEntityId;
+		if (patch.cardEditorInitialImportOffPeakTodayEntityId !== undefined) cardEditorInitialImportOffPeakTodayEntityId = patch.cardEditorInitialImportOffPeakTodayEntityId;
+		if (patch.cardEditorInitialImportTariffEntityId !== undefined) cardEditorInitialImportTariffEntityId = patch.cardEditorInitialImportTariffEntityId;
+		if (patch.cardEditorInitialExportTariffEntityId !== undefined) cardEditorInitialExportTariffEntityId = patch.cardEditorInitialExportTariffEntityId;
+		if (patch.cardEditorInitialImportPeakTariff !== undefined) cardEditorInitialImportPeakTariff = patch.cardEditorInitialImportPeakTariff;
+		if (patch.cardEditorInitialImportOffPeakTariff !== undefined) cardEditorInitialImportOffPeakTariff = patch.cardEditorInitialImportOffPeakTariff;
+		if (patch.cardEditorInitialExportTariff !== undefined) cardEditorInitialExportTariff = patch.cardEditorInitialExportTariff;
 		if (patch.cardEditorInitialSelfSufficiencyEntityId !== undefined) cardEditorInitialSelfSufficiencyEntityId = patch.cardEditorInitialSelfSufficiencyEntityId;
 		if (patch.cardEditorInitialCarChargingEntityId !== undefined) cardEditorInitialCarChargingEntityId = patch.cardEditorInitialCarChargingEntityId;
 		if (patch.cardEditorInitialCarCableEntityId !== undefined) cardEditorInitialCarCableEntityId = patch.cardEditorInitialCarCableEntityId;
@@ -1590,6 +1657,7 @@ async function persistDashboardState(): Promise<{ localOk: boolean; addonOk: boo
 		savedViewSections,
 		savedSidebarCards,
 		selectedLanguage,
+		selectedTheme,
 		activeCardLibraryTab,
 		customTitles,
 		oauth: {
@@ -1632,6 +1700,7 @@ function persistConfigurationState() {
 	if (!browser) return;
 	const configuration = cloneForPersistence({
 		language: selectedLanguage,
+		theme: selectedTheme,
 		cardLibraryTab: activeCardLibraryTab,
 		titles: customTitles,
 		oauth: {
@@ -1655,6 +1724,7 @@ function exportNovaPanelJsonBundle() {
 		savedViewSections,
 		savedSidebarCards,
 		selectedLanguage,
+		selectedTheme,
 		activeCardLibraryTab,
 		customTitles,
 		oauth: {
@@ -1687,6 +1757,7 @@ async function importNovaPanelJsonBundle(file: File): Promise<{ serverOk: boolea
 		parsed.configuration ??
 		({
 			language: selectedLanguage,
+			theme: selectedTheme,
 			cardLibraryTab: activeCardLibraryTab,
 			titles: customTitles
 		});
@@ -1757,6 +1828,7 @@ function applyLocalBootstrapNow(skipDashboardFromStorage: boolean) {
 	if (!browser) return;
 	const next = buildLocalBootstrapState({
 		selectedLanguage,
+		selectedTheme,
 		selectedColumns,
 		savedViewSections,
 		savedSidebarCards,
@@ -1771,6 +1843,7 @@ function applyLocalBootstrapNow(skipDashboardFromStorage: boolean) {
 		skipDashboardFromStorage
 	});
 	selectedLanguage = next.selectedLanguage;
+	selectedTheme = next.selectedTheme;
 	activeCardLibraryTab = next.activeCardLibraryTab;
 	customTitles = next.customTitles;
 	if (next.oauth) {
@@ -2054,7 +2127,7 @@ if (browser) {
 		const seen = new Set<string>();
 		const allEntities = get(entityStore).entities;
 		for (const card of activeSidebarCards) {
-			if (card.type !== 'lights_status') continue;
+			if (card.cardType !== 'lights_status') continue;
 			const scopedIds = new Set(
 				(card.statusEntityIds ?? []).map((value) => value.trim().toLowerCase()).filter(Boolean)
 			);
@@ -2123,6 +2196,13 @@ if (browser) {
 			cardEditorHomeTodayEntityId !== (cardEditorInitialHomeTodayEntityId ?? '') ||
 			cardEditorCostTodayEntityId !== (cardEditorInitialCostTodayEntityId ?? '') ||
 			cardEditorCompensationTodayEntityId !== (cardEditorInitialCompensationTodayEntityId ?? '') ||
+			cardEditorImportPeakTodayEntityId !== (cardEditorInitialImportPeakTodayEntityId ?? '') ||
+			cardEditorImportOffPeakTodayEntityId !== (cardEditorInitialImportOffPeakTodayEntityId ?? '') ||
+			cardEditorImportTariffEntityId !== (cardEditorInitialImportTariffEntityId ?? '') ||
+			cardEditorExportTariffEntityId !== (cardEditorInitialExportTariffEntityId ?? '') ||
+			cardEditorImportPeakTariff !== (cardEditorInitialImportPeakTariff ?? '') ||
+			cardEditorImportOffPeakTariff !== (cardEditorInitialImportOffPeakTariff ?? '') ||
+			cardEditorExportTariff !== (cardEditorInitialExportTariff ?? '') ||
 			cardEditorSelfSufficiencyEntityId !== (cardEditorInitialSelfSufficiencyEntityId ?? '') ||
 			cardEditorCarChargingEntityId !== (cardEditorInitialCarChargingEntityId ?? '') ||
 			cardEditorCarCableEntityId !== (cardEditorInitialCarCableEntityId ?? '') ||
@@ -2353,6 +2433,9 @@ if (browser) {
 	}
 
 	function openSectionCards(section: ViewSectionDraft) {
+		if (!editMode && isCameraStripSection(section)) {
+			return;
+		}
 		if (editMode) {
 			openSectionEditor(section.id);
 			return;
@@ -2398,6 +2481,7 @@ if (browser) {
 
 <div
 	class="app-shell"
+	data-theme={selectedTheme}
 	class:drawer-open={controlsOpen}
 	class:mobile-sidebar-open={mobileSidebarOpen}
 	class:is-mobile={isMobile}
@@ -2677,6 +2761,7 @@ if (browser) {
 					{activeSettingsTab}
 					{selectedColumns}
 					{selectedLanguage}
+					{selectedTheme}
 					spotifyClientId={oauthSpotifyClientId}
 					spotifyClientSecret={oauthSpotifyClientSecret}
 					spotifyRedirectUri={oauthSpotifyRedirectUri}
@@ -2684,6 +2769,7 @@ if (browser) {
 					onSetSettingsTab={setSettingsTab}
 					onSetColumns={setColumns}
 					onSetLanguage={(value) => (selectedLanguage = value)}
+					onSetTheme={(value) => (selectedTheme = value)}
 					onSetSpotifyClientId={(v) => (oauthSpotifyClientId = v)}
 					onSetSpotifyClientSecret={(v) => (oauthSpotifyClientSecret = v)}
 					onSetSpotifyRedirectUri={(v) => (oauthSpotifyRedirectUri = v)}
@@ -2794,6 +2880,13 @@ if (browser) {
 				cardEditorHomeTodayEntityId={cardEditorHomeTodayEntityId}
 				cardEditorCostTodayEntityId={cardEditorCostTodayEntityId}
 				cardEditorCompensationTodayEntityId={cardEditorCompensationTodayEntityId}
+				cardEditorImportPeakTodayEntityId={cardEditorImportPeakTodayEntityId}
+				cardEditorImportOffPeakTodayEntityId={cardEditorImportOffPeakTodayEntityId}
+				cardEditorImportTariffEntityId={cardEditorImportTariffEntityId}
+				cardEditorExportTariffEntityId={cardEditorExportTariffEntityId}
+				cardEditorImportPeakTariff={cardEditorImportPeakTariff}
+				cardEditorImportOffPeakTariff={cardEditorImportOffPeakTariff}
+				cardEditorExportTariff={cardEditorExportTariff}
 				cardEditorSelfSufficiencyEntityId={cardEditorSelfSufficiencyEntityId}
 				cardEditorCarChargingEntityId={cardEditorCarChargingEntityId}
 				cardEditorCarCableEntityId={cardEditorCarCableEntityId}
@@ -2820,6 +2913,13 @@ if (browser) {
 				onHomeTodayEntityIdChange={(value) => (cardEditorHomeTodayEntityId = value)}
 				onCostTodayEntityIdChange={(value) => (cardEditorCostTodayEntityId = value)}
 				onCompensationTodayEntityIdChange={(value) => (cardEditorCompensationTodayEntityId = value)}
+				onImportPeakTodayEntityIdChange={(value) => (cardEditorImportPeakTodayEntityId = value)}
+				onImportOffPeakTodayEntityIdChange={(value) => (cardEditorImportOffPeakTodayEntityId = value)}
+				onImportTariffEntityIdChange={(value) => (cardEditorImportTariffEntityId = value)}
+				onExportTariffEntityIdChange={(value) => (cardEditorExportTariffEntityId = value)}
+				onImportPeakTariffChange={(value) => (cardEditorImportPeakTariff = value)}
+				onImportOffPeakTariffChange={(value) => (cardEditorImportOffPeakTariff = value)}
+				onExportTariffChange={(value) => (cardEditorExportTariff = value)}
 				onSelfSufficiencyEntityIdChange={(value) => (cardEditorSelfSufficiencyEntityId = value)}
 				onCarChargingEntityIdChange={(value) => (cardEditorCarChargingEntityId = value)}
 				onCarCableEntityIdChange={(value) => (cardEditorCarCableEntityId = value)}
@@ -2930,6 +3030,13 @@ if (browser) {
 					homeTodayEntityId={energyDetailCard.homeTodayEntityId}
 					costTodayEntityId={energyDetailCard.costTodayEntityId}
 					compensationTodayEntityId={energyDetailCard.compensationTodayEntityId}
+					importPeakTodayEntityId={energyDetailCard.importPeakTodayEntityId}
+					importOffPeakTodayEntityId={energyDetailCard.importOffPeakTodayEntityId}
+					importTariffEntityId={energyDetailCard.importTariffEntityId}
+					exportTariffEntityId={energyDetailCard.exportTariffEntityId}
+					importPeakTariff={energyDetailCard.importPeakTariff}
+					importOffPeakTariff={energyDetailCard.importOffPeakTariff}
+					exportTariff={energyDetailCard.exportTariff}
 					selfSufficiencyEntityId={energyDetailCard.selfSufficiencyEntityId}
 					carChargingEntityId={energyDetailCard.carChargingEntityId}
 					carCableEntityId={energyDetailCard.carCableEntityId}

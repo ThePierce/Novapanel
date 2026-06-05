@@ -1,4 +1,5 @@
 import { parseJson, readStoredValue, removeStoredValue, writeStoredValue } from './storage';
+import { DEFAULT_PANEL_THEME, isPanelTheme } from '$lib/panel/theme';
 import {
 	coerceCardDraftFromUnknown,
 	dashboardScore,
@@ -27,6 +28,7 @@ export function loadConfiguration(defaults: PanelConfiguration): PanelConfigurat
 	if (!parsed || typeof parsed !== 'object') return defaults;
 	const value = parsed as Record<string, unknown>;
 	const language = typeof value.language === 'string' ? value.language : defaults.language;
+	const theme = isPanelTheme(value.theme) ? value.theme : defaults.theme ?? DEFAULT_PANEL_THEME;
 	const cardLibraryTab =
 		value.cardLibraryTab === 'sidebar' || value.cardLibraryTab === 'view'
 			? value.cardLibraryTab
@@ -89,7 +91,7 @@ export function loadConfiguration(defaults: PanelConfiguration): PanelConfigurat
 					return { onkyoBridges, playerOrder, playerAliases };
 				})()
 			: undefined;
-	return { language, cardLibraryTab, titles, oauth, mediaHub };
+	return { language, theme, cardLibraryTab, titles, oauth, mediaHub };
 }
 
 export function saveConfiguration(configuration: PanelConfiguration) {

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.5
+
+- Bumped the add-on, npm package, documentation, and Git tag version to `1.0.5`.
+- Fixed entity selection and name propagation across sidebar and main-area cards, including locks, light groups, device classes, aliases, and custom names.
+- Improved card sizing and layouts for content-height cards, doors and windows, room popups, alarm controls, media players, and per-device energy usage.
+- Fixed media player off controls, whole-card dragging, camera title/audio behavior, and the clock second hand.
+- Improved energy cost handling, tariff options, usage charts, and anchor point alignment between editor and popup views.
+- Added theme support, a brighter Apple Home-inspired daylight theme, test entities for development, icon presets with manual icon entry, and more modern status icons.
+- Expanded robot vacuum detail views with better map/image detection.
+
 ## 1.0.4
 
 - Bumped the add-on, npm package, documentation, Git tag, and GitHub Release version to `1.0.4`.

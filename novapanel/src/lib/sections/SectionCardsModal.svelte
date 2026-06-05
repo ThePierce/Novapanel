@@ -42,7 +42,7 @@
 		if (cardType === 'light_button' || cardType === 'lights_status') return 'bulb';
 		if (cardType === 'device_button') return 'plug';
 		if (cardType === 'climate_button') return 'temperature';
-		if (cardType === 'cover_button') return 'curtains';
+		if (cardType === 'cover_button') return 'blinds';
 		if (cardType === 'vacuum_button') return 'robot';
 		if (cardType === 'media_player_button') return 'device-speaker';
 		if (cardType === 'devices_status') return 'plug';
@@ -201,8 +201,8 @@
 	}
 	.section-cards-body {
 		display: grid;
-		gap: 0.9rem;
-		padding: var(--np-popup-body-pad-y, 1rem) var(--np-popup-body-pad-x, 1.25rem) 1.1rem;
+		gap: 0.7rem;
+		padding: 0.8rem 1rem 0.95rem;
 		min-height: 0;
 		overflow-y: auto;
 		overflow-x: hidden;
@@ -228,7 +228,7 @@
 	}
 	.section-card-group {
 		display: grid;
-		gap: 0.55rem;
+		gap: 0.42rem;
 	}
 	.section-card-group-head {
 		display: flex;
@@ -249,7 +249,7 @@
 	}
 	.section-card-list {
 		display: grid;
-		gap: 0.45rem;
+		gap: 0.38rem;
 	}
 	.section-card-list.two {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -258,7 +258,7 @@
 		width: 100%;
 		min-width: 0;
 		max-width: 100%;
-		min-height: 4.1rem;
+		min-height: 3.1rem;
 		display: grid;
 		align-content: stretch;
 		justify-items: stretch;
@@ -277,14 +277,46 @@
 	.section-card-preview.camera-strip-card-item {
 		min-height: 0;
 	}
+	.section-card-preview.button-card-item {
+		min-height: 0;
+	}
+	.section-card-preview.button-card-item :global(.light-button-card),
+	.section-card-preview.button-card-item :global(.entity-button-card) {
+		min-height: 3rem !important;
+		padding: 0.35rem 0.48rem !important;
+		gap: 0.48rem !important;
+		border-radius: 10px !important;
+	}
+	.section-card-preview.button-card-item :global(.light-icon-button),
+	.section-card-preview.button-card-item :global(.entity-icon-button) {
+		width: 2rem !important;
+		height: 2rem !important;
+		border-radius: 9px !important;
+	}
+	.section-card-preview.button-card-item :global(.light-icon-button .mdi-mask),
+	.section-card-preview.button-card-item :global(.light-icon-button svg),
+	.section-card-preview.button-card-item :global(.entity-icon-button .mdi-mask),
+	.section-card-preview.button-card-item :global(.entity-icon-button svg) {
+		width: 1.05rem !important;
+		height: 1.05rem !important;
+	}
+	.section-card-preview.button-card-item :global(.light-name),
+	.section-card-preview.button-card-item :global(.entity-name) {
+		font-size: 0.76rem !important;
+		line-height: 1.12 !important;
+	}
+	.section-card-preview.button-card-item :global(.light-state),
+	.section-card-preview.button-card-item :global(.entity-state) {
+		font-size: 0.64rem !important;
+	}
 	.section-card-row {
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);
 		align-items: center;
-		gap: 0.72rem;
-		min-height: 4.1rem;
-		padding: 0.55rem 0.62rem;
-		border-radius: 14px;
+		gap: 0.56rem;
+		min-height: 3.15rem;
+		padding: 0.42rem 0.52rem;
+		border-radius: 11px;
 		background:
 			linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
 			#20293a;
@@ -292,11 +324,11 @@
 		min-width: 0;
 	}
 	.section-card-icon {
-		width: 2.85rem;
-		height: 2.85rem;
+		width: 2.2rem;
+		height: 2.2rem;
 		display: grid;
 		place-items: center;
-		border-radius: 13px;
+		border-radius: 10px;
 		color: #60a5fa;
 		background: rgba(96,165,250,0.16);
 		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
@@ -314,13 +346,13 @@
 	}
 	.section-card-main strong {
 		color: #fff;
-		font-size: 0.98rem;
+		font-size: 0.82rem;
 		line-height: 1.12;
 		font-weight: 750;
 	}
 	.section-card-main span {
 		color: rgba(255,255,255,0.52);
-		font-size: 0.78rem;
+		font-size: 0.68rem;
 		font-weight: 650;
 	}
 	@media (max-width: 560px) {

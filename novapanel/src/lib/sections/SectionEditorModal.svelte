@@ -156,7 +156,7 @@
 		if (cardType === 'light_button' || cardType === 'lights_status') return 'bulb';
 		if (cardType === 'device_button') return 'plug';
 		if (cardType === 'climate_button') return 'temperature';
-		if (cardType === 'cover_button') return 'curtains';
+		if (cardType === 'cover_button') return 'blinds';
 		if (cardType === 'vacuum_button') return 'robot';
 		if (cardType === 'media_player_button') return 'device-speaker';
 		if (cardType === 'devices_status') return 'plug';

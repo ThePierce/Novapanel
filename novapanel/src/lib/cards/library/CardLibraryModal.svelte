@@ -84,7 +84,7 @@
 			case 'light_button': return { icon: 'bulb', accent: '#ffd338', accentSoft: 'rgba(255,211,56,0.18)' };
 			case 'device_button': return { icon: 'plug', accent: '#34d399', accentSoft: 'rgba(52,211,153,0.18)' };
 			case 'climate_button': return { icon: 'temperature', accent: '#fb923c', accentSoft: 'rgba(251,146,60,0.18)' };
-			case 'cover_button': return { icon: 'curtains', accent: '#60a5fa', accentSoft: 'rgba(96,165,250,0.18)' };
+			case 'cover_button': return { icon: 'blinds', accent: '#60a5fa', accentSoft: 'rgba(96,165,250,0.18)' };
 			case 'vacuum_button': return { icon: 'robot', accent: '#34d399', accentSoft: 'rgba(52,211,153,0.18)' };
 			case 'media_player_button': return { icon: 'device-speaker', accent: '#c084fc', accentSoft: 'rgba(192,132,252,0.18)' };
 			case 'openings_status': return { icon: 'door', accent: '#60a5fa', accentSoft: 'rgba(96,165,250,0.18)' };

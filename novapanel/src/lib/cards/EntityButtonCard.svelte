@@ -33,7 +33,9 @@
 	const isUnavailable = $derived(!entity || state === 'unavailable' || state === 'unknown');
 	const isActive = $derived(
 		kind === 'device'
-			? state === 'on'
+			? serviceDomain === 'lock'
+				? state === 'unlocked' || state === 'unlocking'
+				: state === 'on'
 			: kind === 'climate'
 				? state !== 'off' && !isUnavailable
 				: kind === 'cover'
@@ -65,7 +67,7 @@
 	function fallbackIcon(value: EntityButtonKind) {
 		if (value === 'device') return 'mdi:power-plug-outline';
 		if (value === 'climate') return 'mdi:thermostat';
-		if (value === 'cover') return 'mdi:curtains';
+		if (value === 'cover') return 'mdi:blinds-horizontal';
 		if (value === 'vacuum') return 'mdi:robot-vacuum';
 		return 'mdi:speaker';
 	}
@@ -85,11 +87,19 @@
 		if (normalized.includes('blinds')) return closed ? 'mdi:blinds' : 'mdi:blinds-open';
 		if (normalized.includes('window-shutter')) return closed ? 'mdi:window-shutter' : 'mdi:window-shutter-open';
 		if (normalized && !normalized.includes('curtains')) return configured;
-		return closed ? 'mdi:curtains-closed' : 'mdi:curtains';
+		if (normalized.includes('curtains')) return closed ? 'mdi:curtains-closed' : 'mdi:curtains';
+		return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
 	}
 
 	function iconForEntity(value: EntityButtonKind, configuredIcon: string | undefined, position: number | null, currentState: string) {
 		if (value === 'cover') return coverIconForState(position, currentState, configuredIcon);
+		if (value === 'device' && serviceDomain === 'lock') {
+			const configured = (configuredIcon ?? '').trim();
+			if (configured.length > 0) return configured;
+			return currentState === 'unlocked' || currentState === 'unlocking'
+				? 'mdi:lock-open-outline'
+				: 'mdi:lock-outline';
+		}
 		return (configuredIcon && configuredIcon.trim().length > 0) ? configuredIcon.trim() : fallbackIcon(value);
 	}
 
@@ -167,7 +177,11 @@
 			if (kind === 'climate') {
 				await callHaService('climate', state === 'off' ? 'turn_on' : 'turn_off', { entity_id: entityId });
 			} else if (kind === 'device') {
-				await callHaService(serviceDomain || 'switch', state === 'on' ? 'turn_off' : 'turn_on', { entity_id: entityId });
+				if (serviceDomain === 'lock') {
+					await callHaService('lock', state === 'unlocked' || state === 'unlocking' ? 'lock' : 'unlock', { entity_id: entityId });
+				} else {
+					await callHaService(serviceDomain || 'switch', state === 'on' ? 'turn_off' : 'turn_on', { entity_id: entityId });
+				}
 			} else if (kind === 'cover') {
 				await callHaService('cover', state === 'open' || state === 'opening' ? 'close_cover' : 'open_cover', { entity_id: entityId });
 			} else if (kind === 'vacuum') {
@@ -267,6 +281,10 @@
 		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.07);
 		cursor: pointer;
 		transition: transform 140ms ease, background 160ms ease;
+		line-height: 0;
+	}
+	.entity-icon-button :global(svg) {
+		display: block;
 	}
 	.entity-icon-button :global(.mdi-mask) {
 		width: 1.25rem !important;
