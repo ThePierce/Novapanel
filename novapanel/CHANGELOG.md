@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+
+- Restored `host_network: true` for Home Assistant add-on compatibility after reports that calendar and service proxy calls could return 502 in an installed add-on.
+- Bumped the add-on, npm package, Git tag, and release version to `1.1.1`.
+
 ## 1.1.0
 
 - Bumped the add-on, npm package, Git tag, and release version to `1.1.0`.

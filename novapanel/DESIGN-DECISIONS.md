@@ -40,14 +40,16 @@ the now-line can be off by up to an hour relative to the grid lines.
   layout behavior for a twice-a-year edge case.
 - If revisited: scale rows by the actual day length on DST days instead of a fixed 24.
 
-## D1 — Host networking stays disabled
+## D1 — Host networking remains enabled for add-on compatibility
 
-Nova Panel runs as an ingress-only add-on, so host networking is not required. Keeping the
-add-on behind ingress avoids exposing the unauthenticated internal server on `8099` to the
-LAN and reduces the blast radius of proxy or route bugs.
+Nova Panel still serves its UI through Home Assistant ingress, but real add-on installs have
+reported 502 failures from calendar and service proxy routes when `host_network` was removed.
+The add-on therefore keeps host networking enabled to preserve the same Home Assistant and
+Supervisor reachability behavior as the stable 1.0.x releases.
 
-- Status: `host_network` is intentionally absent from `config.yaml`.
-- If revisited: require an app-level auth design before exposing the server directly.
+- Status: `host_network: true` is present in `config.yaml` as a runtime compatibility measure.
+- If revisited: first validate calendar, service-call, camera, and media proxy routes in an
+  installed Home Assistant add-on, not only in CI or local standalone mode.
 
 ## D3 — HA token exposure is transitional
 
