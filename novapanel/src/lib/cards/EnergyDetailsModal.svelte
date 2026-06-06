@@ -3,7 +3,7 @@
 	import { calculateEnergyCosts } from '$lib/energy-costs';
 	import { entityStore } from '$lib/ha/entities-store';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import type { EnergyAnchors, EnergyCostMode } from '$lib/persistence/panel-state-types';
+	import type { EnergyAnchorPoint, EnergyAnchors, EnergyCostMode } from '$lib/persistence/panel-state-types';
 	import { localeFor, selectedLanguageStore, translate } from '$lib/i18n';
 	import { modalBehavior } from '$lib/modal/modal-behavior';
 	import { DEFAULT_CURRENCY_CODE, formatCurrency } from '$lib/currency';
@@ -332,6 +332,8 @@
 	const COLOR_GRID_EXPORT = '#06b6d4'; // cyaan — teruglevering (zon→net), onderscheidbaar van zon
 	const COLOR_BATTERY_DISCHARGE = '#a855f7'; // paars — accu ontladen → huis/auto, onderscheidbaar van zon
 	const COLOR_RAIL = '#3a3f4a'; // donkergrijze rail onder elk pad
+	const FLOW_RAIL_STROKE_WIDTH = 0.007;
+	const FLOW_ACTIVE_STROKE_WIDTH = 0.005;
 
 	const netStatus = $derived(
 		(() => {
@@ -368,12 +370,36 @@
 		railX: 0.404
 	};
 
+	function finiteNumber(value: unknown): value is number {
+		return typeof value === 'number' && Number.isFinite(value);
+	}
+
+	function normalizedPoint(value: unknown, fallback: EnergyAnchorPoint): EnergyAnchorPoint {
+		if (typeof value !== 'object' || value === null) return fallback;
+		const point = value as Partial<EnergyAnchorPoint>;
+		return finiteNumber(point.x) && finiteNumber(point.y) ? { x: point.x, y: point.y } : fallback;
+	}
+
+	function normalizedAnchors(value: EnergyAnchors | undefined): EnergyAnchors {
+		const raw = value as Partial<EnergyAnchors> | undefined;
+		if (!raw) return DEFAULT_ANCHORS;
+		return {
+			solar: normalizedPoint(raw.solar, DEFAULT_ANCHORS.solar),
+			battery: normalizedPoint(raw.battery, DEFAULT_ANCHORS.battery),
+			door: normalizedPoint(raw.door, DEFAULT_ANCHORS.door),
+			car: normalizedPoint(raw.car, DEFAULT_ANCHORS.car),
+			street: normalizedPoint(raw.street, DEFAULT_ANCHORS.street),
+			railX: finiteNumber(raw.railX) ? raw.railX : DEFAULT_ANCHORS.railX,
+			flowWaypoints: raw.flowWaypoints
+		};
+	}
+
 	const currentAnchors = $derived(
 		(() => {
-			if (variantKey === 'day-no-car') return anchorsDayNoCar ?? DEFAULT_ANCHORS;
-			if (variantKey === 'day-with-car') return anchorsDayWithCar ?? DEFAULT_ANCHORS;
-			if (variantKey === 'night-no-car') return anchorsNightNoCar ?? DEFAULT_ANCHORS;
-			return anchorsNightWithCar ?? DEFAULT_ANCHORS;
+			if (variantKey === 'day-no-car') return normalizedAnchors(anchorsDayNoCar);
+			if (variantKey === 'day-with-car') return normalizedAnchors(anchorsDayWithCar);
+			if (variantKey === 'night-no-car') return normalizedAnchors(anchorsNightNoCar);
+			return normalizedAnchors(anchorsNightWithCar);
 		})()
 	);
 
@@ -872,20 +898,18 @@
 						d={f.d}
 						fill="none"
 						stroke={COLOR_RAIL}
-						stroke-width="0.004"
+						stroke-width={FLOW_RAIL_STROKE_WIDTH}
 						stroke-linejoin="round"
 						stroke-linecap="round"
-						vector-effect="non-scaling-stroke"
 					/>
 					<!-- Bewegend gekleurd segment overheen -->
 					<path
 						d={f.d}
 						fill="none"
 						stroke={f.color}
-						stroke-width="0.004"
+						stroke-width={FLOW_ACTIVE_STROKE_WIDTH}
 						stroke-linejoin="round"
 						stroke-linecap="round"
-						vector-effect="non-scaling-stroke"
 						pathLength="1000"
 						stroke-dasharray="140 860"
 						stroke-dashoffset="1000"
