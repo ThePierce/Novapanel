@@ -10,12 +10,15 @@
 		<div class="welcome-copy">
 			<span>{translate('Welkom bij', $selectedLanguageStore)}</span>
 			<strong>Novapanel</strong>
-			<p>{translate('Begin met een leeg dashboard en voeg zelf secties, kaarten en Home Assistant-entiteiten toe.', $selectedLanguageStore)}</p>
+			<p>
+				{translate(
+					'Begin met een leeg dashboard en voeg zelf secties, kaarten en Home Assistant-entiteiten toe.',
+					$selectedLanguageStore
+				)}
+			</p>
 		</div>
 	</div>
-	<a class="welcome-link" href={readmeUrl} target="_blank" rel="noreferrer">
-		README
-	</a>
+	<a class="welcome-link" href={readmeUrl} target="_blank" rel="noreferrer"> README </a>
 </div>
 
 <style>
@@ -28,12 +31,11 @@
 		padding: clamp(1.25rem, 2vw, 1.8rem);
 		border-radius: 18px;
 		background:
-			radial-gradient(circle at 18% 18%, rgba(96,165,250,0.28), transparent 42%),
-			linear-gradient(145deg, rgba(255,255,255,0.105), rgba(255,255,255,0.035)),
-			#20293a;
+			radial-gradient(circle at 18% 18%, rgba(96, 165, 250, 0.28), transparent 42%),
+			linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.035)), #20293a;
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.075),
-			0 18px 45px rgba(0,0,0,0.22);
+			inset 0 0 0 1px rgba(255, 255, 255, 0.075),
+			0 18px 45px rgba(0, 0, 0, 0.22);
 		box-sizing: border-box;
 	}
 
@@ -56,8 +58,8 @@
 		color: #bfdbfe;
 		font-size: 2.1rem;
 		font-weight: 860;
-		background: rgba(96,165,250,0.18);
-		box-shadow: inset 0 0 0 1px rgba(147,197,253,0.22);
+		background: rgba(96, 165, 250, 0.18);
+		box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.22);
 	}
 
 	.welcome-copy {
@@ -67,7 +69,7 @@
 	}
 
 	.welcome-copy span {
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		font-size: 0.86rem;
 		font-weight: 720;
 	}
@@ -83,7 +85,7 @@
 	.welcome-copy p {
 		max-width: 38rem;
 		margin: 0.35rem 0 0;
-		color: rgba(255,255,255,0.68);
+		color: rgba(255, 255, 255, 0.68);
 		font-size: 0.96rem;
 		line-height: 1.45;
 	}
@@ -102,12 +104,12 @@
 		font-size: 0.82rem;
 		font-weight: 780;
 		text-decoration: none;
-		background: rgba(96,165,250,0.16);
-		box-shadow: inset 0 0 0 1px rgba(147,197,253,0.22);
+		background: rgba(96, 165, 250, 0.16);
+		box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.22);
 	}
 
 	.welcome-link:hover {
-		background: rgba(96,165,250,0.24);
+		background: rgba(96, 165, 250, 0.24);
 	}
 
 	@media (max-width: 720px) {

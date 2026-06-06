@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { get } from 'svelte/store';
 	import { clockNow } from '$lib/cards/clock-time';
+	import { localeFor, selectedLanguageStore } from '$lib/i18n';
 
 	type Orientation = 'vertical' | 'horizontal';
 	type Align = 'left' | 'center' | 'right';
@@ -23,18 +23,11 @@
 		locale
 	}: Props = $props();
 
-	let now = $state(get(clockNow));
-	$effect(() => {
-		const unsub = clockNow.subscribe((value) => {
-			now = value;
-		});
-		return () => unsub();
-	});
+	const now = $derived($clockNow);
 
 	function getLocale() {
 		if (locale && locale.length > 0) return locale;
-		if (typeof document !== 'undefined') return document.documentElement.lang || undefined;
-		return undefined;
+		return localeFor($selectedLanguageStore);
 	}
 
 	const weekDay = $derived(
@@ -89,9 +82,15 @@
 	.date-card.date-horizontal {
 		align-items: baseline;
 	}
-	.date-card.date-align-left { justify-content: flex-start; }
-	.date-card.date-align-center { justify-content: center; }
-	.date-card.date-align-right { justify-content: flex-end; }
+	.date-card.date-align-left {
+		justify-content: flex-start;
+	}
+	.date-card.date-align-center {
+		justify-content: center;
+	}
+	.date-card.date-align-right {
+		justify-content: flex-end;
+	}
 
 	.ambient-glow {
 		display: none;
@@ -105,18 +104,23 @@
 		align-items: center;
 		text-align: center;
 		padding: 10px 16px;
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 16px;
 		min-width: 110px;
 		isolation: isolate;
-		transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-		box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+		transition:
+			transform 0.3s ease,
+			border-color 0.3s ease,
+			box-shadow 0.3s ease;
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 	}
 	.calendar-block::before {
 		content: '';
 		position: absolute;
-		top: 0; left: 0; right: 0;
+		top: 0;
+		left: 0;
+		right: 0;
 		height: 6px;
 		background: linear-gradient(90deg, #f87171 0%, #fb923c 50%, #f87171 100%);
 		border-radius: 16px 16px 0 0;
@@ -125,16 +129,16 @@
 	}
 	.date-card:hover .calendar-block {
 		transform: translateY(-2px);
-		border-color: rgba(255,255,255,0.13);
+		border-color: rgba(255, 255, 255, 0.13);
 		box-shadow:
-			inset 0 1px 0 rgba(255,255,255,0.10),
-			0 8px 24px rgba(0,0,0,0.30);
+			inset 0 1px 0 rgba(255, 255, 255, 0.1),
+			0 8px 24px rgba(0, 0, 0, 0.3);
 	}
 
 	.cal-weekday {
 		font-size: 11px;
 		font-weight: 600;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		text-transform: uppercase;
 		letter-spacing: 0.18em;
 		margin-top: 4px;
@@ -147,15 +151,15 @@
 		letter-spacing: -0.04em;
 		font-variant-numeric: tabular-nums;
 		text-shadow:
-			0 2px 16px rgba(0,0,0,0.4),
-			0 0 32px rgba(96,165,250,0.20);
+			0 2px 16px rgba(0, 0, 0, 0.4),
+			0 0 32px rgba(96, 165, 250, 0.2);
 		margin-top: 4px;
 	}
 	.cal-month {
 		font-size: 11px;
 		font-weight: 500;
-		color: rgba(255,255,255,0.55);
-		letter-spacing: 0.10em;
+		color: rgba(255, 255, 255, 0.55);
+		letter-spacing: 0.1em;
 		margin-top: 2px;
 		text-transform: capitalize;
 	}
@@ -173,16 +177,16 @@
 		color: #fff;
 		letter-spacing: -0.015em;
 		text-transform: capitalize;
-		text-shadow: 0 2px 10px rgba(0,0,0,0.25);
+		text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 	}
 	.row-sep {
-		color: rgba(255,255,255,0.35);
+		color: rgba(255, 255, 255, 0.35);
 		font-weight: 300;
 	}
 	.row-date {
 		font-size: 0.95rem;
 		font-weight: 500;
-		color: rgba(255,255,255,0.65);
+		color: rgba(255, 255, 255, 0.65);
 		text-transform: capitalize;
 		font-variant-numeric: tabular-nums;
 	}

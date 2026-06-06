@@ -30,13 +30,18 @@ export type SidebarItemBase = {
 	// Kosten vandaag (EUR, Utility Meter helpers)
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	energyCostMode?: import('$lib/persistence/panel-state-types').EnergyCostMode;
 	// Kosten fallback: piek/dal dagtellers en tarieven
 	importPeakTodayEntityId?: string;
 	importOffPeakTodayEntityId?: string;
+	exportPeakTodayEntityId?: string;
+	exportOffPeakTodayEntityId?: string;
 	importTariffEntityId?: string;
 	exportTariffEntityId?: string;
 	importPeakTariff?: number;
 	importOffPeakTariff?: number;
+	exportPeakTariff?: number;
+	exportOffPeakTariff?: number;
 	exportTariff?: number;
 	// Optioneel: zelfvoorzienend % als template-sensor bestaat
 	selfSufficiencyEntityId?: string;

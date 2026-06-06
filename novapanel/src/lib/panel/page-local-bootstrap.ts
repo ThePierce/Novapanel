@@ -1,10 +1,18 @@
 import type { LanguageCode } from '$lib/i18n';
 import { DEFAULT_PANEL_THEME, isPanelTheme, type PanelTheme } from '$lib/panel/theme';
-import type { CardDraft, PanelConfiguration, PanelDashboard, PanelDashboardLayout, ViewSectionDraft } from '$lib/persistence/panel-state';
+import { coerceCurrencyCode, DEFAULT_CURRENCY_CODE } from '$lib/currency';
+import type {
+	CardDraft,
+	PanelConfiguration,
+	PanelDashboard,
+	PanelDashboardLayout,
+	ViewSectionDraft
+} from '$lib/persistence/panel-state';
 
 type LocalBootstrapInput = {
 	selectedLanguage: LanguageCode;
 	selectedTheme: PanelTheme;
+	selectedCurrencyCode?: string;
 	selectedColumns: 1 | 2 | 3;
 	savedViewSections: ViewSectionDraft[];
 	savedSidebarCards: CardDraft[];
@@ -23,6 +31,7 @@ type LocalBootstrapInput = {
 export type LocalBootstrapOutput = {
 	selectedLanguage: LanguageCode;
 	selectedTheme: PanelTheme;
+	selectedCurrencyCode: string;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: {
@@ -46,15 +55,25 @@ export type LocalBootstrapOutput = {
 };
 
 export function buildLocalBootstrapState(input: LocalBootstrapInput): LocalBootstrapOutput {
-	input.migrateLegacyPanelState({ language: input.selectedLanguage, theme: input.selectedTheme });
-	const configuration = input.loadConfiguration({ language: input.selectedLanguage, theme: input.selectedTheme });
+	const defaultCurrencyCode = coerceCurrencyCode(input.selectedCurrencyCode, DEFAULT_CURRENCY_CODE);
+	input.migrateLegacyPanelState({
+		language: input.selectedLanguage,
+		theme: input.selectedTheme,
+		currencyCode: defaultCurrencyCode
+	});
+	const configuration = input.loadConfiguration({
+		language: input.selectedLanguage,
+		theme: input.selectedTheme,
+		currencyCode: defaultCurrencyCode
+	});
 	const nextLanguage =
 		typeof configuration.language === 'string' && input.isValidLanguage(configuration.language)
 			? configuration.language
 			: input.selectedLanguage;
 	const nextTheme = isPanelTheme(configuration.theme)
 		? configuration.theme
-		: input.selectedTheme ?? DEFAULT_PANEL_THEME;
+		: (input.selectedTheme ?? DEFAULT_PANEL_THEME);
+	const nextCurrencyCode = coerceCurrencyCode(configuration.currencyCode, defaultCurrencyCode);
 	const activeCardLibraryTab = configuration.cardLibraryTab ?? 'sidebar';
 	const customTitles = configuration.titles ?? {};
 	const oauth = configuration.oauth;
@@ -87,6 +106,7 @@ export function buildLocalBootstrapState(input: LocalBootstrapInput): LocalBoots
 	return {
 		selectedLanguage: nextLanguage,
 		selectedTheme: nextTheme,
+		selectedCurrencyCode: nextCurrencyCode,
 		activeCardLibraryTab,
 		customTitles,
 		oauth,

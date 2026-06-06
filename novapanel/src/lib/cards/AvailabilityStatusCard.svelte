@@ -5,12 +5,27 @@
 		domains?: string[];
 		deviceClasses?: string[];
 		ignoredEntityIds?: string[];
-	statusEntityIds?: string[];
-	statusEntityAliases?: Record<string, string>;
+		statusEntityIds?: string[];
+		statusEntityAliases?: Record<string, string>;
 		icon?: string;
 	};
 
-let { domains = ['all'], deviceClasses = [], ignoredEntityIds = [], statusEntityIds = [], statusEntityAliases = {}, icon = 'availability' }: Props = $props();
+	let {
+		domains = ['all'],
+		deviceClasses = [],
+		ignoredEntityIds = [],
+		statusEntityIds = [],
+		statusEntityAliases = {},
+		icon = 'availability'
+	}: Props = $props();
 </script>
 
-<StatusSummaryCard kind="availability_status" {domains} {deviceClasses} {ignoredEntityIds} {statusEntityIds} {statusEntityAliases} {icon} />
+<StatusSummaryCard
+	kind="availability_status"
+	{domains}
+	{deviceClasses}
+	{ignoredEntityIds}
+	{statusEntityIds}
+	{statusEntityAliases}
+	{icon}
+/>

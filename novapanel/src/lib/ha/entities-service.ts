@@ -5,6 +5,7 @@ import {
 	type HomeAssistantEntity
 } from './entities-service-helpers';
 import { createDemoHomeAssistantEntities } from './demo-entities';
+import { fetchWithTimeout } from '$lib/fetch-with-timeout';
 
 export type EntityStatus = 'connecting' | 'ready' | 'error';
 export type { HomeAssistantEntity } from './entities-service-helpers';
@@ -20,6 +21,8 @@ const HA_ENTITY_DEBUG = false;
 const ENTITY_POLL_INTERVAL_MS = 1500;
 const ENTITY_POLL_HIDDEN_INTERVAL_MS = 10000;
 const ENTITY_POLL_MAX_ERROR_INTERVAL_MS = 30000;
+const ENTITY_POLL_ERROR_STATUS_THRESHOLD = 3;
+const ENTITY_FETCH_TIMEOUT_MS = 14000;
 const DEMO_RETRY_INTERVAL_MS = 15000;
 
 function log(message: string, details?: unknown) {
@@ -88,11 +91,15 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 		let lastError: unknown = null;
 		for (const endpoint of getNovaApiCandidates('/api/ha/states')) {
 			try {
-				const response = await fetch(endpoint, {
-					credentials: 'same-origin',
-					cache: 'no-store',
-					headers: { accept: 'application/json' }
-				});
+				const response = await fetchWithTimeout(
+					endpoint,
+					{
+						credentials: 'same-origin',
+						cache: 'no-store',
+						headers: { accept: 'application/json' }
+					},
+					ENTITY_FETCH_TIMEOUT_MS
+				);
 				if (!response.ok) throw new Error(`ha_states_proxy_http_${response.status}`);
 				const data = (await response.json()) as unknown;
 				if (!Array.isArray(data)) throw new Error('ha_states_proxy_invalid_response');
@@ -108,13 +115,17 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 		let lastError: unknown = null;
 		for (const endpoint of getNovaApiCandidates('/api/ha/ws')) {
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					credentials: 'same-origin',
-					cache: 'no-store',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ payload: { type: 'get_states' }, timeoutMs: 15000 })
-				});
+				const response = await fetchWithTimeout(
+					endpoint,
+					{
+						method: 'POST',
+						credentials: 'same-origin',
+						cache: 'no-store',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({ payload: { type: 'get_states' }, timeoutMs: 15000 })
+					},
+					ENTITY_FETCH_TIMEOUT_MS + 2000
+				);
 				if (!response.ok) throw new Error(`ha_ws_proxy_http_${response.status}`);
 				const data = (await response.json()) as { ok?: boolean; result?: unknown; error?: string };
 				if (data.ok !== true) throw new Error(data.error || 'ha_ws_proxy_failed');
@@ -183,6 +194,10 @@ export function createHomeAssistantEntitiesService(options: EntityServiceOptions
 			}
 			pollErrorCount += 1;
 			log('state poll failed', error);
+			options.onError(error instanceof Error ? error.message : String(error));
+			if (pollErrorCount >= ENTITY_POLL_ERROR_STATUS_THRESHOLD) {
+				options.onStatus('error');
+			}
 		} finally {
 			pollInFlight = false;
 			schedulePoll();

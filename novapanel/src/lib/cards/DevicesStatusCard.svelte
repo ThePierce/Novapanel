@@ -20,4 +20,12 @@
 	}: Props = $props();
 </script>
 
-<StatusSummaryCard kind="devices_status" {domains} {deviceClasses} {ignoredEntityIds} {statusEntityIds} {statusEntityAliases} {icon} />
+<StatusSummaryCard
+	kind="devices_status"
+	{domains}
+	{deviceClasses}
+	{ignoredEntityIds}
+	{statusEntityIds}
+	{statusEntityAliases}
+	{icon}
+/>

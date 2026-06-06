@@ -103,12 +103,17 @@ export function saveCardEditorRuntime(input: {
 	homeTodayEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	energyCostMode?: CardDraft['energyCostMode'];
 	importPeakTodayEntityId?: string;
 	importOffPeakTodayEntityId?: string;
+	exportPeakTodayEntityId?: string;
+	exportOffPeakTodayEntityId?: string;
 	importTariffEntityId?: string;
 	exportTariffEntityId?: string;
 	importPeakTariff?: string;
 	importOffPeakTariff?: string;
+	exportPeakTariff?: string;
+	exportOffPeakTariff?: string;
 	exportTariff?: string;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
@@ -168,12 +173,17 @@ export function saveCardEditorRuntime(input: {
 				input.homeTodayEntityId,
 				input.costTodayEntityId,
 				input.compensationTodayEntityId,
+				input.energyCostMode,
 				input.importPeakTodayEntityId,
 				input.importOffPeakTodayEntityId,
+				input.exportPeakTodayEntityId,
+				input.exportOffPeakTodayEntityId,
 				input.importTariffEntityId,
 				input.exportTariffEntityId,
 				input.importPeakTariff,
 				input.importOffPeakTariff,
+				input.exportPeakTariff,
+				input.exportOffPeakTariff,
 				input.exportTariff,
 				input.selfSufficiencyEntityId,
 				input.carChargingEntityId,
@@ -236,12 +246,17 @@ export function saveCardEditorRuntime(input: {
 			input.homeTodayEntityId,
 			input.costTodayEntityId,
 			input.compensationTodayEntityId,
+			input.energyCostMode,
 			input.importPeakTodayEntityId,
 			input.importOffPeakTodayEntityId,
+			input.exportPeakTodayEntityId,
+			input.exportOffPeakTodayEntityId,
 			input.importTariffEntityId,
 			input.exportTariffEntityId,
 			input.importPeakTariff,
 			input.importOffPeakTariff,
+			input.exportPeakTariff,
+			input.exportOffPeakTariff,
 			input.exportTariff,
 			input.selfSufficiencyEntityId,
 			input.carChargingEntityId,

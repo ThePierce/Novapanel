@@ -15,11 +15,10 @@ type CreatePageDraftRuntimeParams = {
 	getState: () => DraftState;
 	setState: (patch: Partial<DraftState>) => void;
 	getSectionLabel: (index: number) => string;
-	getLocalizedCardLabel: (type: string) => string;
 };
 
 export function createPageDraftRuntime(params: CreatePageDraftRuntimeParams) {
-	const { getState, setState, getSectionLabel, getLocalizedCardLabel } = params;
+	const { getState, setState, getSectionLabel } = params;
 
 	function applyDraftChange(nextSections: ViewSectionDraft[]) {
 		const state = getState();

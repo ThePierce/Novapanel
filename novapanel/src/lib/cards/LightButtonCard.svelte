@@ -24,11 +24,14 @@
 	const groupEntities = $derived.by(() => {
 		if (!lightGroup) return [] as HomeAssistantEntity[];
 		const wanted = new Set(lightGroup.entityIds.map((id) => id.trim().toLowerCase()).filter(Boolean));
-		return $entityStore.entities.filter((entry: HomeAssistantEntity) => wanted.has(entry.entityId.toLowerCase()));
+		return $entityStore.entities.filter((entry: HomeAssistantEntity) =>
+			wanted.has(entry.entityId.toLowerCase())
+		);
 	});
 	const isUnavailable = $derived(
 		lightGroup
-			? groupEntities.length === 0 || groupEntities.every((entry) => entry.state === 'unavailable' || entry.state === 'unknown')
+			? groupEntities.length === 0 ||
+					groupEntities.every((entry) => entry.state === 'unavailable' || entry.state === 'unknown')
 			: !entity || entity.state === 'unavailable' || entity.state === 'unknown'
 	);
 	const isOn = $derived(
@@ -36,9 +39,7 @@
 			? groupEntities.some((entry) => (entry.state ?? '').toLowerCase() === 'on')
 			: (entity?.state ?? '').toLowerCase() === 'on'
 	);
-	const serviceDomain = $derived(
-		(entity?.domain || entityId?.split('.')[0] || 'light').toLowerCase()
-	);
+	const serviceDomain = $derived((entity?.domain || entityId?.split('.')[0] || 'light').toLowerCase());
 	const brightnessPct = $derived(
 		(() => {
 			if (lightGroup) {
@@ -46,7 +47,9 @@
 				if (lit.length === 0) return 0;
 				const total = lit.reduce((sum, entry) => {
 					const raw = entry.attributes?.brightness;
-					return sum + (typeof raw === 'number' && Number.isFinite(raw) ? Math.round((raw / 255) * 100) : 100);
+					return (
+						sum + (typeof raw === 'number' && Number.isFinite(raw) ? Math.round((raw / 255) * 100) : 100)
+					);
 				}, 0);
 				return Math.max(0, Math.min(100, Math.round(total / lit.length)));
 			}
@@ -56,9 +59,9 @@
 		})()
 	);
 	const displayName = $derived(
-		(title && title.trim().length > 0)
+		title && title.trim().length > 0
 			? title.trim()
-			: lightGroup?.name ?? entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
+			: (lightGroup?.name ?? entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore))
 	);
 	const stateLabel = $derived(
 		isUnavailable
@@ -67,11 +70,19 @@
 				? isOn
 					? `${groupEntities.filter((entry) => (entry.state ?? '').toLowerCase() === 'on').length}/${groupEntities.length} ${translate('aan', $selectedLanguageStore)}`
 					: translate('Uit', $selectedLanguageStore)
-				: isOn ? `${brightnessPct}%` : translate('Uit', $selectedLanguageStore)
+				: isOn
+					? `${brightnessPct}%`
+					: translate('Uit', $selectedLanguageStore)
 	);
 	const accent = $derived(isOn ? '#ffd338' : '#8d98aa');
 	const accentSoft = $derived(isOn ? 'rgba(255,211,56,0.22)' : 'rgba(141,152,170,0.16)');
-	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : lightGroup ? 'mdi:lightbulb-group-outline' : 'mdi:lightbulb-outline');
+	const cardIcon = $derived(
+		icon && icon.trim().length > 0
+			? icon.trim()
+			: lightGroup
+				? 'mdi:lightbulb-group-outline'
+				: 'mdi:lightbulb-outline'
+	);
 
 	function handleOpen(event: MouseEvent | KeyboardEvent) {
 		if (editMode) return;
@@ -128,7 +139,12 @@
 	onkeydown={handleKeydown}
 >
 	<div class="light-bg" aria-hidden="true"></div>
-	<button type="button" class="light-icon-button" aria-label={`${displayName} ${isOn ? translate('uitzetten', $selectedLanguageStore) : translate('aanzetten', $selectedLanguageStore)}`} onclick={toggleLight}>
+	<button
+		type="button"
+		class="light-icon-button"
+		aria-label={`${displayName} ${isOn ? translate('uitzetten', $selectedLanguageStore) : translate('aanzetten', $selectedLanguageStore)}`}
+		onclick={toggleLight}
+	>
 		<StatusIcon icon={cardIcon} size={20} />
 	</button>
 	<div class="light-copy">
@@ -149,26 +165,26 @@
 		padding: 0.45rem 0.6rem;
 		border-radius: 12px;
 		color: rgba(255, 255, 255, 0.92);
-		background:
-			linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
-			#1f2738;
-		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.05);
+		background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)), #1f2738;
+		box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
 		box-sizing: border-box;
 		overflow: hidden;
 		cursor: pointer;
-		transition: transform 160ms ease, background 180ms ease, box-shadow 180ms ease;
+		transition:
+			transform 160ms ease,
+			background 180ms ease,
+			box-shadow 180ms ease;
 	}
 	.light-button-card:hover {
 		transform: translateY(-1px);
 		box-shadow:
-			inset 0 0 0 0.5px rgba(255,255,255,0.08),
-			0 8px 22px rgba(0,0,0,0.22);
+			inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+			0 8px 22px rgba(0, 0, 0, 0.22);
 	}
 	.light-button-card.is-on {
 		background:
 			radial-gradient(circle at 22% 18%, var(--light-soft), transparent 44%),
-			linear-gradient(145deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03)),
-			#222b3c;
+			linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)), #222b3c;
 	}
 	.light-button-card.is-unavailable {
 		opacity: 0.74;
@@ -190,9 +206,11 @@
 		border-radius: 11px;
 		color: var(--light-accent);
 		background: var(--light-soft);
-		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.07);
+		box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
 		cursor: pointer;
-		transition: transform 140ms ease, background 160ms ease;
+		transition:
+			transform 140ms ease,
+			background 160ms ease;
 		line-height: 0;
 	}
 	.light-icon-button :global(svg) {
@@ -231,7 +249,7 @@
 		margin-top: 0.12rem;
 		font-size: 0.7rem;
 		font-weight: 500;
-		color: rgba(255,255,255,0.5);
+		color: rgba(255, 255, 255, 0.5);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;

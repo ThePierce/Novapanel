@@ -14,8 +14,7 @@ export function buildRenderedViewSections(activeViewSections: ViewSectionDraft[]
 			...section,
 			cards: section.cards
 				.filter(
-					(card): card is CardDraft =>
-						Boolean(card) && typeof card.id === 'string' && card.id.length > 0
+					(card): card is CardDraft => Boolean(card) && typeof card.id === 'string' && card.id.length > 0
 				)
 				.filter((card, index, list) => list.findIndex((entry) => entry.id === card.id) === index)
 		}))
@@ -52,12 +51,17 @@ export function buildSidebarItems(
 		homeTodayEntityId: card.homeTodayEntityId,
 		costTodayEntityId: card.costTodayEntityId,
 		compensationTodayEntityId: card.compensationTodayEntityId,
+		energyCostMode: card.energyCostMode,
 		importPeakTodayEntityId: card.importPeakTodayEntityId,
 		importOffPeakTodayEntityId: card.importOffPeakTodayEntityId,
+		exportPeakTodayEntityId: card.exportPeakTodayEntityId,
+		exportOffPeakTodayEntityId: card.exportOffPeakTodayEntityId,
 		importTariffEntityId: card.importTariffEntityId,
 		exportTariffEntityId: card.exportTariffEntityId,
 		importPeakTariff: card.importPeakTariff,
 		importOffPeakTariff: card.importOffPeakTariff,
+		exportPeakTariff: card.exportPeakTariff,
+		exportOffPeakTariff: card.exportOffPeakTariff,
 		exportTariff: card.exportTariff,
 		selfSufficiencyEntityId: card.selfSufficiencyEntityId,
 		carChargingEntityId: card.carChargingEntityId,

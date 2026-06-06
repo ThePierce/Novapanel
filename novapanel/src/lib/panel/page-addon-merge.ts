@@ -33,6 +33,7 @@ export type MergeOutput = {
 		serverIsNewer: boolean;
 		addonUpdatedAt: number;
 		localUpdatedAt: number;
+		localHasDashboardContent: boolean;
 	};
 };
 
@@ -57,17 +58,24 @@ export function mergeAddonDashboardState(input: MergeInput): MergeOutput {
 	const hasExplicitSections = Array.isArray(input.addonDashboard.viewSections);
 	const addonSections = input.localizeAndSanitizeSections(input.addonDashboard.viewSections);
 
-	// Only apply server sections/cards if server state is at least as recent as local state.
-	// This prevents a stale server (failed writes) from wiping newer local changes.
+	// Only apply server sections/cards when the server has a real, fresh timestamp.
+	// Untimestamped server state may hydrate an empty local dashboard, but it must not wipe local cards.
 	const addonUpdatedAt =
-		typeof input.addonDashboard.updatedAt === 'number' && Number.isFinite(input.addonDashboard.updatedAt)
+		typeof input.addonDashboard.updatedAt === 'number' &&
+		Number.isFinite(input.addonDashboard.updatedAt) &&
+		input.addonDashboard.updatedAt > 0
 			? input.addonDashboard.updatedAt
 			: 0;
 	const localUpdatedAt =
-		typeof input.currentUpdatedAt === 'number' && Number.isFinite(input.currentUpdatedAt)
+		typeof input.currentUpdatedAt === 'number' &&
+		Number.isFinite(input.currentUpdatedAt) &&
+		input.currentUpdatedAt > 0
 			? input.currentUpdatedAt
 			: 0;
-	const serverIsNewer = addonUpdatedAt >= localUpdatedAt;
+	const localHasDashboardContent =
+		countViewCards(input.currentViewSections) > 0 || input.currentSidebarCards.length > 0;
+	const serverIsNewer =
+		addonUpdatedAt > 0 ? addonUpdatedAt >= localUpdatedAt : localUpdatedAt === 0 && !localHasDashboardContent;
 
 	let viewSections = input.currentViewSections;
 	if (hasExplicitSections && serverIsNewer) {
@@ -79,7 +87,7 @@ export function mergeAddonDashboardState(input: MergeInput): MergeOutput {
 		? input.sanitizeSidebarCards(input.addonDashboard.sidebarCards)
 		: input.currentSidebarCards;
 	let sidebarCards = input.currentSidebarCards;
-	if (input.isRemovedLegacySidebarSeed(addonSidebarCards)) {
+	if (hasExplicitSidebarCards && serverIsNewer && input.isRemovedLegacySidebarSeed(addonSidebarCards)) {
 		sidebarCards = [];
 	} else if (hasExplicitSidebarCards && serverIsNewer) {
 		sidebarCards = addonSidebarCards;
@@ -103,7 +111,8 @@ export function mergeAddonDashboardState(input: MergeInput): MergeOutput {
 			currentSidebarCardsBefore: input.currentSidebarCards.length,
 			serverIsNewer,
 			addonUpdatedAt,
-			localUpdatedAt
+			localUpdatedAt,
+			localHasDashboardContent
 		}
 	};
 }

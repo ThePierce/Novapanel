@@ -52,7 +52,10 @@
 		const match = personEntities.find((person) => {
 			const personKeys = [person.friendlyName, person.entityId].map(normalizeName).filter(Boolean);
 			return personKeys.some((personKey) =>
-				candidates.some((candidate) => candidate === personKey || candidate.includes(personKey) || personKey.includes(candidate))
+				candidates.some(
+					(candidate) =>
+						candidate === personKey || candidate.includes(personKey) || personKey.includes(candidate)
+				)
 			);
 		});
 		return match?.entityId ?? '';
@@ -60,8 +63,9 @@
 
 	function addSource() {
 		const firstUnused =
-			calendarEntities.find((entity) => !normalizedSources.some((source) => source.entityId === entity.entityId))
-				?.entityId ?? '';
+			calendarEntities.find(
+				(entity) => !normalizedSources.some((source) => source.entityId === entity.entityId)
+			)?.entityId ?? '';
 		onSourcesChange([
 			...normalizedSources,
 			{
@@ -108,7 +112,12 @@
 	<div class="calendar-editor-head">
 		<div>
 			<strong>{translate('Kalenders', $selectedLanguageStore)}</strong>
-			<span>{translate('Kies CalDAV kalender-entiteiten, koppel optioneel een person-entiteit, geef iedere persoon een kleur en zet ze in de juiste volgorde.', $selectedLanguageStore)}</span>
+			<span
+				>{translate(
+					'Kies CalDAV kalender-entiteiten, koppel optioneel een person-entiteit, geef iedere persoon een kleur en zet ze in de juiste volgorde.',
+					$selectedLanguageStore
+				)}</span
+			>
 		</div>
 		<button type="button" class="np-mini-btn primary" onclick={addSource}>
 			<TablerIcon name="plus" size={13} />
@@ -118,7 +127,10 @@
 
 	{#if normalizedSources.length === 0}
 		<div class="calendar-editor-empty">
-			{translate('Nog geen kalenders geselecteerd. Je kunt ook handmatig een entity id invullen, bijvoorbeeld', $selectedLanguageStore)}
+			{translate(
+				'Nog geen kalenders geselecteerd. Je kunt ook handmatig een entity id invullen, bijvoorbeeld',
+				$selectedLanguageStore
+			)}
 			<code>calendar.family</code>.
 		</div>
 	{/if}
@@ -136,7 +148,7 @@
 	</datalist>
 
 	<div class="calendar-source-list">
-		{#each normalizedSources as source, index}
+		{#each normalizedSources as source, index (`${source.entityId || 'source'}-${index}`)}
 			<div class="calendar-source-row">
 				<input
 					class="calendar-color"
@@ -151,12 +163,15 @@
 					list={calendarListId}
 					value={source.entityId}
 					placeholder="calendar.persoon"
-					oninput={(event) => updateSource(index, { entityId: (event.currentTarget as HTMLInputElement).value.trim() })}
+					oninput={(event) =>
+						updateSource(index, { entityId: (event.currentTarget as HTMLInputElement).value.trim() })}
 				/>
 				<input
 					type="text"
 					value={source.alias ?? ''}
-					placeholder={source.entityId ? entityName(source.entityId) : translate('Naam', $selectedLanguageStore)}
+					placeholder={source.entityId
+						? entityName(source.entityId)
+						: translate('Naam', $selectedLanguageStore)}
 					oninput={(event) => updateSource(index, { alias: (event.currentTarget as HTMLInputElement).value })}
 				/>
 				<input
@@ -165,9 +180,13 @@
 					list={personListId}
 					value={source.personEntityId ?? ''}
 					placeholder={source.personEntityId ? personName(source.personEntityId) : 'person.persoon'}
-					oninput={(event) => updateSource(index, { personEntityId: (event.currentTarget as HTMLInputElement).value.trim() })}
+					oninput={(event) =>
+						updateSource(index, { personEntityId: (event.currentTarget as HTMLInputElement).value.trim() })}
 				/>
-				<div class="calendar-order-actions" aria-label={translate('Volgorde aanpassen', $selectedLanguageStore)}>
+				<div
+					class="calendar-order-actions"
+					aria-label={translate('Volgorde aanpassen', $selectedLanguageStore)}
+				>
 					<button
 						type="button"
 						class="np-mini-btn ghost"
@@ -187,7 +206,12 @@
 						<TablerIcon name="arrow-down" size={13} />
 					</button>
 				</div>
-				<button type="button" class="np-mini-btn ghost danger" aria-label={translate('Verwijderen', $selectedLanguageStore)} onclick={() => removeSource(index)}>
+				<button
+					type="button"
+					class="np-mini-btn ghost danger"
+					aria-label={translate('Verwijderen', $selectedLanguageStore)}
+					onclick={() => removeSource(index)}
+				>
 					<TablerIcon name="trash" size={13} />
 				</button>
 			</div>
@@ -215,7 +239,7 @@
 	.calendar-editor-empty {
 		display: block;
 		margin-top: 0.2rem;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		font-size: 0.78rem;
 		line-height: 1.25;
 	}
@@ -223,7 +247,7 @@
 		margin-top: 0;
 		padding: 0.75rem;
 		border-radius: 0.65rem;
-		background: rgba(255,255,255,0.055);
+		background: rgba(255, 255, 255, 0.055);
 	}
 	.calendar-editor-empty code {
 		color: #bae6fd;
@@ -239,8 +263,8 @@
 		gap: 0.5rem;
 		padding: 0.55rem;
 		border-radius: 0.72rem;
-		background: rgba(255,255,255,0.045);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.065);
+		background: rgba(255, 255, 255, 0.045);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.065);
 	}
 	.calendar-color {
 		width: 2.1rem;
@@ -260,9 +284,9 @@
 	input[type='text'] {
 		min-width: 0;
 		height: 2.15rem;
-		border: 1px solid rgba(255,255,255,0.09);
+		border: 1px solid rgba(255, 255, 255, 0.09);
 		border-radius: 0.55rem;
-		background: rgba(255,255,255,0.075);
+		background: rgba(255, 255, 255, 0.075);
 		color: #f5f5f5;
 		padding: 0 0.65rem;
 	}
@@ -276,18 +300,18 @@
 		gap: 0.35rem;
 		padding: 0 0.65rem;
 		color: #f5f5f5;
-		background: rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.08);
 		cursor: pointer;
 	}
 	.np-mini-btn.primary {
-		background: rgba(56,189,248,0.22);
+		background: rgba(56, 189, 248, 0.22);
 		color: #bae6fd;
 	}
 	.np-mini-btn.ghost.danger {
 		color: #fca5a5;
 	}
 	.np-mini-btn.ghost:disabled {
-		color: rgba(255,255,255,0.35);
+		color: rgba(255, 255, 255, 0.35);
 	}
 	.np-mini-btn:disabled {
 		opacity: 0.45;

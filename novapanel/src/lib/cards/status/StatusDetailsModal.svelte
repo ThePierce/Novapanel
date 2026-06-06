@@ -4,7 +4,6 @@
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
 	import { callHaService } from '$lib/ha/service-call';
 	import {
-		buildStatusSummary,
 		filterEntitiesForStatusCard,
 		isEntityActive,
 		type StatusCardKind
@@ -16,8 +15,9 @@
 	import { loadLightGroups, type LightGroup } from '$lib/cards/light-groups';
 	import { areaStore, areaById } from '$lib/ha/area-store';
 	import { browser } from '$app/environment';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
 
-const EMPTY_RECORD: Record<string, string> = {};
+	const EMPTY_RECORD: Record<string, string> = {};
 
 	type Props = {
 		t: (key: TranslationKey) => string;
@@ -28,19 +28,21 @@ const EMPTY_RECORD: Record<string, string> = {};
 		domains?: string[];
 		deviceClasses?: string[];
 		statusEntityIds?: string[];
-	statusEntityAliases?: Record<string, string>;
-	statusEntityIconOverrides?: Record<string, string>;
+		statusEntityAliases?: Record<string, string>;
+		statusEntityIconOverrides?: Record<string, string>;
 		ignoredEntityIds?: string[];
 		spotifyConfigured?: boolean;
 		mediaHubOnkyoBridges?: Array<{ id: string; label: string; zoneEntityId: string; spotifySource?: string }>;
 		mediaHubPlayerOrder?: string[];
 		mediaHubPlayerAliases?: Record<string, string>;
-		onMediaHubBridgesChange?: (value: Array<{ id: string; label: string; zoneEntityId: string; spotifySource?: string }>) => void;
+		onMediaHubBridgesChange?: (
+			value: Array<{ id: string; label: string; zoneEntityId: string; spotifySource?: string }>
+		) => void;
 		onMediaHubPlayerOrderChange?: (value: string[]) => void;
 		onClose: () => void;
 		onIgnore: (entityId: string) => void;
 		onUnignore: (entityId: string) => void;
-	onEntityIconChange?: (entityId: string, icon: string | null) => void;
+		onEntityIconChange?: (entityId: string, icon: string | null) => void;
 		/** When true, entity rows do not trigger HA toggle on click (editor / arrange mode). */
 		editMode?: boolean;
 	};
@@ -54,31 +56,29 @@ const EMPTY_RECORD: Record<string, string> = {};
 		domains = [],
 		deviceClasses = [],
 		statusEntityIds = [],
-	statusEntityAliases = EMPTY_RECORD,
-	statusEntityIconOverrides = EMPTY_RECORD,
-	editMode = false,
-	spotifyConfigured = false,
-	mediaHubOnkyoBridges = [],
-	mediaHubPlayerOrder = [],
-	mediaHubPlayerAliases = {},
-	onMediaHubBridgesChange,
-	onMediaHubPlayerOrderChange,
-	onClose,
-	onEntityIconChange
+		statusEntityAliases = EMPTY_RECORD,
+		statusEntityIconOverrides = EMPTY_RECORD,
+		editMode = false,
+		spotifyConfigured = false,
+		mediaHubOnkyoBridges = [],
+		mediaHubPlayerOrder = [],
+		mediaHubPlayerAliases = {},
+		onMediaHubBridgesChange,
+		onMediaHubPlayerOrderChange,
+		onClose,
+		onEntityIconChange
 	}: Props = $props();
 
 	let actionBusyEntityId = $state('');
 	let actionError = $state('');
 	const AVAILABILITY_TAB_KEY = 'np_availability_tab_last';
 	let availabilityTab = $state<'entities' | 'batteries'>(
-		(readStoredValue(AVAILABILITY_TAB_KEY) === 'batteries' ? 'batteries' : 'entities')
+		readStoredValue(AVAILABILITY_TAB_KEY) === 'batteries' ? 'batteries' : 'entities'
 	);
 	$effect(() => {
 		writeStoredValue(AVAILABILITY_TAB_KEY, availabilityTab);
 	});
-	const showScopedBatteryPane = $derived(
-		kind === 'availability_status' && availabilityTab === 'batteries'
-	);
+	const showScopedBatteryPane = $derived(kind === 'availability_status' && availabilityTab === 'batteries');
 	const showScopedEntitiesPane = $derived(
 		(kind === 'availability_status' && availabilityTab === 'entities') ||
 			kind === 'devices_status' ||
@@ -86,14 +86,57 @@ const EMPTY_RECORD: Record<string, string> = {};
 			kind === 'lights_status'
 	);
 
-	const cardTypeMeta = $derived((() => {
-		if (kind === 'lights_status') return { title: translate('Lampen', $selectedLanguageStore), icon: 'bulb', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: translate('Welke lampen zijn aan', $selectedLanguageStore) };
-		if (kind === 'openings_status') return { title: translate('cardTypeOpeningsStatus', $selectedLanguageStore), icon: 'door', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: translate('Welke deuren en ramen zijn open', $selectedLanguageStore) };
-		if (kind === 'devices_status') return { title: translate('Apparaten', $selectedLanguageStore), icon: 'plug', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: translate('Welke apparaten staan aan', $selectedLanguageStore) };
-		if (kind === 'availability_status') return { title: translate('Beschikbaarheid', $selectedLanguageStore), icon: 'wifi', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: translate('Bereikbaarheid en batterijen', $selectedLanguageStore) };
-		if (kind === 'media_players_status') return { title: 'Media', icon: 'device-speaker', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: translate('Spelers en queue', $selectedLanguageStore) };
-		return { title: translate('Status', $selectedLanguageStore), icon: 'note', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: '' };
-	})());
+	const cardTypeMeta = $derived(
+		(() => {
+			if (kind === 'lights_status')
+				return {
+					title: translate('Lampen', $selectedLanguageStore),
+					icon: 'bulb',
+					tint: 'rgba(255,211,56,0.18)',
+					color: '#ffd338',
+					subtitle: translate('Welke lampen zijn aan', $selectedLanguageStore)
+				};
+			if (kind === 'openings_status')
+				return {
+					title: translate('cardTypeOpeningsStatus', $selectedLanguageStore),
+					icon: 'door',
+					tint: 'rgba(96,165,250,0.18)',
+					color: '#60a5fa',
+					subtitle: translate('Welke deuren en ramen zijn open', $selectedLanguageStore)
+				};
+			if (kind === 'devices_status')
+				return {
+					title: translate('Apparaten', $selectedLanguageStore),
+					icon: 'plug',
+					tint: 'rgba(52,211,153,0.18)',
+					color: '#34d399',
+					subtitle: translate('Welke apparaten staan aan', $selectedLanguageStore)
+				};
+			if (kind === 'availability_status')
+				return {
+					title: translate('Beschikbaarheid', $selectedLanguageStore),
+					icon: 'wifi',
+					tint: 'rgba(34,211,238,0.18)',
+					color: '#22d3ee',
+					subtitle: translate('Bereikbaarheid en batterijen', $selectedLanguageStore)
+				};
+			if (kind === 'media_players_status')
+				return {
+					title: 'Media',
+					icon: 'device-speaker',
+					tint: 'rgba(192,132,252,0.18)',
+					color: '#c084fc',
+					subtitle: translate('Spelers en queue', $selectedLanguageStore)
+				};
+			return {
+				title: translate('Status', $selectedLanguageStore),
+				icon: 'note',
+				tint: 'rgba(96,165,250,0.18)',
+				color: '#60a5fa',
+				subtitle: ''
+			};
+		})()
+	);
 	const detailTitle = $derived(
 		typeof title === 'string' && title.trim().length > 0 ? title.trim() : cardTypeMeta.title
 	);
@@ -195,12 +238,20 @@ const EMPTY_RECORD: Record<string, string> = {};
 		return loadLightGroups(cardId);
 	});
 	const groupedEntityIds = $derived(
-		new Set(lightGroups.flatMap(g => g.entityIds.map(id => id.toLowerCase())))
+		new Set(lightGroups.flatMap((g) => g.entityIds.map((id) => id.toLowerCase())))
 	);
 
 	// Area grouping
-	const AREA_KINDS: StatusCardKind[] = ['lights_status','openings_status','devices_status','availability_status','media_players_status'];
-	const usesAreaGrouping = $derived(AREA_KINDS.includes(kind) && $areaStore.loaded && $areaStore.areas.length > 0);
+	const AREA_KINDS: StatusCardKind[] = [
+		'lights_status',
+		'openings_status',
+		'devices_status',
+		'availability_status',
+		'media_players_status'
+	];
+	const usesAreaGrouping = $derived(
+		AREA_KINDS.includes(kind) && $areaStore.loaded && $areaStore.areas.length > 0
+	);
 	type AreaGroup<T> = { areaId: string | null; areaName: string; entities: T[] };
 	function groupByArea<T extends { entityId: string }>(entities: T[]): AreaGroup<T>[] {
 		const { entityAreaMap } = $areaStore;
@@ -208,50 +259,47 @@ const EMPTY_RECORD: Record<string, string> = {};
 		const noArea: T[] = [];
 		for (const entity of entities) {
 			const areaId = entityAreaMap[entity.entityId] ?? null;
-			if (!areaId) { noArea.push(entity); continue; }
+			if (!areaId) {
+				noArea.push(entity);
+				continue;
+			}
 			const areaName = $areaById[areaId]?.name ?? areaId;
 			if (!areaMap.has(areaId)) areaMap.set(areaId, { areaId, areaName, entities: [] });
 			areaMap.get(areaId)!.entities.push(entity);
 		}
-		const groups = [...areaMap.values()].sort((a,b) => a.areaName.localeCompare(b.areaName,'nl'));
+		const groups = [...areaMap.values()].sort((a, b) => a.areaName.localeCompare(b.areaName, 'nl'));
 		if (noArea.length > 0) groups.push({ areaId: null, areaName: 'Overig', entities: noArea });
 		return groups;
 	}
 	type WithArea<T> = T & { _areaName: string | null };
 	function sortByArea<T extends { entityId: string }>(entities: T[]): WithArea<T>[] {
-		if (!usesAreaGrouping) return entities.map(e => ({ ...e, _areaName: null }));
-		return groupByArea(entities).flatMap(g => g.entities.map(e => ({ ...e, _areaName: g.areaName })));
+		if (!usesAreaGrouping) return entities.map((e) => ({ ...e, _areaName: null }));
+		return groupByArea(entities).flatMap((g) => g.entities.map((e) => ({ ...e, _areaName: g.areaName })));
 	}
 	type SortedGroup = LightGroup & { _areaName: string | null };
 	const sortedLightGroups = $derived.by((): SortedGroup[] => {
 		if (!lightGroups.length) return [];
 		const { entityAreaMap } = $areaStore;
-		return lightGroups.map(group => {
-			const areaCounts = new Map<string, number>();
-			for (const id of group.entityIds) {
-				const areaId = entityAreaMap[id.toLowerCase()] ?? entityAreaMap[id] ?? null;
-				if (areaId) areaCounts.set(areaId, (areaCounts.get(areaId) ?? 0) + 1);
-			}
-			let bestAreaId: string | null = null; let bestCount = 0;
-			for (const [aId, cnt] of areaCounts) { if (cnt > bestCount) { bestAreaId = aId; bestCount = cnt; } }
-			const areaName = bestAreaId ? ($areaById[bestAreaId]?.name ?? bestAreaId) : null;
-			return { ...group, _areaName: areaName };
-		}).sort((a,b) => (a._areaName ?? 'zzz').localeCompare(b._areaName ?? 'zzz','nl'));
+		return lightGroups
+			.map((group) => {
+				const areaCounts = new Map<string, number>();
+				for (const id of group.entityIds) {
+					const areaId = entityAreaMap[id.toLowerCase()] ?? entityAreaMap[id] ?? null;
+					if (areaId) areaCounts.set(areaId, (areaCounts.get(areaId) ?? 0) + 1);
+				}
+				let bestAreaId: string | null = null;
+				let bestCount = 0;
+				for (const [aId, cnt] of areaCounts) {
+					if (cnt > bestCount) {
+						bestAreaId = aId;
+						bestCount = cnt;
+					}
+				}
+				const areaName = bestAreaId ? ($areaById[bestAreaId]?.name ?? bestAreaId) : null;
+				return { ...group, _areaName: areaName };
+			})
+			.sort((a, b) => (a._areaName ?? 'zzz').localeCompare(b._areaName ?? 'zzz', 'nl'));
 	});
-	const sortedActiveEntities = $derived(sortByArea(
-		scopedActiveEntities.filter(e => kind !== 'lights_status' || !groupedEntityIds.has(e.entityId.toLowerCase()))
-	));
-	const sortedBatteryEntities = $derived(sortByArea(batteryEntities));
-	const sortedMediaEntities = $derived(sortByArea(mediaPlayerEntities));
-
-
-
-
-
-
-
-
-
 	const result = $derived(
 		filterEntitiesForStatusCard({
 			entities: $entityStore.entities,
@@ -263,9 +311,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 	);
 	const statusScopeSet = $derived(
 		new Set(
-			(statusEntityIds ?? [])
-				.map((value) => value.trim().toLowerCase())
-				.filter((value) => value.length > 0)
+			(statusEntityIds ?? []).map((value) => value.trim().toLowerCase()).filter((value) => value.length > 0)
 		)
 	);
 	const scopedActiveEntities = $derived.by(() => {
@@ -274,7 +320,8 @@ const EMPTY_RECORD: Record<string, string> = {};
 			kind !== 'availability_status' &&
 			kind !== 'devices_status' &&
 			kind !== 'openings_status'
-		) return result.active;
+		)
+			return result.active;
 		if (statusScopeSet.size === 0) return result.active;
 		return result.active.filter((entity) => statusScopeSet.has(entity.entityId.toLowerCase()));
 	});
@@ -284,7 +331,8 @@ const EMPTY_RECORD: Record<string, string> = {};
 			kind !== 'availability_status' &&
 			kind !== 'devices_status' &&
 			kind !== 'openings_status'
-		) return result.relevant;
+		)
+			return result.relevant;
 		if (statusScopeSet.size === 0) return result.relevant;
 		return result.relevant.filter((entity) => statusScopeSet.has(entity.entityId.toLowerCase()));
 	});
@@ -300,8 +348,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 		}
 		return out.sort((a, b) => a.batteryLevel - b.batteryLevel);
 	});
-	const summary = $derived(buildStatusSummary({ kind, activeCount: result.active.length, language: $selectedLanguageStore }));
-
 	// Hero stats per kind
 	const heroStats = $derived.by(() => {
 		const totalScoped = scopedRelevantEntities.length;
@@ -310,8 +356,14 @@ const EMPTY_RECORD: Record<string, string> = {};
 			return {
 				active: activeScoped,
 				total: totalScoped,
-				activeLabel: activeScoped === 1 ? translate('lamp aan', $selectedLanguageStore) : translate('lampen aan', $selectedLanguageStore),
-				idleLabel: activeScoped === 0 ? translate('Alle lampen uit', $selectedLanguageStore) : `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
+				activeLabel:
+					activeScoped === 1
+						? translate('lamp aan', $selectedLanguageStore)
+						: translate('lampen aan', $selectedLanguageStore),
+				idleLabel:
+					activeScoped === 0
+						? translate('Alle lampen uit', $selectedLanguageStore)
+						: `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
 				accent: '#ffd338',
 				accentSoft: 'rgba(255,211,56,0.18)',
 				bgGradient: 'radial-gradient(circle at 30% 20%, rgba(255,211,56,0.10), transparent 55%)'
@@ -322,7 +374,10 @@ const EMPTY_RECORD: Record<string, string> = {};
 				active: activeScoped,
 				total: totalScoped,
 				activeLabel: translate('Open', $selectedLanguageStore).toLowerCase(),
-				idleLabel: activeScoped === 0 ? translate('Alles dicht', $selectedLanguageStore) : `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
+				idleLabel:
+					activeScoped === 0
+						? translate('Alles dicht', $selectedLanguageStore)
+						: `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
 				accent: '#60a5fa',
 				accentSoft: 'rgba(96,165,250,0.18)',
 				bgGradient: 'radial-gradient(circle at 30% 20%, rgba(96,165,250,0.10), transparent 55%)'
@@ -332,8 +387,14 @@ const EMPTY_RECORD: Record<string, string> = {};
 			return {
 				active: activeScoped,
 				total: totalScoped,
-				activeLabel: activeScoped === 1 ? translate('apparaat actief', $selectedLanguageStore) : translate('apparaten actief', $selectedLanguageStore),
-				idleLabel: activeScoped === 0 ? translate('Alle apparaten uit', $selectedLanguageStore) : `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
+				activeLabel:
+					activeScoped === 1
+						? translate('apparaat actief', $selectedLanguageStore)
+						: translate('apparaten actief', $selectedLanguageStore),
+				idleLabel:
+					activeScoped === 0
+						? translate('Alle apparaten uit', $selectedLanguageStore)
+						: `${translate('van', $selectedLanguageStore)} ${totalScoped} ${translate('Totaal', $selectedLanguageStore).toLowerCase()}`,
 				accent: '#34d399',
 				accentSoft: 'rgba(52,211,153,0.18)',
 				bgGradient: 'radial-gradient(circle at 30% 20%, rgba(52,211,153,0.10), transparent 55%)'
@@ -347,14 +408,16 @@ const EMPTY_RECORD: Record<string, string> = {};
 				active: offline,
 				total: totalScoped,
 				activeLabel: offline === 1 ? 'offline' : 'offline',
-				idleLabel: offline === 0
-					? `${translate('alle', $selectedLanguageStore)} ${totalScoped} ${translate('Apparaten', $selectedLanguageStore).toLowerCase()} online`
-					: `${online} online · ${offline} offline`,
+				idleLabel:
+					offline === 0
+						? `${translate('alle', $selectedLanguageStore)} ${totalScoped} ${translate('Apparaten', $selectedLanguageStore).toLowerCase()} online`
+						: `${online} online · ${offline} offline`,
 				accent: offline > 0 ? '#f87171' : '#22d3ee',
 				accentSoft: offline > 0 ? 'rgba(248,113,113,0.18)' : 'rgba(34,211,238,0.18)',
-				bgGradient: offline > 0
-					? 'radial-gradient(circle at 30% 20%, rgba(248,113,113,0.10), transparent 55%)'
-					: 'radial-gradient(circle at 30% 20%, rgba(34,211,238,0.10), transparent 55%)',
+				bgGradient:
+					offline > 0
+						? 'radial-gradient(circle at 30% 20%, rgba(248,113,113,0.10), transparent 55%)'
+						: 'radial-gradient(circle at 30% 20%, rgba(34,211,238,0.10), transparent 55%)',
 				lowestBattery
 			};
 		}
@@ -377,6 +440,19 @@ const EMPTY_RECORD: Record<string, string> = {};
 			return allowed.has(fullId) || allowed.has(shortId) || allowedNames.has(friendlyName);
 		});
 	});
+	const sortedActiveEntities = $derived(
+		sortByArea(
+			scopedActiveEntities.filter(
+				(e) => kind !== 'lights_status' || !groupedEntityIds.has(e.entityId.toLowerCase())
+			)
+		)
+	);
+	const sortedBatteryEntities = $derived(sortByArea(batteryEntities));
+	const sortedMediaEntities = $derived(sortByArea(mediaPlayerEntities));
+
+	function translateAny(key: TranslationKey | string) {
+		return t(key as TranslationKey);
+	}
 
 	async function callHaDomainService(
 		domain: string,
@@ -395,9 +471,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 			return true;
 		} catch (error) {
 			const message =
-				error instanceof Error && error.message.trim().length > 0
-					? error.message
-					: t('unknownError');
+				error instanceof Error && error.message.trim().length > 0 ? error.message : t('unknownError');
 			if (!options.silent) actionError = `${t('actionFailedPrefix')}: ${message}`;
 			return false;
 		} finally {
@@ -405,19 +479,11 @@ const EMPTY_RECORD: Record<string, string> = {};
 		}
 	}
 
-	async function callMediaService(entityId: string, service: string, serviceData: Record<string, unknown> = {}) {
-		await callHaDomainService('media_player', service, entityId, serviceData);
-	}
-
 	async function toggleLightGroup(group: LightGroup) {
 		const groupIdSet = new Set(
-			group.entityIds
-				.map((id) => id.trim().toLowerCase())
-				.filter((id) => id.length > 0)
+			group.entityIds.map((id) => id.trim().toLowerCase()).filter((id) => id.length > 0)
 		);
-		const groupEntities = result.relevant.filter((e) =>
-			groupIdSet.has(e.entityId.trim().toLowerCase())
-		);
+		const groupEntities = result.relevant.filter((e) => groupIdSet.has(e.entityId.trim().toLowerCase()));
 		if (groupEntities.length === 0) return;
 		const anyOn = groupEntities.some((e) => (e.state || '').toLowerCase() === 'on');
 		const service = anyOn ? 'turn_off' : 'turn_on';
@@ -442,19 +508,6 @@ const EMPTY_RECORD: Record<string, string> = {};
 			}
 		}
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	async function toggleLightOrDeviceEntity(entity: HomeAssistantEntity) {
 		if (editMode || actionBusyEntityId) return;
@@ -532,7 +585,8 @@ const EMPTY_RECORD: Record<string, string> = {};
 	function formatOpeningState(raw: string): string {
 		const s = (raw || '').trim().toLowerCase();
 		if (s === 'on' || s === 'open' || s === 'opening') return translate('Open', $selectedLanguageStore);
-		if (s === 'off' || s === 'closed' || s === 'closing') return translate('Gesloten', $selectedLanguageStore);
+		if (s === 'off' || s === 'closed' || s === 'closing')
+			return translate('Gesloten', $selectedLanguageStore);
 		if (s === 'unavailable') return translate('Niet bereikbaar', $selectedLanguageStore);
 		if (s === 'unknown' || s === '') return translate('Onbekend', $selectedLanguageStore);
 		return raw;
@@ -598,7 +652,14 @@ const EMPTY_RECORD: Record<string, string> = {};
 </script>
 
 <button type="button" class="modal-overlay" onclick={onClose} aria-label={t('closeOverlay')}></button>
-<section class="settings-modal app-popup status-detail-modal np-detail" data-kind={kind} role="dialog" aria-modal="true" aria-label={detailTitle}>
+<div
+	class="settings-modal app-popup status-detail-modal np-detail"
+	data-kind={kind}
+	role="dialog"
+	aria-modal="true"
+	aria-label={detailTitle}
+	use:modalBehavior={{ onClose }}
+>
 	<div class="np-detail-head" style="--np-tint: {cardTypeMeta.tint}; --np-color: {cardTypeMeta.color};">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
 		<div class="np-detail-head-icon"><TablerIcon name={cardTypeMeta.icon} size={22} /></div>
@@ -613,7 +674,10 @@ const EMPTY_RECORD: Record<string, string> = {};
 		{/if}
 
 		{#if heroStats && (kind === 'lights_status' || kind === 'openings_status' || kind === 'devices_status' || kind === 'availability_status')}
-			<div class="status-hero" style="--hero-accent: {heroStats.accent}; --hero-accent-soft: {heroStats.accentSoft}; --hero-bg: {heroStats.bgGradient};">
+			<div
+				class="status-hero"
+				style="--hero-accent: {heroStats.accent}; --hero-accent-soft: {heroStats.accentSoft}; --hero-bg: {heroStats.bgGradient};"
+			>
 				<div class="status-hero-bg" aria-hidden="true"></div>
 				<div class="status-hero-icon">
 					<TablerIcon name={cardTypeMeta.icon} size={28} />
@@ -628,7 +692,14 @@ const EMPTY_RECORD: Record<string, string> = {};
 				{#if kind === 'availability_status' && heroStats.lowestBattery !== null && heroStats.lowestBattery !== undefined}
 					<div class="status-hero-extra">
 						<div class="status-hero-extra-label">Laagste batterij</div>
-						<div class="status-hero-extra-value" style="color: {heroStats.lowestBattery <= 20 ? '#f87171' : heroStats.lowestBattery <= 40 ? '#fbbf24' : '#4ade80'};">
+						<div
+							class="status-hero-extra-value"
+							style="color: {heroStats.lowestBattery <= 20
+								? '#f87171'
+								: heroStats.lowestBattery <= 40
+									? '#fbbf24'
+									: '#4ade80'};"
+						>
 							{heroStats.lowestBattery}%
 						</div>
 					</div>
@@ -660,7 +731,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 		{/if}
 		{#if kind === 'media_players_status'}
 			<MediaHubCard
-				{t}
+				t={translateAny}
 				entities={sortedMediaEntities}
 				allEntities={$entityStore.entities.filter((e) => e.domain === 'media_player')}
 				callService={callHaDomainService}
@@ -679,11 +750,13 @@ const EMPTY_RECORD: Record<string, string> = {};
 					<div class="empty-row">-</div>
 				{:else}
 					{#each sortedBatteryEntities as entity, idx (entity.entityId)}
-						{#if usesAreaGrouping && (idx === 0 || sortedBatteryEntities[idx-1]._areaName !== entity._areaName)}
+						{#if usesAreaGrouping && (idx === 0 || sortedBatteryEntities[idx - 1]._areaName !== entity._areaName)}
 							<div class="area-header">{entity._areaName ?? 'Overig'}</div>
 						{/if}
 						<div class="entity-row availability-card popup-card-editable">
-							<div class={`availability-cover availability-cover-battery ${getBatteryToneClass(entity.batteryLevel)}`}>
+							<div
+								class={`availability-cover availability-cover-battery ${getBatteryToneClass(entity.batteryLevel)}`}
+							>
 								<StatusIcon icon={getBatteryIcon(entity.batteryLevel)} size={20} />
 							</div>
 							<div class="entity-main availability-main">
@@ -694,7 +767,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 					{/each}
 				{/if}
 			</div>
-		{:else if kind !== 'media_players_status'}
+		{:else}
 			{#if showScopedEntitiesPane}
 				<div class="entity-list availability-grid">
 					{#if scopedActiveEntities.length === 0}
@@ -704,46 +777,59 @@ const EMPTY_RECORD: Record<string, string> = {};
 									<StatusIcon icon="mdi:check-circle" size={72} />
 								</div>
 								<div class="availability-ok-title">{t('availabilityEntitiesAllOk').split('.')[0]}</div>
-								<div class="availability-ok-sub">{t('availabilityEntitiesAllOk').split('.').slice(1).join('.').trim()}</div>
+								<div class="availability-ok-sub">
+									{t('availabilityEntitiesAllOk').split('.').slice(1).join('.').trim()}
+								</div>
 							</div>
 						{:else}
 							<div class="empty-row">-</div>
 						{/if}
 					{:else}
 						{#if kind === 'lights_status' && sortedLightGroups.length > 0}
-						{#each sortedLightGroups as group, gIdx (group.id)}
-							{@const groupActive = group.entityIds.some(id => scopedActiveEntities.some(e => e.entityId.toLowerCase() === id.toLowerCase()))}
-							{@const groupCount = group.entityIds.filter(id => scopedActiveEntities.some(e => e.entityId.toLowerCase() === id.toLowerCase())).length}
-							{#if groupCount > 0}
-								{#if usesAreaGrouping && (gIdx === 0 || sortedLightGroups[gIdx-1]._areaName !== group._areaName)}
-									<div class="area-header">{group._areaName ?? 'Overig'}</div>
-								{/if}
-								<div class="entity-row availability-card entity-row-toggleable"
-									role="button"
-									tabindex={editMode ? -1 : 0}
-									class:entity-group-active={groupActive}
-									onclick={() => !editMode && toggleLightGroup(group)}
-									onkeydown={(event) => {
-										if (!editMode && (event.key === 'Enter' || event.key === ' ')) {
-											event.preventDefault();
-											toggleLightGroup(group);
-										}
-									}}>
-									<div class="availability-cover-wrap"><div class="availability-cover">
-										<StatusIcon icon={groupActive ? 'mdi:lightbulb-group' : 'mdi:lightbulb-group-outline'} size={20} />
-									</div></div>
-									<div class="entity-main availability-main">
-										<span class="entity-name">{group.name}</span>
-										<span class="entity-state">{groupCount}/{group.entityIds.length} aan</span>
+							{#each sortedLightGroups as group, gIdx (group.id)}
+								{@const groupActive = group.entityIds.some((id) =>
+									scopedActiveEntities.some((e) => e.entityId.toLowerCase() === id.toLowerCase())
+								)}
+								{@const groupCount = group.entityIds.filter((id) =>
+									scopedActiveEntities.some((e) => e.entityId.toLowerCase() === id.toLowerCase())
+								).length}
+								{#if groupCount > 0}
+									{#if usesAreaGrouping && (gIdx === 0 || sortedLightGroups[gIdx - 1]._areaName !== group._areaName)}
+										<div class="area-header">{group._areaName ?? 'Overig'}</div>
+									{/if}
+									<div
+										class="entity-row availability-card entity-row-toggleable"
+										role="button"
+										tabindex={editMode ? -1 : 0}
+										class:entity-group-active={groupActive}
+										onclick={() => !editMode && toggleLightGroup(group)}
+										onkeydown={(event) => {
+											if (!editMode && (event.key === 'Enter' || event.key === ' ')) {
+												event.preventDefault();
+												toggleLightGroup(group);
+											}
+										}}
+									>
+										<div class="availability-cover-wrap">
+											<div class="availability-cover">
+												<StatusIcon
+													icon={groupActive ? 'mdi:lightbulb-group' : 'mdi:lightbulb-group-outline'}
+													size={20}
+												/>
+											</div>
+										</div>
+										<div class="entity-main availability-main">
+											<span class="entity-name">{group.name}</span>
+											<span class="entity-state">{groupCount}/{group.entityIds.length} aan</span>
+										</div>
 									</div>
-								</div>
-							{/if}
-						{/each}
-					{/if}
-					{#each sortedActiveEntities as entity, idx (entity.entityId)}
-						{#if usesAreaGrouping && (idx === 0 || sortedActiveEntities[idx-1]._areaName !== entity._areaName)}
-							<div class="area-header">{entity._areaName ?? 'Overig'}</div>
+								{/if}
+							{/each}
 						{/if}
+						{#each sortedActiveEntities as entity, idx (entity.entityId)}
+							{#if usesAreaGrouping && (idx === 0 || sortedActiveEntities[idx - 1]._areaName !== entity._areaName)}
+								<div class="area-header">{entity._areaName ?? 'Overig'}</div>
+							{/if}
 							<div
 								class="entity-row availability-card popup-card-editable"
 								data-active="1"
@@ -753,7 +839,11 @@ const EMPTY_RECORD: Record<string, string> = {};
 									(kind === 'lights_status' || kind === 'devices_status')}
 								onclick={(e) => handleScopedEntityRowClick(e, entity)}
 								onkeydown={(e) => {
-									if (!editMode && (kind === 'lights_status' || kind === 'devices_status') && (e.key === 'Enter' || e.key === ' ')) {
+									if (
+										!editMode &&
+										(kind === 'lights_status' || kind === 'devices_status') &&
+										(e.key === 'Enter' || e.key === ' ')
+									) {
 										e.preventDefault();
 										handleScopedEntityRowClick(e, entity);
 									}
@@ -761,6 +851,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 							>
 								<div
 									class="availability-cover-wrap"
+									role="presentation"
 									onpointerdown={(event) => startIconHold(entity, event)}
 									onpointerup={cancelIconHold}
 									onpointerleave={cancelIconHold}
@@ -770,12 +861,23 @@ const EMPTY_RECORD: Record<string, string> = {};
 										<StatusIcon icon={getEntityDetailIcon(entity)} size={20} />
 									</div>
 									{#if iconEditorEntityId === entity.entityId}
-										<div class="icon-mini-editor" role="presentation" onpointerdown={(e) => e.stopPropagation()} onclick={(e) => e.stopPropagation()}>
+										<div
+											class="icon-mini-editor"
+											role="presentation"
+											onpointerdown={(e) => e.stopPropagation()}
+											onclick={(e) => e.stopPropagation()}
+										>
 											<div class="icon-mini-preview">
-												<StatusIcon icon={iconEditorDraft && iconEditorDraft.trim().length > 0 ? iconEditorDraft : getEntityDetailIcon(entity)} size={18} />
+												<StatusIcon
+													icon={iconEditorDraft && iconEditorDraft.trim().length > 0
+														? iconEditorDraft
+														: getEntityDetailIcon(entity)}
+													size={18}
+												/>
 											</div>
 											<input
 												class="icon-mini-input"
+												data-modal-escape-scope
 												type="text"
 												value={iconEditorDraft}
 												placeholder="mdi:door-open"
@@ -786,10 +888,20 @@ const EMPTY_RECORD: Record<string, string> = {};
 												}}
 											/>
 											<div class="icon-mini-actions">
-												<button type="button" class="icon-mini-btn icon-mini-btn-save" onclick={saveIconEditor} aria-label={t('save')}>
+												<button
+													type="button"
+													class="icon-mini-btn icon-mini-btn-save"
+													onclick={saveIconEditor}
+													aria-label={t('save')}
+												>
 													<StatusIcon icon="mdi:check" size={12} />
 												</button>
-												<button type="button" class="icon-mini-btn icon-mini-btn-cancel" onclick={closeIconEditor} aria-label={t('cancel')}>
+												<button
+													type="button"
+													class="icon-mini-btn icon-mini-btn-cancel"
+													onclick={closeIconEditor}
+													aria-label={t('cancel')}
+												>
 													<StatusIcon icon="mdi:close" size={12} />
 												</button>
 											</div>
@@ -799,7 +911,9 @@ const EMPTY_RECORD: Record<string, string> = {};
 								<div class="entity-main availability-main">
 									<span>{popupLabelForEntity(entity.entityId, entity.friendlyName)}</span>
 									{#if kind === 'availability_status'}
-										<div class="availability-sub">{entity.state === 'unavailable' ? 'Niet bereikbaar' : (entity.state || 'Onbekend')}</div>
+										<div class="availability-sub">
+											{entity.state === 'unavailable' ? 'Niet bereikbaar' : entity.state || 'Onbekend'}
+										</div>
 									{:else if kind === 'openings_status'}
 										<div class="availability-sub">{formatOpeningState(entity.state)}</div>
 									{:else}
@@ -813,54 +927,99 @@ const EMPTY_RECORD: Record<string, string> = {};
 			{/if}
 		{/if}
 	</div>
-</section>
+</div>
 
 <style>
-	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.36); border: 0; padding: 0; margin: 0; z-index: 40; cursor: default; }
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.36);
+		border: 0;
+		padding: 0;
+		margin: 0;
+		z-index: 40;
+		cursor: default;
+	}
 	.np-detail.settings-modal {
-		position: fixed; top: 50%; left: 50%;
+		position: fixed;
+		top: 50%;
+		left: 50%;
 		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
-		border: 0.5px solid rgba(255,255,255,0.08);
-		border-radius: 18px; padding: 0; z-index: 60;
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
+		border-radius: 18px;
+		padding: 0;
+		z-index: 60;
 		transform: translate(-50%, -50%);
 		overflow: hidden;
 	}
 	.np-detail.settings-modal::before {
-		content: ''; position: absolute; top: 0; left: 50%;
-		width: 60%; height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-		transform: translateX(-50%); pointer-events: none; z-index: 5;
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		width: 60%;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+		transform: translateX(-50%);
+		pointer-events: none;
+		z-index: 5;
 	}
 
 	/* Premium detail-modal header */
 	.np-detail-head {
 		padding: 18px 22px 14px;
-		border-bottom: 0.5px solid rgba(255,255,255,0.06);
-		display: flex; align-items: center; gap: 12px;
-		position: relative; overflow: hidden; flex-shrink: 0;
+		border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		position: relative;
+		overflow: hidden;
+		flex-shrink: 0;
 	}
 	.np-detail-head-glow {
-		position: absolute; top: -100px; left: -40px;
-		width: 220px; height: 220px;
-		background: radial-gradient(circle, var(--np-tint, rgba(96,165,250,0.18)), transparent 70%);
-		pointer-events: none; filter: blur(20px);
+		position: absolute;
+		top: -100px;
+		left: -40px;
+		width: 220px;
+		height: 220px;
+		background: radial-gradient(circle, var(--np-tint, rgba(96, 165, 250, 0.18)), transparent 70%);
+		pointer-events: none;
+		filter: blur(20px);
 	}
 	.np-detail-head-icon {
-		width: 38px; height: 38px;
-		border-radius: 10px; display: grid; place-items: center;
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
+		display: grid;
+		place-items: center;
 		background: var(--np-tint);
-		border: 0.5px solid rgba(255,255,255,0.10);
+		border: 0.5px solid rgba(255, 255, 255, 0.1);
 		color: var(--np-color);
-		flex-shrink: 0; position: relative; z-index: 1;
+		flex-shrink: 0;
+		position: relative;
+		z-index: 1;
 	}
-	.np-detail-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
+	.np-detail-head-text {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		z-index: 1;
+	}
 	.np-detail-head-title {
-		font-size: 15px; font-weight: 500;
-		letter-spacing: -0.01em; line-height: 1.2;
+		font-size: 15px;
+		font-weight: 500;
+		letter-spacing: -0.01em;
+		line-height: 1.2;
 		color: #f5f5f5;
-		white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
-	.np-detail-head-sub { font-size: 11.5px; color: rgba(255,255,255,0.5); margin-top: 3px; }
+	.np-detail-head-sub {
+		font-size: 11.5px;
+		color: rgba(255, 255, 255, 0.5);
+		margin-top: 3px;
+	}
 
 	.app-popup {
 		width: clamp(
@@ -893,7 +1052,9 @@ const EMPTY_RECORD: Record<string, string> = {};
 			min-height: min(20rem, var(--np-popup-max-height, calc(100vh - 1.5rem)));
 		}
 	}
-	.status-detail-modal.app-popup { grid-template-rows: auto minmax(0, 1fr); }
+	.status-detail-modal.app-popup {
+		grid-template-rows: auto minmax(0, 1fr);
+	}
 	.status-detail-modal {
 		--green-100: #004d00;
 		--green-90: #197a19;
@@ -923,13 +1084,13 @@ const EMPTY_RECORD: Record<string, string> = {};
 		gap: clamp(10px, 2.2cqw, 16px);
 		padding: clamp(12px, 2.6cqw, 18px) clamp(14px, 3cqw, 20px);
 		background:
-			linear-gradient(135deg, var(--hero-accent-soft, rgba(255,255,255,0.04)), transparent 60%),
-			rgba(255,255,255,0.03);
-		border: 0.5px solid rgba(255,255,255,0.08);
+			linear-gradient(135deg, var(--hero-accent-soft, rgba(255, 255, 255, 0.04)), transparent 60%),
+			rgba(255, 255, 255, 0.03);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 16px;
 		overflow: hidden;
 		isolation: isolate;
-		box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 		flex: 0 0 auto;
 		min-width: 0;
 	}
@@ -944,8 +1105,13 @@ const EMPTY_RECORD: Record<string, string> = {};
 		animation: hero-shift 16s ease-in-out infinite;
 	}
 	@keyframes hero-shift {
-		0%, 100% { transform: scale(1) rotate(0deg); }
-		50% { transform: scale(1.1) rotate(5deg); }
+		0%,
+		100% {
+			transform: scale(1) rotate(0deg);
+		}
+		50% {
+			transform: scale(1.1) rotate(5deg);
+		}
 	}
 	.status-hero-icon {
 		position: relative;
@@ -956,11 +1122,11 @@ const EMPTY_RECORD: Record<string, string> = {};
 		display: grid;
 		place-items: center;
 		background: var(--hero-accent-soft);
-		border: 0.5px solid rgba(255,255,255,0.12);
+		border: 0.5px solid rgba(255, 255, 255, 0.12);
 		color: var(--hero-accent);
 		box-shadow:
 			0 0 24px var(--hero-accent-soft),
-			inset 0 1px 0 rgba(255,255,255,0.10);
+			inset 0 1px 0 rgba(255, 255, 255, 0.1);
 	}
 	.status-hero-text {
 		position: relative;
@@ -982,17 +1148,19 @@ const EMPTY_RECORD: Record<string, string> = {};
 		line-height: 1;
 		letter-spacing: -0.03em;
 		font-variant-numeric: tabular-nums;
-		text-shadow: 0 2px 16px rgba(0,0,0,0.4), 0 0 24px var(--hero-accent-soft);
+		text-shadow:
+			0 2px 16px rgba(0, 0, 0, 0.4),
+			0 0 24px var(--hero-accent-soft);
 	}
 	.status-hero-num-label {
 		font-size: 13px;
 		font-weight: 500;
-		color: rgba(255,255,255,0.78);
+		color: rgba(255, 255, 255, 0.78);
 		letter-spacing: -0.005em;
 	}
 	.status-hero-sub {
 		font-size: 11.5px;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
@@ -1003,14 +1171,16 @@ const EMPTY_RECORD: Record<string, string> = {};
 	.status-hero-progress {
 		position: relative;
 		z-index: 1;
-		width: 56px; height: 56px;
+		width: 56px;
+		height: 56px;
 		display: grid;
 		place-items: center;
 	}
 	.status-hero-progress-svg {
 		position: absolute;
 		inset: 0;
-		width: 100%; height: 100%;
+		width: 100%;
+		height: 100%;
 	}
 	.status-hero-progress-pct {
 		position: relative;
@@ -1031,7 +1201,7 @@ const EMPTY_RECORD: Record<string, string> = {};
 	}
 	.status-hero-extra-label {
 		font-size: 10.5px;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
@@ -1046,26 +1216,31 @@ const EMPTY_RECORD: Record<string, string> = {};
 	}
 
 	/* Per-kind active tile styling — accent border + soft glow */
-	.status-detail-modal[data-kind="lights_status"] .entity-row.availability-card.popup-card-editable[data-active="1"],
-	.status-detail-modal[data-kind="lights_status"] .entity-row.availability-card.entity-group-active {
-		background: linear-gradient(135deg, rgba(255,211,56,0.08), transparent 60%), rgba(255,255,255,0.04);
-		border-color: rgba(255,211,56,0.30);
-		box-shadow: 0 0 12px rgba(255,211,56,0.10);
+	.status-detail-modal[data-kind='lights_status']
+		.entity-row.availability-card.popup-card-editable[data-active='1'],
+	.status-detail-modal[data-kind='lights_status'] .entity-row.availability-card.entity-group-active {
+		background: linear-gradient(135deg, rgba(255, 211, 56, 0.08), transparent 60%), rgba(255, 255, 255, 0.04);
+		border-color: rgba(255, 211, 56, 0.3);
+		box-shadow: 0 0 12px rgba(255, 211, 56, 0.1);
 	}
-	.status-detail-modal[data-kind="openings_status"] .entity-row.availability-card.popup-card-editable[data-active="1"] {
-		background: linear-gradient(135deg, rgba(96,165,250,0.10), transparent 60%), rgba(255,255,255,0.04);
-		border-color: rgba(96,165,250,0.32);
-		box-shadow: 0 0 12px rgba(96,165,250,0.12);
+	.status-detail-modal[data-kind='openings_status']
+		.entity-row.availability-card.popup-card-editable[data-active='1'] {
+		background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), transparent 60%), rgba(255, 255, 255, 0.04);
+		border-color: rgba(96, 165, 250, 0.32);
+		box-shadow: 0 0 12px rgba(96, 165, 250, 0.12);
 	}
-	.status-detail-modal[data-kind="devices_status"] .entity-row.availability-card.popup-card-editable[data-active="1"] {
-		background: linear-gradient(135deg, rgba(52,211,153,0.08), transparent 60%), rgba(255,255,255,0.04);
-		border-color: rgba(52,211,153,0.30);
-		box-shadow: 0 0 12px rgba(52,211,153,0.10);
+	.status-detail-modal[data-kind='devices_status']
+		.entity-row.availability-card.popup-card-editable[data-active='1'] {
+		background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), transparent 60%), rgba(255, 255, 255, 0.04);
+		border-color: rgba(52, 211, 153, 0.3);
+		box-shadow: 0 0 12px rgba(52, 211, 153, 0.1);
 	}
-	.status-detail-modal[data-kind="availability_status"] .entity-row.availability-card.popup-card-editable[data-active="1"] {
-		background: linear-gradient(135deg, rgba(248,113,113,0.08), transparent 60%), rgba(255,255,255,0.04);
-		border-color: rgba(248,113,113,0.30);
-		box-shadow: 0 0 12px rgba(248,113,113,0.12);
+	.status-detail-modal[data-kind='availability_status']
+		.entity-row.availability-card.popup-card-editable[data-active='1'] {
+		background:
+			linear-gradient(135deg, rgba(248, 113, 113, 0.08), transparent 60%), rgba(255, 255, 255, 0.04);
+		border-color: rgba(248, 113, 113, 0.3);
+		box-shadow: 0 0 12px rgba(248, 113, 113, 0.12);
 	}
 	.status-detail-body {
 		margin-top: 0.45rem;
@@ -1080,7 +1255,11 @@ const EMPTY_RECORD: Record<string, string> = {};
 		flex: 1;
 		container-type: inline-size;
 	}
-	.status-detail-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+	.status-detail-body::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
 	.status-detail-body > .status-hero,
 	.status-detail-body > .np-detail-tabs,
 	.status-detail-body > .np-detail-error {
@@ -1103,30 +1282,56 @@ const EMPTY_RECORD: Record<string, string> = {};
 		height: 0;
 		display: none;
 	}
-	.entity-list { display: grid; gap: 0.45rem; align-content: start; min-width: 0; min-height: 0; max-width: 100%; }
-	.entity-list:has(.availability-all-ok) { display: flex; flex: 1; min-height: 0; align-items: center; justify-content: center; }
+	.entity-list {
+		display: grid;
+		gap: 0.45rem;
+		align-content: start;
+		min-width: 0;
+		min-height: 0;
+		max-width: 100%;
+	}
+	.entity-list:has(.availability-all-ok) {
+		display: flex;
+		flex: 1;
+		min-height: 0;
+		align-items: center;
+		justify-content: center;
+	}
 	.availability-grid {
 		grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
 		align-items: start;
 	}
-	.status-detail-modal[data-kind="openings_status"] .availability-grid {
+	.status-detail-modal[data-kind='openings_status'] .availability-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 	.media-players-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		align-items: start;
 	}
-	.entity-row { display: flex; justify-content: space-between; gap: 0.7rem; align-items: center; background: rgba(255,255,255,0.04); border-radius: 0.4rem; padding: 0.5rem 0.6rem; min-width: 0; box-sizing: border-box; }
+	.entity-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.7rem;
+		align-items: center;
+		background: rgba(255, 255, 255, 0.04);
+		border-radius: 0.4rem;
+		padding: 0.5rem 0.6rem;
+		min-width: 0;
+		box-sizing: border-box;
+	}
 	.availability-card {
 		gap: 12px;
 		padding: 12px 14px;
-		background: rgba(255,255,255,0.025);
+		background: rgba(255, 255, 255, 0.025);
 		border-radius: 13px;
-		border: 0.5px solid rgba(255,255,255,0.07);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 		min-height: 4.35rem;
 		min-width: 0;
 		box-sizing: border-box;
-		transition: border-color 0.2s, background 0.2s, transform 0.2s;
+		transition:
+			border-color 0.2s,
+			background 0.2s,
+			transform 0.2s;
 	}
 	.entity-row.availability-card.entity-row-toggleable {
 		cursor: pointer;
@@ -1137,20 +1342,24 @@ const EMPTY_RECORD: Record<string, string> = {};
 		transform: translateY(-1px);
 	}
 	.entity-row.availability-card.entity-group-active {
-		background: linear-gradient(135deg, rgba(96,165,250,0.05), transparent 60%), rgba(255,255,255,0.035);
-		border-color: rgba(96,165,250,0.20);
+		background:
+			linear-gradient(135deg, rgba(96, 165, 250, 0.05), transparent 60%), rgba(255, 255, 255, 0.035);
+		border-color: rgba(96, 165, 250, 0.2);
 	}
 	.availability-cover {
 		width: 3rem;
 		height: 3rem;
 		border-radius: 0.5rem;
-		background: rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.08);
 		display: grid;
 		place-items: center;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		flex: 0 0 auto;
 	}
-	.availability-cover-wrap { position: relative; flex: 0 0 auto; }
+	.availability-cover-wrap {
+		position: relative;
+		flex: 0 0 auto;
+	}
 	.icon-mini-editor {
 		position: absolute;
 		top: calc(100% + 0.3rem);
@@ -1158,34 +1367,38 @@ const EMPTY_RECORD: Record<string, string> = {};
 		width: 6.6rem;
 		z-index: 6;
 		background: #182132;
-		border: 1px solid rgba(255,255,255,0.12);
+		border: 1px solid rgba(255, 255, 255, 0.12);
 		border-radius: 0.45rem;
 		padding: 0.35rem;
 		display: grid;
 		gap: 0.3rem;
-		box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 	}
 	.icon-mini-preview {
 		width: 100%;
 		height: 2.1rem;
 		border-radius: 0.35rem;
-		background: rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.08);
 		display: grid;
 		place-items: center;
-		color: rgba(255,255,255,0.8);
+		color: rgba(255, 255, 255, 0.8);
 	}
 	.icon-mini-input {
 		width: 100%;
 		height: 1.8rem;
 		border-radius: 0.35rem;
 		border: 0;
-		background: rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.08);
 		color: #f5f5f5;
 		padding: 0 0.4rem;
 		font-size: 0.72rem;
 		box-sizing: border-box;
 	}
-	.icon-mini-actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
+	.icon-mini-actions {
+		display: flex;
+		gap: 0.25rem;
+		justify-content: flex-end;
+	}
 	.icon-mini-btn {
 		width: 1.4rem;
 		height: 1.4rem;
@@ -1197,22 +1410,63 @@ const EMPTY_RECORD: Record<string, string> = {};
 		padding: 0;
 		line-height: 0;
 	}
-	.icon-mini-btn-save { background: #c89d1b; color: #fff; }
-	.icon-mini-btn-cancel { background: rgba(255,255,255,0.12); color: #f5f5f5; }
-	.availability-cover-battery { color: var(--green-90); }
-	.availability-cover-battery.battery-tone-100 { color: var(--green-100); }
-	.availability-cover-battery.battery-tone-90 { color: var(--green-90); }
-	.availability-cover-battery.battery-tone-80 { color: var(--green-80); }
-	.availability-cover-battery.battery-tone-70 { color: var(--green-70); }
-	.availability-cover-battery.battery-tone-60 { color: var(--green-60); }
-	.availability-cover-battery.battery-tone-50 { color: var(--yellow-50); }
-	.availability-cover-battery.battery-tone-40 { color: var(--orange-40); }
-	.availability-cover-battery.battery-tone-30 { color: var(--red-30); }
-	.availability-cover-battery.battery-tone-20 { color: var(--red-20); }
-	.availability-cover-battery.battery-tone-10 { color: var(--red-10); }
-	.availability-cover-battery.battery-tone-0 { color: var(--red-0); }
-	.entity-main { min-width: 0; display: grid; gap: 3px; }
-	.availability-main { align-content: center; justify-items: start; text-align: left; flex: 1; min-width: 0; width: 100%; }
+	.icon-mini-btn-save {
+		background: #c89d1b;
+		color: #fff;
+	}
+	.icon-mini-btn-cancel {
+		background: rgba(255, 255, 255, 0.12);
+		color: #f5f5f5;
+	}
+	.availability-cover-battery {
+		color: var(--green-90);
+	}
+	.availability-cover-battery.battery-tone-100 {
+		color: var(--green-100);
+	}
+	.availability-cover-battery.battery-tone-90 {
+		color: var(--green-90);
+	}
+	.availability-cover-battery.battery-tone-80 {
+		color: var(--green-80);
+	}
+	.availability-cover-battery.battery-tone-70 {
+		color: var(--green-70);
+	}
+	.availability-cover-battery.battery-tone-60 {
+		color: var(--green-60);
+	}
+	.availability-cover-battery.battery-tone-50 {
+		color: var(--yellow-50);
+	}
+	.availability-cover-battery.battery-tone-40 {
+		color: var(--orange-40);
+	}
+	.availability-cover-battery.battery-tone-30 {
+		color: var(--red-30);
+	}
+	.availability-cover-battery.battery-tone-20 {
+		color: var(--red-20);
+	}
+	.availability-cover-battery.battery-tone-10 {
+		color: var(--red-10);
+	}
+	.availability-cover-battery.battery-tone-0 {
+		color: var(--red-0);
+	}
+	.entity-main {
+		min-width: 0;
+		display: grid;
+		gap: 3px;
+	}
+	.availability-main {
+		align-content: center;
+		justify-items: start;
+		text-align: left;
+		flex: 1;
+		min-width: 0;
+		width: 100%;
+	}
 	.availability-main span {
 		width: 100%;
 		min-width: 0;
@@ -1222,12 +1476,13 @@ const EMPTY_RECORD: Record<string, string> = {};
 		line-height: 1.15;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow-wrap: anywhere;
 	}
 	.availability-sub {
 		font-size: 11.5px;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 400;
 		width: 100%;
 		min-width: 0;
@@ -1235,11 +1490,22 @@ const EMPTY_RECORD: Record<string, string> = {};
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	.entity-main span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: normal; overflow-wrap: anywhere; }
-	.entity-main .entity-name { font-size: 13px; font-weight: 500; color: #f5f5f5; letter-spacing: -0.005em; }
+	.entity-main span {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+	.entity-main .entity-name {
+		font-size: 13px;
+		font-weight: 500;
+		color: #f5f5f5;
+		letter-spacing: -0.005em;
+	}
 	.entity-state {
 		font-size: 11.5px;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 400;
 		width: 100%;
 		min-width: 0;
@@ -1247,9 +1513,16 @@ const EMPTY_RECORD: Record<string, string> = {};
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-	.entity-actions { display: flex; gap: 0.3rem; align-items: center; justify-content: flex-end; }
+	.entity-actions {
+		display: flex;
+		gap: 0.3rem;
+		align-items: center;
+		justify-content: flex-end;
+	}
 	@container (max-width: 540px) {
-		.status-hero { grid-template-columns: auto minmax(0, 1fr); }
+		.status-hero {
+			grid-template-columns: auto minmax(0, 1fr);
+		}
 		.status-hero-extra {
 			grid-column: 1 / -1;
 			text-align: left;
@@ -1258,25 +1531,68 @@ const EMPTY_RECORD: Record<string, string> = {};
 			justify-content: space-between;
 			gap: 0.75rem;
 		}
-		.availability-grid { grid-template-columns: 1fr; }
-		.availability-card { min-height: 4rem; padding: 10px 12px; }
+		.availability-grid {
+			grid-template-columns: 1fr;
+		}
+		.availability-card {
+			min-height: 4rem;
+			padding: 10px 12px;
+		}
 		.availability-cover {
 			width: 2.75rem;
 			height: 2.75rem;
 		}
 	}
 	@media (max-width: 1100px) {
-		.availability-grid { grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr)); }
+		.availability-grid {
+			grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+		}
 	}
 	@media (max-width: 700px) {
-		.availability-grid { grid-template-columns: 1fr; }
+		.availability-grid {
+			grid-template-columns: 1fr;
+		}
 	}
-	.empty-row { opacity: 0.68; }
-	.area-header { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.35); padding: 8px 4px 2px; grid-column: 1 / -1; }
-	.entity-group-active { background: rgba(250,204,21,0.06); }
-	.entity-group-active .availability-cover { color: #facc15; }
-	.availability-all-ok { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 0; text-align: center; height: 100%; min-height: 16rem; }
-	.availability-ok-icon { color: #4ade80; filter: drop-shadow(0 0 16px rgba(74,222,128,0.5)); }
-	.availability-ok-title { font-size: 1.2rem; font-weight: 600; color: #f5f5f5; }
-	.availability-ok-sub { font-size: 0.85rem; opacity: 0.5; }
+	.empty-row {
+		opacity: 0.68;
+	}
+	.area-header {
+		font-size: 10.5px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: rgba(255, 255, 255, 0.35);
+		padding: 8px 4px 2px;
+		grid-column: 1 / -1;
+	}
+	.entity-group-active {
+		background: rgba(250, 204, 21, 0.06);
+	}
+	.entity-group-active .availability-cover {
+		color: #facc15;
+	}
+	.availability-all-ok {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		padding: 0;
+		text-align: center;
+		height: 100%;
+		min-height: 16rem;
+	}
+	.availability-ok-icon {
+		color: #4ade80;
+		filter: drop-shadow(0 0 16px rgba(74, 222, 128, 0.5));
+	}
+	.availability-ok-title {
+		font-size: 1.2rem;
+		font-weight: 600;
+		color: #f5f5f5;
+	}
+	.availability-ok-sub {
+		font-size: 0.85rem;
+		opacity: 0.5;
+	}
 </style>

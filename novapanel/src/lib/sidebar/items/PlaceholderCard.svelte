@@ -14,8 +14,7 @@
 	import EnergyCard from '$lib/cards/EnergyCard.svelte';
 	import LazyComponent from '$lib/lazy/LazyComponent.svelte';
 
-	let camerasStripCardPromise: Promise<typeof import('$lib/cards/CamerasStripCard.svelte')> | null =
-		null;
+	let camerasStripCardPromise: Promise<typeof import('$lib/cards/CamerasStripCard.svelte')> | null = null;
 	const loadCamerasStripCard = () =>
 		(camerasStripCardPromise ??= import('$lib/cards/CamerasStripCard.svelte'));
 
@@ -29,28 +28,34 @@
 		onCameraClick?: (camera: import('$lib/persistence/panel-state-types').CameraConfig) => void;
 	};
 
-let { item, editable = false, onSelectItem, onDragStart, onDragEnd, onDragOverValid, onCameraClick }: Props =
-		$props();
-let dragGhostImage: HTMLImageElement | null = null;
+	let {
+		item,
+		editable = false,
+		onSelectItem,
+		onDragStart,
+		onDragEnd,
+		onDragOverValid,
+		onCameraClick
+	}: Props = $props();
+	let dragGhostImage: HTMLImageElement | null = null;
 
-function applyDragCursorIndicatorOnly(event: DragEvent) {
-	const transfer = event.dataTransfer;
-	if (!transfer) return;
-	transfer.effectAllowed = 'move';
-	transfer.dropEffect = 'move';
-	transfer.setData('text/plain', 'novapanel-sidebar-drag');
-	if (!dragGhostImage) {
-		dragGhostImage = new Image();
-		dragGhostImage.src =
-			'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+	function applyDragCursorIndicatorOnly(event: DragEvent) {
+		const transfer = event.dataTransfer;
+		if (!transfer) return;
+		transfer.effectAllowed = 'move';
+		transfer.dropEffect = 'move';
+		transfer.setData('text/plain', 'novapanel-sidebar-drag');
+		if (!dragGhostImage) {
+			dragGhostImage = new Image();
+			dragGhostImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+		}
+		transfer.setDragImage(dragGhostImage, 0, 0);
 	}
-	transfer.setDragImage(dragGhostImage, 0, 0);
-}
 </script>
 
 <div
 	class="placeholder-card"
-	class:editable={editable}
+	class:editable
 	class:has-title={!!(item.title && item.title.trim().length > 0)}
 	role="button"
 	tabindex="0"
@@ -93,7 +98,7 @@ function applyDragCursorIndicatorOnly(event: DragEvent) {
 			weekdayWithDate={item.dateWeekdayWithDate ?? false}
 		/>
 	{:else if item.type === 'divider'}
-		<DividerCard editable={editable} />
+		<DividerCard {editable} />
 	{:else if item.type === 'weather'}
 		<WeatherCard entityId={item.entityId} locale={item.locale as any} />
 	{:else if item.type === 'weather_forecast'}

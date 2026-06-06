@@ -71,7 +71,7 @@
 			type="text"
 			class="np-input mono"
 			value={value ?? ''}
-			placeholder={placeholder}
+			{placeholder}
 			oninput={(event) => onChange((event.currentTarget as HTMLInputElement).value)}
 			onblur={(event) => {
 				const next = normalizeIconValue((event.currentTarget as HTMLInputElement).value);
@@ -85,7 +85,11 @@
 	{#if validationMessage}
 		<span class={`icon-validation ${validationState}`}>
 			<TablerIcon
-				name={validationState === 'ok' ? 'circle-check' : validationState === 'error' ? 'alert-circle' : 'loader-2'}
+				name={validationState === 'ok'
+					? 'circle-check'
+					: validationState === 'error'
+						? 'alert-circle'
+						: 'loader-2'}
 				size={13}
 			/>
 			{validationMessage}
@@ -104,7 +108,7 @@
 	.np-label {
 		font-size: 0.78rem;
 		font-weight: 700;
-		color: rgba(255,255,255,0.68);
+		color: rgba(255, 255, 255, 0.68);
 	}
 	.icon-choice-grid {
 		display: grid;
@@ -118,15 +122,18 @@
 		place-items: center;
 		align-content: center;
 		gap: 0.32rem;
-		border: 1px solid rgba(255,255,255,0.08);
+		border: 1px solid rgba(255, 255, 255, 0.08);
 		border-radius: 0.62rem;
-		color: rgba(255,255,255,0.72);
-		background: rgba(255,255,255,0.045);
+		color: rgba(255, 255, 255, 0.72);
+		background: rgba(255, 255, 255, 0.045);
 		font: inherit;
 		font-size: 0.72rem;
 		font-weight: 750;
 		cursor: pointer;
-		transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+		transition:
+			background 140ms ease,
+			border-color 140ms ease,
+			color 140ms ease;
 	}
 	.icon-choice span {
 		max-width: 100%;
@@ -135,13 +142,13 @@
 		white-space: nowrap;
 	}
 	.icon-choice:hover {
-		color: rgba(255,255,255,0.94);
-		background: rgba(255,255,255,0.075);
+		color: rgba(255, 255, 255, 0.94);
+		background: rgba(255, 255, 255, 0.075);
 	}
 	.icon-choice.selected {
 		color: #f8fafc;
-		border-color: rgba(96,165,250,0.5);
-		background: rgba(96,165,250,0.18);
+		border-color: rgba(96, 165, 250, 0.5);
+		background: rgba(96, 165, 250, 0.18);
 	}
 	.icon-input-row {
 		display: grid;
@@ -152,9 +159,9 @@
 	.np-input {
 		width: 100%;
 		height: 2.45rem;
-		border: 1px solid rgba(255,255,255,0.09);
+		border: 1px solid rgba(255, 255, 255, 0.09);
 		border-radius: 0.55rem;
-		background: rgba(255,255,255,0.075);
+		background: rgba(255, 255, 255, 0.075);
 		color: #f5f5f5;
 		padding: 0 0.75rem;
 		font: inherit;
@@ -170,7 +177,7 @@
 		place-items: center;
 		border-radius: 0.55rem;
 		color: #93c5fd;
-		background: rgba(147,197,253,0.13);
+		background: rgba(147, 197, 253, 0.13);
 	}
 	.icon-validation {
 		display: inline-flex;
@@ -178,7 +185,7 @@
 		gap: 0.35rem;
 		min-height: 1.1rem;
 		font-size: 0.76rem;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 	}
 	.icon-validation.ok {
 		color: #86efac;
@@ -192,6 +199,6 @@
 	.icon-help {
 		font-size: 0.72rem;
 		line-height: 1.25;
-		color: rgba(255,255,255,0.48);
+		color: rgba(255, 255, 255, 0.48);
 	}
 </style>

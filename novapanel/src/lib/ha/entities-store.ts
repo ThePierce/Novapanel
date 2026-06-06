@@ -22,6 +22,7 @@ type OptimisticEntityPatch = {
 
 type OptimisticEntityOverride = {
 	patch: OptimisticEntityPatch;
+	previous: HomeAssistantEntity;
 	expiresAt: number;
 };
 
@@ -102,6 +103,36 @@ function applyOptimisticPatch(
 	};
 }
 
+function rollbackOptimisticPatch(
+	entity: HomeAssistantEntity,
+	override: OptimisticEntityOverride
+): HomeAssistantEntity {
+	const { patch, previous } = override;
+	let nextState = entity.state;
+	let nextAttributes = entity.attributes;
+	let changed = false;
+	if (patch.state !== undefined && entity.state === patch.state) {
+		nextState = previous.state;
+		changed = true;
+	}
+	for (const [key, value] of Object.entries(patch.attributes ?? {})) {
+		if (!Object.is(entity.attributes[key], value)) continue;
+		if (nextAttributes === entity.attributes) nextAttributes = { ...entity.attributes };
+		if (Object.prototype.hasOwnProperty.call(previous.attributes, key)) {
+			nextAttributes[key] = previous.attributes[key];
+		} else {
+			delete nextAttributes[key];
+		}
+		changed = true;
+	}
+	if (!changed) return entity;
+	return {
+		...entity,
+		state: nextState,
+		attributes: nextAttributes
+	};
+}
+
 function optimisticPatchForService(
 	entity: HomeAssistantEntity,
 	domain: string,
@@ -155,12 +186,13 @@ function optimisticPatchForService(
 	} else if (normalizedDomain === 'cover') {
 		if (normalizedService === 'open_cover') setState('opening');
 		if (normalizedService === 'close_cover') setState('closing');
-		if (normalizedService === 'stop_cover') setState(state === 'closing' ? 'closed' : state === 'opening' ? 'open' : entity.state);
+		if (normalizedService === 'stop_cover')
+			setState(state === 'closing' ? 'closed' : state === 'opening' ? 'open' : entity.state);
 		const position = numberAttribute(serviceData, 'position');
 		if (position !== null) {
 			const clamped = Math.max(0, Math.min(100, Math.round(position)));
 			setAttr('current_position', clamped);
-			setState(clamped <= 0 ? 'closed' : clamped >= 100 ? 'open' : 'open');
+			setState(clamped <= 0 ? 'closed' : 'open');
 		}
 	} else if (normalizedDomain === 'media_player') {
 		if (normalizedService === 'turn_on') setState('on');
@@ -222,15 +254,19 @@ function createEntityStore() {
 		onStatus: (status) => update((state) => ({ ...state, status })),
 		onError: (error) => update((state) => ({ ...state, error }))
 	});
+	let startCount = 0;
 	let started = false;
 
 	const start = () => {
+		startCount += 1;
 		if (started) return;
 		started = true;
 		service.start();
 	};
 
 	const stop = () => {
+		if (startCount > 0) startCount -= 1;
+		if (startCount > 0) return;
 		if (!started) return;
 		started = false;
 		service.stop();
@@ -266,6 +302,7 @@ function createEntityStore() {
 					if (!patch) return entity;
 					optimisticOverrides.set(entity.entityId, {
 						patch,
+						previous: entity,
 						expiresAt: now + OPTIMISTIC_STATE_TTL_MS
 					});
 					return applyOptimisticPatch(entity, patch);
@@ -273,9 +310,25 @@ function createEntityStore() {
 			}));
 		},
 		clearServiceOptimism: (serviceData: Record<string, unknown>) => {
-			const ids = serviceEntityIds(serviceData);
-			if (ids.length === 0) return;
-			for (const id of ids) optimisticOverrides.delete(id);
+			const ids = new Set(serviceEntityIds(serviceData));
+			if (ids.size === 0) return;
+			const rollbackById = new Map<string, OptimisticEntityOverride>();
+			for (const id of ids) {
+				const override = optimisticOverrides.get(id);
+				if (override) rollbackById.set(id, override);
+				optimisticOverrides.delete(id);
+			}
+			if (rollbackById.size > 0) {
+				const now = Date.now();
+				update((state) => ({
+					...state,
+					lastUpdated: now,
+					entities: state.entities.map((entity) => {
+						const override = rollbackById.get(entity.entityId);
+						return override ? rollbackOptimisticPatch(entity, override) : entity;
+					})
+				}));
+			}
 			service.refresh(0);
 		},
 		refreshSoon: (delayMs = 120) => service.refresh(delayMs)

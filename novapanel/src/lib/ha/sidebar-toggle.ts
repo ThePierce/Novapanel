@@ -53,7 +53,9 @@ const HA_SIDEBAR_INNER_SELECTOR = [
 	'.sidebar'
 ].join(',');
 
-const HA_SIDEBAR_HEADER_SELECTOR = ['.menu', '.menu .title', '.menu ha-icon-button', 'ha-menu-button'].join(',');
+const HA_SIDEBAR_HEADER_SELECTOR = ['.menu', '.menu .title', '.menu ha-icon-button', 'ha-menu-button'].join(
+	','
+);
 
 const SIDEBAR_Z_INDEX = '2147483647';
 
@@ -91,10 +93,7 @@ function asHTMLElement(element: Element | null | undefined): HTMLElement | null 
 
 function isNovaPanelToggle(element: HTMLElement): boolean {
 	try {
-		return (
-			element.matches(NOVAPANEL_TOGGLE_SELECTOR) ||
-			Boolean(element.closest(NOVAPANEL_TOGGLE_SELECTOR))
-		);
+		return element.matches(NOVAPANEL_TOGGLE_SELECTOR) || Boolean(element.closest(NOVAPANEL_TOGGLE_SELECTOR));
 	} catch {
 		return false;
 	}
@@ -190,8 +189,7 @@ function findKnownHASidebarToggleButton(document: Document): HTMLElement | null 
 		asHTMLElement(topBar?.querySelector('ha-menu-button')) ?? queryShadow(topBar, 'ha-menu-button');
 	if (topBarMenu) return getClickableElement(topBarMenu);
 
-	const sidebar =
-		asHTMLElement(drawer?.querySelector('ha-sidebar')) ?? queryShadow(drawer, 'ha-sidebar');
+	const sidebar = asHTMLElement(drawer?.querySelector('ha-sidebar')) ?? queryShadow(drawer, 'ha-sidebar');
 	const sidebarMenu = queryShadow(sidebar, 'ha-menu-button');
 	if (sidebarMenu) return getClickableElement(sidebarMenu);
 
@@ -238,11 +236,7 @@ function isCurrentFrame(frame: HTMLElement): boolean {
 		if (iframe.contentWindow === window) return true;
 	} catch {}
 	const src = iframe.getAttribute('src') ?? '';
-	return (
-		src.includes('hassio_ingress') ||
-		src.includes('novapanel') ||
-		src.includes('e806fdae_novapanel')
-	);
+	return src.includes('hassio_ingress') || src.includes('novapanel') || src.includes('e806fdae_novapanel');
 }
 
 function lowerNovaPanelFrames(targetWindow: Window, snapshots: StyleSnapshot[]) {
@@ -395,7 +389,10 @@ function applyExpandedSidebarOverlay(
 	setImportant(styleSnapshots, sidebar, 'box-shadow', '0 0 24px rgba(0, 0, 0, 0.32)');
 
 	if (sidebar.shadowRoot) {
-		for (const headerElement of deepQuerySelectorAllElements(sidebar.shadowRoot, HA_SIDEBAR_HEADER_SELECTOR)) {
+		for (const headerElement of deepQuerySelectorAllElements(
+			sidebar.shadowRoot,
+			HA_SIDEBAR_HEADER_SELECTOR
+		)) {
 			hideSidebarHeaderElement(headerElement, styleSnapshots);
 		}
 
@@ -445,15 +442,10 @@ function revealNativeHASidebarLayer(): boolean {
 			}
 			for (const delay of [60, 180, 420]) {
 				const timerId = targetWindow.setTimeout(() => {
-						for (const sidebar of sidebars) {
-							applyExpandedSidebarOverlay(
-								sidebar,
-								styleSnapshots,
-								attributeSnapshots,
-								propertySnapshots
-							);
-						}
-					}, delay);
+					for (const sidebar of sidebars) {
+						applyExpandedSidebarOverlay(sidebar, styleSnapshots, attributeSnapshots, propertySnapshots);
+					}
+				}, delay);
 				cleanupCallbacks.push(() => targetWindow.clearTimeout(timerId));
 			}
 			installParentOutsideHandler(targetWindow, cleanupCallbacks);
@@ -485,7 +477,8 @@ function clearFrameRevealStyles() {
 }
 
 function createSidebarEvent(target: Window, eventName: string, detail?: unknown): CustomEvent {
-	const EventConstructor = target.CustomEvent ?? CustomEvent;
+	const EventConstructor =
+		(target as Window & { CustomEvent?: typeof CustomEvent }).CustomEvent ?? CustomEvent;
 	return new EventConstructor(eventName, { bubbles: true, composed: true, detail });
 }
 
@@ -510,8 +503,7 @@ function openNativeHASidebarExpanded(): boolean {
 		const document = getAccessibleDocument(targetWindow);
 		if (!document) continue;
 		for (const main of deepQuerySelectorAll(document, 'home-assistant-main')) {
-			signalled =
-				dispatchSidebarEvent(targetWindow, main, 'hass-toggle-menu', { open: true }) || signalled;
+			signalled = dispatchSidebarEvent(targetWindow, main, 'hass-toggle-menu', { open: true }) || signalled;
 		}
 	}
 	return signalled;

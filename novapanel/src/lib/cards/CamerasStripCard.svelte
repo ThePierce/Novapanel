@@ -12,7 +12,7 @@
 		onCameraClick?: (camera: CameraConfig) => void;
 	};
 
-	let { cameras = [], title, onCameraClick }: Props = $props();
+	let { cameras = [], onCameraClick }: Props = $props();
 
 	const entities = $derived($entityStore.entities);
 	let cameraAspectRatios = $state<Record<string, number>>({});
@@ -118,55 +118,64 @@
 		return () => window.clearInterval(interval);
 	});
 
-	const cameraInfos = $derived((() => {
-		const list = cameras ?? [];
-		const out: CameraInfo[] = [];
-		for (const c of list) {
-			const ent = entities.find((e) => e.entityId === c.entityId);
-			const friendly = ent?.friendlyName || c.entityId;
-			const ep = (ent?.attributes as { entity_picture?: string } | undefined)?.entity_picture ?? '';
-			const baseUrl = ep ? snapshotUrlFor(ep) : cameraProxyUrlFor(c.entityId);
-			const tick = cameraRefreshTicks[c.entityId] ?? 0;
-			const url = baseUrl ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}_t=${tick}` : '';
-			out.push({
-				config: c,
-				name: c.alias && c.alias.trim().length > 0 ? c.alias : friendly,
-				thumbnail: url,
-				entityPicture: ep
-			});
-		}
-		return out;
-	})());
+	const cameraInfos = $derived(
+		(() => {
+			const list = cameras ?? [];
+			const out: CameraInfo[] = [];
+			for (const c of list) {
+				const ent = entities.find((e) => e.entityId === c.entityId);
+				const friendly = ent?.friendlyName || c.entityId;
+				const ep = (ent?.attributes as { entity_picture?: string } | undefined)?.entity_picture ?? '';
+				const baseUrl = ep ? snapshotUrlFor(ep) : cameraProxyUrlFor(c.entityId);
+				const tick = cameraRefreshTicks[c.entityId] ?? 0;
+				const url = baseUrl ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}_t=${tick}` : '';
+				out.push({
+					config: c,
+					name: c.alias && c.alias.trim().length > 0 ? c.alias : friendly,
+					thumbnail: url,
+					entityPicture: ep
+				});
+			}
+			return out;
+		})()
+	);
 
 	// Apple Home pattern: groep camera's in tuples [large?, small1?, small2?]
 	// Een 'group' is altijd 1 large positie (mogelijk leeg) + 0..2 small posities
 	type Group = { large: CameraInfo | null; smalls: CameraInfo[] };
-	const groups = $derived((() => {
-		const result: Group[] = [];
-		const queue = [...cameraInfos];
-		while (queue.length > 0) {
-			// Pak eerste large (of als geen large-marker, pak gewoon eerste)
-			let large: CameraInfo | null = null;
-			const firstLargeIdx = queue.findIndex((c) => c.config.isLarge);
-			if (firstLargeIdx === 0) {
-				large = queue.shift() ?? null;
-			} else if (firstLargeIdx === -1) {
-				// Geen large meer → pak eerste als large
-				large = queue.shift() ?? null;
-			} else {
-				// Eerst nog kleinere camera's vóór de large
-				large = queue.shift() ?? null;
+	const groups = $derived(
+		(() => {
+			const result: Group[] = [];
+			const queue = [...cameraInfos];
+			while (queue.length > 0) {
+				// Pak eerste large (of als geen large-marker, pak gewoon eerste)
+				let large: CameraInfo | null = null;
+				const smalls: CameraInfo[] = [];
+				const firstLargeIdx = queue.findIndex((c) => c.config.isLarge);
+				if (firstLargeIdx === 0) {
+					large = queue.shift() ?? null;
+				} else if (firstLargeIdx === -1) {
+					// Geen large meer → pak eerste als large
+					large = queue.shift() ?? null;
+				} else {
+					// Eerst nog kleinere camera's vóór de large
+					while (smalls.length < 2 && queue.length > 0 && !queue[0].config.isLarge) {
+						const next = queue.shift();
+						if (next) smalls.push(next);
+					}
+					result.push({ large, smalls });
+					continue;
+				}
+				// Verzamel max 2 'kleine' camera's tot we een nieuwe 'large' tegenkomen
+				while (smalls.length < 2 && queue.length > 0 && !queue[0].config.isLarge) {
+					const next = queue.shift();
+					if (next) smalls.push(next);
+				}
+				result.push({ large, smalls });
 			}
-			const smalls: CameraInfo[] = [];
-			// Verzamel max 2 'kleine' camera's tot we een nieuwe 'large' tegenkomen
-			while (smalls.length < 2 && queue.length > 0 && !queue[0].config.isLarge) {
-				const next = queue.shift();
-				if (next) smalls.push(next);
-			}
-			result.push({ large, smalls });
-		}
-		return result;
-	})());
+			return result;
+		})()
+	);
 
 	function handleClick(camera: CameraInfo) {
 		if (onCameraClick) onCameraClick(camera.config);
@@ -295,9 +304,9 @@
 		justify-content: center;
 		gap: 10px;
 		padding: 36px 12px;
-		color: rgba(255,255,255,0.4);
+		color: rgba(255, 255, 255, 0.4);
 		font-size: 13px;
-		border: 0.5px dashed rgba(255,255,255,0.10);
+		border: 0.5px dashed rgba(255, 255, 255, 0.1);
 		border-radius: 12px;
 	}
 	.cameras-strip-scroll {
@@ -313,7 +322,11 @@
 		overscroll-behavior-x: contain;
 		touch-action: pan-x;
 	}
-	.cameras-strip-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
+	.cameras-strip-scroll::-webkit-scrollbar {
+		display: none;
+		width: 0;
+		height: 0;
+	}
 	.cameras-group {
 		display: flex;
 		gap: 12px;
@@ -338,16 +351,21 @@
 		max-width: none;
 		flex: 0 0 auto;
 		border-radius: 14px;
-		border: 0.5px solid rgba(255,255,255,0.08);
-		background: rgba(0,0,0,0.30);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
+		background: rgba(0, 0, 0, 0.3);
 		cursor: pointer;
 		padding: 0;
-		transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+		transition:
+			transform 0.18s ease,
+			border-color 0.18s ease,
+			box-shadow 0.18s ease;
 	}
 	.camera-tile:hover {
-		border-color: rgba(96,165,250,0.4);
+		border-color: rgba(96, 165, 250, 0.4);
 		transform: translateY(-2px);
-		box-shadow: 0 12px 28px rgba(0,0,0,0.35), 0 0 18px rgba(96,165,250,0.15);
+		box-shadow:
+			0 12px 28px rgba(0, 0, 0, 0.35),
+			0 0 18px rgba(96, 165, 250, 0.15);
 	}
 	.camera-tile-large {
 		width: clamp(13.5rem, 44cqw, 17.5rem);
@@ -359,10 +377,12 @@
 	}
 
 	.camera-placeholder {
-		width: 100%; height: 100%;
-		display: grid; place-items: center;
-		color: rgba(255,255,255,0.3);
-		background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(167,139,250,0.10));
+		width: 100%;
+		height: 100%;
+		display: grid;
+		place-items: center;
+		color: rgba(255, 255, 255, 0.3);
+		background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.1));
 	}
 
 	.camera-refresh-meter {
@@ -383,9 +403,9 @@
 		font-size: 10px;
 		font-weight: 700;
 		line-height: 1;
-		color: rgba(255,255,255,0.88);
+		color: rgba(255, 255, 255, 0.88);
 		font-variant-numeric: tabular-nums;
-		text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
 	}
 	.camera-refresh-meter.small {
 		left: 7px;
@@ -408,8 +428,12 @@
 			flex-direction: column;
 			gap: 8px;
 		}
-		.camera-tile-large { width: clamp(13rem, 76cqw, 15rem); }
-		.camera-tile-small { width: clamp(8rem, 46cqw, 9.5rem); }
+		.camera-tile-large {
+			width: clamp(13rem, 76cqw, 15rem);
+		}
+		.camera-tile-small {
+			width: clamp(8rem, 46cqw, 9.5rem);
+		}
 		.camera-refresh-meter {
 			left: 7px;
 			bottom: 7px;
@@ -417,7 +441,11 @@
 	}
 
 	@supports not (width: 1cqw) {
-		.camera-tile-large { width: clamp(13.5rem, 42vw, 17.5rem); }
-		.camera-tile-small { width: clamp(8.75rem, 28vw, 11.25rem); }
+		.camera-tile-large {
+			width: clamp(13.5rem, 42vw, 17.5rem);
+		}
+		.camera-tile-small {
+			width: clamp(8.75rem, 28vw, 11.25rem);
+		}
 	}
 </style>

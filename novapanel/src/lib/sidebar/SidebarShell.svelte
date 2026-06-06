@@ -31,11 +31,7 @@
 	}: Props = $props();
 </script>
 
-<aside
-	class="sidebar-shell"
-	style:width={`${state.width}px`}
-	class:hidden={!state.enabled}
->
+<aside class="sidebar-shell" style:width={`${state.width}px`} class:hidden={!state.enabled}>
 	<SidebarList
 		items={state.items}
 		{editable}

@@ -15,7 +15,7 @@
 	};
 
 	let { title, icon, tone = 'blue', status = 'empty', statusLabel, open = false, children }: Props = $props();
-	let isOpen = $state(open);
+	let isOpen = $derived(open);
 
 	const TONE_BG: Record<Tone, string> = {
 		amber: 'rgba(250,204,21,0.16)',
@@ -59,11 +59,14 @@
 
 <style>
 	.np-section {
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 		border-radius: 13px;
 		overflow: visible;
-		transition: border-color 0.2s, background 0.2s, transform 0.2s;
+		transition:
+			border-color 0.2s,
+			background 0.2s,
+			transform 0.2s;
 		position: relative;
 		min-width: 0;
 		max-width: 100%;
@@ -71,13 +74,14 @@
 		container-type: inline-size;
 	}
 	.np-section:hover {
-		border-color: rgba(255,255,255,0.13);
-		background: rgba(255,255,255,0.04);
+		border-color: rgba(255, 255, 255, 0.13);
+		background: rgba(255, 255, 255, 0.04);
 		transform: translateY(-1px);
 	}
 	.np-section.required {
-		border-color: rgba(250,204,21,0.18);
-		background: linear-gradient(135deg, rgba(250,204,21,0.04), transparent 60%), rgba(255,255,255,0.025);
+		border-color: rgba(250, 204, 21, 0.18);
+		background:
+			linear-gradient(135deg, rgba(250, 204, 21, 0.04), transparent 60%), rgba(255, 255, 255, 0.025);
 	}
 	.np-section.required::before {
 		content: '';
@@ -85,15 +89,22 @@
 		inset: 0;
 		border-radius: 13px;
 		padding: 0.5px;
-		background: linear-gradient(135deg, rgba(250,204,21,0.30), rgba(96,165,250,0.30) 50%, transparent);
-		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		background: linear-gradient(135deg, rgba(250, 204, 21, 0.3), rgba(96, 165, 250, 0.3) 50%, transparent);
+		-webkit-mask:
+			linear-gradient(#fff 0 0) content-box,
+			linear-gradient(#fff 0 0);
 		-webkit-mask-composite: xor;
+		mask:
+			linear-gradient(#fff 0 0) content-box,
+			linear-gradient(#fff 0 0);
 		mask-composite: exclude;
 		pointer-events: none;
 		opacity: 0;
 		transition: opacity 0.25s;
 	}
-	.np-section.required:hover::before { opacity: 1; }
+	.np-section.required:hover::before {
+		opacity: 1;
+	}
 	.np-section-head {
 		display: flex;
 		align-items: center;
@@ -111,13 +122,17 @@
 		box-sizing: border-box;
 	}
 	.np-section-icon {
-		width: 30px; height: 30px;
+		width: 30px;
+		height: 30px;
 		border-radius: 8px;
-		display: grid; place-items: center;
+		display: grid;
+		place-items: center;
 		flex-shrink: 0;
 		transition: transform 0.2s;
 	}
-	.np-section:hover .np-section-icon { transform: scale(1.06); }
+	.np-section:hover .np-section-icon {
+		transform: scale(1.06);
+	}
 	.np-section-title {
 		font-size: 13px;
 		font-weight: 500;
@@ -136,17 +151,31 @@
 		font-weight: 500;
 		font-variant-numeric: tabular-nums;
 	}
-	.np-section-meta.filled { background: rgba(74,222,128,0.13); color: #4ade80; }
-	.np-section-meta.partial { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); }
-	.np-section-meta.empty { background: transparent; color: rgba(255,255,255,0.3); }
-	.np-section-meta.required { background: rgba(250,204,21,0.16); color: #facc15; }
+	.np-section-meta.filled {
+		background: rgba(74, 222, 128, 0.13);
+		color: #4ade80;
+	}
+	.np-section-meta.partial {
+		background: rgba(255, 255, 255, 0.06);
+		color: rgba(255, 255, 255, 0.6);
+	}
+	.np-section-meta.empty {
+		background: transparent;
+		color: rgba(255, 255, 255, 0.3);
+	}
+	.np-section-meta.required {
+		background: rgba(250, 204, 21, 0.16);
+		color: #facc15;
+	}
 	.np-section-chevron {
-		color: rgba(255,255,255,0.4);
+		color: rgba(255, 255, 255, 0.4);
 		display: inline-grid;
 		place-items: center;
 		transition: transform 0.2s;
 	}
-	.np-section.open .np-section-chevron { transform: rotate(180deg); }
+	.np-section.open .np-section-chevron {
+		transform: rotate(180deg);
+	}
 	.np-section-body {
 		padding: 4px 15px 15px;
 		display: flex;

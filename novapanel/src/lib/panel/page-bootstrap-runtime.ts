@@ -23,6 +23,7 @@ type BootstrapState = {
 	activeViewSectionId: string;
 	selectedLanguage: LanguageCode;
 	selectedTheme: PanelTheme;
+	selectedCurrencyCode?: string;
 	activeCardLibraryTab: CardLibraryTab;
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: {
@@ -54,8 +55,8 @@ type CreatePageBootstrapRuntimeParams = {
 		layout: { columns: 1 | 2 | 3; popupWidth: number; popupHeight: number };
 		viewSections: ViewSectionDraft[];
 		sidebarCards: CardDraft[];
+		updatedAt?: number;
 	}) => void;
-	persistDashboardState: () => Promise<{ localOk: boolean; addonOk: boolean }>;
 	countViewCards: (sections: ViewSectionDraft[]) => number;
 };
 
@@ -71,7 +72,6 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 		isValidLanguage,
 		cloneForPersistence,
 		saveDashboard,
-		persistDashboardState,
 		countViewCards
 	} = params;
 
@@ -84,6 +84,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			layout?: { columns?: 1 | 2 | 3; popupWidth?: number; popupHeight?: number };
 			viewSections?: unknown;
 			sidebarCards?: unknown;
+			updatedAt?: unknown;
 		};
 		configuration?: {
 			language?: string;
@@ -109,10 +110,12 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 				layout?: { columns?: 1 | 2 | 3; popupWidth?: number; popupHeight?: number };
 				viewSections?: unknown;
 				sidebarCards?: unknown;
+				updatedAt?: unknown;
 			};
 			configuration?: {
 				language?: string;
 				theme?: string;
+				currencyCode?: unknown;
 				cardLibraryTab?: CardLibraryTab;
 				titles?: { cardLibrary?: string; homeviewPreview?: string };
 				oauth?: {
@@ -135,11 +138,14 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 		const next = await hydrateFromAddonStateOnlyRuntime({
 			readAddonPanelState,
 			selectedColumns: state.selectedColumns,
+			currentPopupWidth: state.savedLayout.popupWidth,
+			currentPopupHeight: state.savedLayout.popupHeight,
 			savedViewSections: state.savedViewSections,
 			savedSidebarCards: state.savedSidebarCards,
 			currentUpdatedAt: state.savedUpdatedAt,
 			selectedLanguage: state.selectedLanguage,
 			selectedTheme: state.selectedTheme,
+			selectedCurrencyCode: state.selectedCurrencyCode,
 			activeCardLibraryTab: state.activeCardLibraryTab,
 			customTitles: state.customTitles,
 			oauth: state.oauth,
@@ -151,15 +157,23 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			cloneForPersistence,
 			saveDashboard
 		});
-		if (!next) { try { localStorage.setItem('np_diag_hydrate', JSON.stringify({ts: Date.now(), result: 'null'})); } catch {} return; }
+		if (!next) {
+			try {
+				localStorage.setItem('np_diag_hydrate', JSON.stringify({ ts: Date.now(), result: 'null' }));
+			} catch {}
+			return;
+		}
 		try {
-			localStorage.setItem('np_diag_hydrate', JSON.stringify({
-				ts: Date.now(),
-				sc: next.savedSidebarCards.length,
-				vs: next.savedViewSections.length,
-				updatedAt: next.savedUpdatedAt,
-				debug: next.mergedDebug
-			}));
+			localStorage.setItem(
+				'np_diag_hydrate',
+				JSON.stringify({
+					ts: Date.now(),
+					sc: next.savedSidebarCards.length,
+					vs: next.savedViewSections.length,
+					updatedAt: next.savedUpdatedAt,
+					debug: next.mergedDebug
+				})
+			);
 		} catch {}
 		setState({
 			selectedColumns: next.selectedColumns,
@@ -170,6 +184,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			activeViewSectionId: next.activeViewSectionId,
 			selectedLanguage: next.selectedLanguage,
 			selectedTheme: next.selectedTheme,
+			selectedCurrencyCode: next.selectedCurrencyCode,
 			activeCardLibraryTab: next.activeCardLibraryTab,
 			customTitles: next.customTitles,
 			oauth: next.oauth,
@@ -187,6 +202,7 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 		configuration?: {
 			language?: string;
 			theme?: string;
+			currencyCode?: unknown;
 			cardLibraryTab?: CardLibraryTab;
 			titles?: { cardLibrary?: string; homeviewPreview?: string };
 			oauth?: {
@@ -208,10 +224,14 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 		const next = await hydrateFromAddonStateOnlyRuntime({
 			readAddonPanelState: async () => payload,
 			selectedColumns: state.selectedColumns,
+			currentPopupWidth: state.savedLayout.popupWidth,
+			currentPopupHeight: state.savedLayout.popupHeight,
 			savedViewSections: state.savedViewSections,
 			savedSidebarCards: state.savedSidebarCards,
+			currentUpdatedAt: state.savedUpdatedAt,
 			selectedLanguage: state.selectedLanguage,
 			selectedTheme: state.selectedTheme,
+			selectedCurrencyCode: state.selectedCurrencyCode,
 			activeCardLibraryTab: state.activeCardLibraryTab,
 			customTitles: state.customTitles,
 			oauth: state.oauth,
@@ -229,9 +249,11 @@ export function createPageBootstrapRuntime(params: CreatePageBootstrapRuntimePar
 			savedViewSections: next.savedViewSections,
 			savedSidebarCards: next.savedSidebarCards,
 			savedLayout: next.savedLayout,
+			savedUpdatedAt: next.savedUpdatedAt ?? state.savedUpdatedAt,
 			activeViewSectionId: next.activeViewSectionId,
 			selectedLanguage: next.selectedLanguage,
 			selectedTheme: next.selectedTheme,
+			selectedCurrencyCode: next.selectedCurrencyCode,
 			activeCardLibraryTab: next.activeCardLibraryTab,
 			customTitles: next.customTitles,
 			oauth: next.oauth,

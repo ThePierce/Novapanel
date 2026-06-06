@@ -18,4 +18,11 @@
 	}: Props = $props();
 </script>
 
-<StatusSummaryCard kind="media_players_status" {domains} {ignoredEntityIds} {statusEntityIds} {statusEntityAliases} {icon} />
+<StatusSummaryCard
+	kind="media_players_status"
+	{domains}
+	{ignoredEntityIds}
+	{statusEntityIds}
+	{statusEntityAliases}
+	{icon}
+/>

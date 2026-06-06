@@ -1,5 +1,6 @@
 import type { LanguageCode } from '$lib/i18n';
 import { DEFAULT_PANEL_THEME, isPanelTheme, type PanelTheme } from '$lib/panel/theme';
+import { coerceCurrencyCode, DEFAULT_CURRENCY_CODE } from '$lib/currency';
 import type { PanelDashboard } from './panel-state-types';
 import { parseDashboardValue } from './panel-state-coercion';
 
@@ -10,6 +11,7 @@ export type NovaPanelExportedBundle = {
 	configuration: {
 		language: LanguageCode;
 		theme: PanelTheme;
+		currencyCode: string;
 		cardLibraryTab: 'sidebar' | 'view';
 		titles: { cardLibrary?: string; homeviewPreview?: string };
 		oauth?: {
@@ -49,6 +51,7 @@ function parseConfiguration(raw: unknown): NovaPanelExportedBundle['configuratio
 	const cardLibraryTab =
 		c.cardLibraryTab === 'sidebar' || c.cardLibraryTab === 'view' ? c.cardLibraryTab : undefined;
 	const theme = isPanelTheme(c.theme) ? c.theme : DEFAULT_PANEL_THEME;
+	const currencyCode = coerceCurrencyCode(c.currencyCode, DEFAULT_CURRENCY_CODE);
 	const titlesRaw = c.titles;
 	const titles =
 		titlesRaw && typeof titlesRaw === 'object'
@@ -98,17 +101,17 @@ function parseConfiguration(raw: unknown): NovaPanelExportedBundle['configuratio
 						: undefined;
 					const playerAliases =
 						m.playerAliases && typeof m.playerAliases === 'object'
-							? Object.fromEntries(
+							? (Object.fromEntries(
 									Object.entries(m.playerAliases as Record<string, unknown>).filter(
 										([, v]) => typeof v === 'string'
 									)
-								) as Record<string, string>
+								) as Record<string, string>)
 							: undefined;
 					return { onkyoBridges, playerOrder, playerAliases };
 				})()
 			: undefined;
 	if (!language || !cardLibraryTab) return undefined;
-	return { language, theme, cardLibraryTab, titles, oauth, mediaHub };
+	return { language, theme, currencyCode, cardLibraryTab, titles, oauth, mediaHub };
 }
 
 /**
@@ -124,9 +127,7 @@ export function parseNovaPanelImportPayload(text: string): NovaPanelImportParsed
 	if (!parsed || typeof parsed !== 'object') throw new Error('invalid_shape');
 	const root = parsed as Record<string, unknown>;
 	const inner =
-		root.npExportVersion === 1 && root.dashboard && typeof root.dashboard === 'object'
-			? root
-			: root;
+		root.npExportVersion === 1 && root.dashboard && typeof root.dashboard === 'object' ? root : root;
 	const dashUnknown = inner.dashboard;
 	if (!dashUnknown || typeof dashUnknown !== 'object') throw new Error('missing_dashboard');
 	const dashboard = parseDashboardValue(

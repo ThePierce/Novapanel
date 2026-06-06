@@ -10,7 +10,7 @@ export function normalizeSectionPositions(
 ): ViewSectionDraft[] {
 	const byColumn = new Map<number, ViewSectionDraft[]>();
 	for (const section of sections) {
-		const rawSpan = isWeekCalendarSection(section) ? 1 : section.span ?? 1;
+		const rawSpan = isWeekCalendarSection(section) ? 1 : (section.span ?? 1);
 		const span = Math.max(1, Math.min(selectedColumns, rawSpan));
 		const maxStart = Math.max(1, selectedColumns - span + 1);
 		const column = Math.max(1, Math.min(maxStart, section.column));
@@ -132,6 +132,13 @@ export function moveViewCard(
 	targetCardId: string | null = null,
 	placement: 'before' | 'after' = 'before'
 ) {
+	if (
+		draggingViewCardFromSectionId === targetSectionId &&
+		targetCardId !== null &&
+		draggingViewCardId === targetCardId
+	) {
+		return sections;
+	}
 	const sourceSection = sections.find((section) => section.id === draggingViewCardFromSectionId);
 	const targetSection = sections.find((section) => section.id === targetSectionId);
 	if (!sourceSection || !targetSection) return sections;
@@ -169,7 +176,9 @@ export function moveSidebarCard(
 	const sourceIndex = nextCards.findIndex((card) => card.id === draggingSidebarCardId);
 	if (sourceIndex < 0) return cards;
 	const [dragged] = nextCards.splice(sourceIndex, 1);
-	const rawTargetIndex = targetCardId ? nextCards.findIndex((card) => card.id === targetCardId) : nextCards.length;
+	const rawTargetIndex = targetCardId
+		? nextCards.findIndex((card) => card.id === targetCardId)
+		: nextCards.length;
 	const targetIndex =
 		targetCardId && rawTargetIndex >= 0 && placement === 'after' ? rawTargetIndex + 1 : rawTargetIndex;
 	nextCards.splice(targetIndex < 0 ? nextCards.length : targetIndex, 0, dragged);

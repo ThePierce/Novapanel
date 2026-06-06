@@ -25,10 +25,6 @@
 
 	// Load groups for this card - reactive to cardId
 	const lightGroups = $derived(browser && cardId ? loadLightGroups(cardId) : []);
-	// All entity IDs that are part of a group - these are "hidden" in favor of the group
-	const groupedEntityIds = $derived(new Set(lightGroups.flatMap((g) => g.entityIds)));
-	// Extra "virtual" entity IDs: groups are represented as their first member for filtering
-	// The real grouping happens in the details modal
 </script>
 
 <StatusSummaryCard
@@ -39,6 +35,5 @@
 	{statusEntityIds}
 	{statusEntityAliases}
 	{icon}
-	{cardId}
 	{lightGroups}
 />

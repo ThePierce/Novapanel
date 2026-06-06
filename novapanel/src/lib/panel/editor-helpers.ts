@@ -10,7 +10,8 @@ function asClockStyle(value: unknown): ClockStyle | undefined {
 		value === 'luxury_steel' ||
 		value === 'minimal' ||
 		value === 'dark' ||
-		value === 'dots'
+		value === 'dots' ||
+		value === 'aurora'
 	) {
 		return value;
 	}
@@ -61,7 +62,10 @@ function cleanIconMap(value?: Record<string, string>): Record<string, string> | 
 		.map(([key, icon]) => {
 			const cleanedKey = key.trim();
 			const cleanedIcon = icon.trim();
-			return [cleanedKey, cleanedIcon && cleanedIcon.includes(':') ? cleanedIcon : `mdi:${cleanedIcon}`] as const;
+			return [
+				cleanedKey,
+				cleanedIcon && cleanedIcon.includes(':') ? cleanedIcon : `mdi:${cleanedIcon}`
+			] as const;
 		})
 		.filter(([key, icon]) => key.length > 0 && icon.length > 4);
 	return entries.length > 0 ? Object.fromEntries(entries) : undefined;
@@ -90,8 +94,8 @@ export function addCatalogCardToSidebar(
 			title,
 			cardType: selected.type,
 			entityId: undefined,
-			analogClockStyle: selected.type === 'clock' ? selected.preview.analogStyle : undefined,
-			digitalClockStyle: selected.type === 'clock' ? selected.preview.digitalStyle : undefined,
+			analogClockStyle: selected.preview.kind === 'clock' ? selected.preview.analogStyle : undefined,
+			digitalClockStyle: selected.preview.kind === 'clock' ? selected.preview.digitalStyle : undefined,
 			clockStyle: selected.type === 'clock' ? 'digital' : undefined,
 			clockShowAnalog: selected.type === 'clock' ? false : undefined,
 			clockShowDigital: selected.type === 'clock' ? true : undefined,
@@ -104,7 +108,7 @@ export function addCatalogCardToSidebar(
 			dateWeekdayWithDate: selected.type === 'date' ? false : undefined,
 			weatherForecastType: selected.type === 'weather_forecast' ? 'daily' : undefined,
 			weatherForecastDaysToShow: selected.type === 'weather_forecast' ? 5 : undefined,
-			alarmEntityId: selected.type === 'alarm_panel' ? undefined : undefined,
+			alarmEntityId: undefined,
 			statusDomains:
 				selected.type === 'lights_status'
 					? ['light']
@@ -116,15 +120,15 @@ export function addCatalogCardToSidebar(
 								? ['all']
 								: selected.type === 'media_players_status'
 									? ['media_player']
-								: undefined,
-			statusDeviceClasses:
-				selected.type === 'openings_status' ? ['door', 'window', 'opening'] : undefined,
+									: undefined,
+			statusDeviceClasses: selected.type === 'openings_status' ? ['door', 'window', 'opening'] : undefined,
 			statusEntityIds: undefined,
 			statusDiscoveredEntityIds:
 				selected.type === 'lights_status' ||
 				selected.type === 'openings_status' ||
 				selected.type === 'devices_status' ||
-				selected.type === 'availability_status'
+				selected.type === 'availability_status' ||
+				selected.type === 'media_players_status'
 					? []
 					: undefined,
 			statusIcon:
@@ -132,17 +136,17 @@ export function addCatalogCardToSidebar(
 					? 'lightbulb'
 					: defaultEntityButtonIcon(selected.type)
 						? defaultEntityButtonIcon(selected.type)
-					: selected.type === 'openings_status'
-						? 'door_open'
-						: selected.type === 'devices_status'
-							? 'plug'
-							: selected.type === 'alarm_panel'
-								? 'mdi:shield-off-outline'
-							: selected.type === 'availability_status'
-								? 'availability'
-								: selected.type === 'media_players_status'
-									? 'mdi:audio-video'
-								: undefined,
+						: selected.type === 'openings_status'
+							? 'door_open'
+							: selected.type === 'devices_status'
+								? 'plug'
+								: selected.type === 'alarm_panel'
+									? 'mdi:shield-off-outline'
+									: selected.type === 'availability_status'
+										? 'availability'
+										: selected.type === 'media_players_status'
+											? 'mdi:audio-video'
+											: undefined,
 			ignoredEntityIds: []
 		}
 	];
@@ -166,8 +170,9 @@ export function addCatalogCardToSection(
 							title,
 							cardType: selected.type,
 							entityId: undefined,
-							analogClockStyle: selected.type === 'clock' ? selected.preview.analogStyle : undefined,
-							digitalClockStyle: selected.type === 'clock' ? selected.preview.digitalStyle : undefined,
+							analogClockStyle: selected.preview.kind === 'clock' ? selected.preview.analogStyle : undefined,
+							digitalClockStyle:
+								selected.preview.kind === 'clock' ? selected.preview.digitalStyle : undefined,
 							clockStyle: selected.type === 'clock' ? 'digital' : undefined,
 							clockShowAnalog: selected.type === 'clock' ? false : undefined,
 							clockShowDigital: selected.type === 'clock' ? true : undefined,
@@ -189,7 +194,7 @@ export function addCatalogCardToSection(
 												? ['all']
 												: selected.type === 'media_players_status'
 													? ['media_player']
-												: undefined,
+													: undefined,
 							statusDeviceClasses:
 								selected.type === 'openings_status' ? ['door', 'window', 'opening'] : undefined,
 							statusEntityIds: undefined,
@@ -197,7 +202,8 @@ export function addCatalogCardToSection(
 								selected.type === 'lights_status' ||
 								selected.type === 'openings_status' ||
 								selected.type === 'devices_status' ||
-								selected.type === 'availability_status'
+								selected.type === 'availability_status' ||
+								selected.type === 'media_players_status'
 									? []
 									: undefined,
 							statusIcon:
@@ -205,17 +211,17 @@ export function addCatalogCardToSection(
 									? 'lightbulb'
 									: defaultEntityButtonIcon(selected.type)
 										? defaultEntityButtonIcon(selected.type)
-									: selected.type === 'openings_status'
-										? 'door_open'
-										: selected.type === 'devices_status'
-											? 'plug'
-											: selected.type === 'alarm_panel'
-												? 'mdi:shield-off-outline'
-											: selected.type === 'availability_status'
-												? 'availability'
-												: selected.type === 'media_players_status'
-													? 'mdi:audio-video'
-													: undefined,
+										: selected.type === 'openings_status'
+											? 'door_open'
+											: selected.type === 'devices_status'
+												? 'plug'
+												: selected.type === 'alarm_panel'
+													? 'mdi:shield-off-outline'
+													: selected.type === 'availability_status'
+														? 'availability'
+														: selected.type === 'media_players_status'
+															? 'mdi:audio-video'
+															: undefined,
 							ignoredEntityIds: []
 						}
 					]
@@ -262,12 +268,17 @@ export function saveCardEdits(
 	homeTodayEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	energyCostMode?: CardDraft['energyCostMode'],
 	importPeakTodayEntityId?: string,
 	importOffPeakTodayEntityId?: string,
+	exportPeakTodayEntityId?: string,
+	exportOffPeakTodayEntityId?: string,
 	importTariffEntityId?: string,
 	exportTariffEntityId?: string,
 	importPeakTariff?: string,
 	importOffPeakTariff?: string,
+	exportPeakTariff?: string,
+	exportOffPeakTariff?: string,
 	exportTariff?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
@@ -292,9 +303,7 @@ export function saveCardEdits(
 		cardType,
 		entityId: entityId && entityId.trim().length > 0 ? entityId.trim() : undefined,
 		alarmEntityId:
-			cardType === 'alarm_panel' && entityId && entityId.trim().length > 0
-				? entityId.trim()
-				: undefined,
+			cardType === 'alarm_panel' && entityId && entityId.trim().length > 0 ? entityId.trim() : undefined,
 		analogClockStyle: cardType === 'clock' ? analogStyle : undefined,
 		digitalClockStyle: cardType === 'clock' ? digitalStyle : undefined,
 		clockStyle: cardType === 'clock' ? asClockStyle(clockStyle) : undefined,
@@ -338,14 +347,16 @@ export function saveCardEdits(
 			cardType === 'lights_status' ||
 			cardType === 'openings_status' ||
 			cardType === 'devices_status' ||
-			cardType === 'availability_status'
+			cardType === 'availability_status' ||
+			cardType === 'media_players_status'
 				? cleanIconMap(statusEntityIconOverrides)
 				: undefined,
 		statusDiscoveredEntityIds:
 			cardType === 'lights_status' ||
 			cardType === 'openings_status' ||
 			cardType === 'devices_status' ||
-			cardType === 'availability_status'
+			cardType === 'availability_status' ||
+			cardType === 'media_players_status'
 				? statusDiscoveredEntityIds
 				: undefined,
 		statusIcon:
@@ -389,11 +400,15 @@ export function saveCardEdits(
 				? batteryChargeEntityId.trim()
 				: undefined,
 		importTodayEntityId:
-			cardType === 'energy' && typeof importTodayEntityId === 'string' && importTodayEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof importTodayEntityId === 'string' &&
+			importTodayEntityId.trim().length > 0
 				? importTodayEntityId.trim()
 				: undefined,
 		exportTodayEntityId:
-			cardType === 'energy' && typeof exportTodayEntityId === 'string' && exportTodayEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof exportTodayEntityId === 'string' &&
+			exportTodayEntityId.trim().length > 0
 				? exportTodayEntityId.trim()
 				: undefined,
 		solarTodayEntityId:
@@ -409,34 +424,63 @@ export function saveCardEdits(
 				? costTodayEntityId.trim()
 				: undefined,
 		compensationTodayEntityId:
-			cardType === 'energy' && typeof compensationTodayEntityId === 'string' && compensationTodayEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof compensationTodayEntityId === 'string' &&
+			compensationTodayEntityId.trim().length > 0
 				? compensationTodayEntityId.trim()
 				: undefined,
+		energyCostMode: cardType === 'energy' ? (energyCostMode ?? 'peak_offpeak') : undefined,
 		importPeakTodayEntityId:
-			cardType === 'energy' && typeof importPeakTodayEntityId === 'string' && importPeakTodayEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof importPeakTodayEntityId === 'string' &&
+			importPeakTodayEntityId.trim().length > 0
 				? importPeakTodayEntityId.trim()
 				: undefined,
 		importOffPeakTodayEntityId:
-			cardType === 'energy' && typeof importOffPeakTodayEntityId === 'string' && importOffPeakTodayEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof importOffPeakTodayEntityId === 'string' &&
+			importOffPeakTodayEntityId.trim().length > 0
 				? importOffPeakTodayEntityId.trim()
 				: undefined,
+		exportPeakTodayEntityId:
+			cardType === 'energy' &&
+			typeof exportPeakTodayEntityId === 'string' &&
+			exportPeakTodayEntityId.trim().length > 0
+				? exportPeakTodayEntityId.trim()
+				: undefined,
+		exportOffPeakTodayEntityId:
+			cardType === 'energy' &&
+			typeof exportOffPeakTodayEntityId === 'string' &&
+			exportOffPeakTodayEntityId.trim().length > 0
+				? exportOffPeakTodayEntityId.trim()
+				: undefined,
 		importTariffEntityId:
-			cardType === 'energy' && typeof importTariffEntityId === 'string' && importTariffEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof importTariffEntityId === 'string' &&
+			importTariffEntityId.trim().length > 0
 				? importTariffEntityId.trim()
 				: undefined,
 		exportTariffEntityId:
-			cardType === 'energy' && typeof exportTariffEntityId === 'string' && exportTariffEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof exportTariffEntityId === 'string' &&
+			exportTariffEntityId.trim().length > 0
 				? exportTariffEntityId.trim()
 				: undefined,
 		importPeakTariff: cardType === 'energy' ? cleanTariff(importPeakTariff) : undefined,
 		importOffPeakTariff: cardType === 'energy' ? cleanTariff(importOffPeakTariff) : undefined,
+		exportPeakTariff: cardType === 'energy' ? cleanTariff(exportPeakTariff) : undefined,
+		exportOffPeakTariff: cardType === 'energy' ? cleanTariff(exportOffPeakTariff) : undefined,
 		exportTariff: cardType === 'energy' ? cleanTariff(exportTariff) : undefined,
 		selfSufficiencyEntityId:
-			cardType === 'energy' && typeof selfSufficiencyEntityId === 'string' && selfSufficiencyEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof selfSufficiencyEntityId === 'string' &&
+			selfSufficiencyEntityId.trim().length > 0
 				? selfSufficiencyEntityId.trim()
 				: undefined,
 		carChargingEntityId:
-			cardType === 'energy' && typeof carChargingEntityId === 'string' && carChargingEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof carChargingEntityId === 'string' &&
+			carChargingEntityId.trim().length > 0
 				? carChargingEntityId.trim()
 				: undefined,
 		carCableEntityId:
@@ -444,7 +488,9 @@ export function saveCardEdits(
 				? carCableEntityId.trim()
 				: undefined,
 		carChargingPowerEntityId:
-			cardType === 'energy' && typeof carChargingPowerEntityId === 'string' && carChargingPowerEntityId.trim().length > 0
+			cardType === 'energy' &&
+			typeof carChargingPowerEntityId === 'string' &&
+			carChargingPowerEntityId.trim().length > 0
 				? carChargingPowerEntityId.trim()
 				: undefined,
 		energyDeviceEntityIds:
@@ -452,7 +498,9 @@ export function saveCardEdits(
 				? energyDeviceEntityIds.map((v) => v.trim()).filter((v) => v.length > 0)
 				: undefined,
 		energyDeviceTodayEntityIds:
-			cardType === 'energy' && Array.isArray(energyDeviceTodayEntityIds) && energyDeviceTodayEntityIds.length > 0
+			cardType === 'energy' &&
+			Array.isArray(energyDeviceTodayEntityIds) &&
+			energyDeviceTodayEntityIds.length > 0
 				? energyDeviceTodayEntityIds.map((v) => v.trim()).filter((v) => v.length > 0)
 				: undefined,
 		energyDeviceAliases: cardType === 'energy' ? cleanAliasMap(energyDeviceAliases) : undefined,
@@ -512,12 +560,17 @@ export function saveCardInSidebar(
 	homeTodayEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	energyCostMode?: CardDraft['energyCostMode'],
 	importPeakTodayEntityId?: string,
 	importOffPeakTodayEntityId?: string,
+	exportPeakTodayEntityId?: string,
+	exportOffPeakTodayEntityId?: string,
 	importTariffEntityId?: string,
 	exportTariffEntityId?: string,
 	importPeakTariff?: string,
 	importOffPeakTariff?: string,
+	exportPeakTariff?: string,
+	exportOffPeakTariff?: string,
 	exportTariff?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
@@ -576,12 +629,17 @@ export function saveCardInSidebar(
 					homeTodayEntityId,
 					costTodayEntityId,
 					compensationTodayEntityId,
+					energyCostMode,
 					importPeakTodayEntityId,
 					importOffPeakTodayEntityId,
+					exportPeakTodayEntityId,
+					exportOffPeakTodayEntityId,
 					importTariffEntityId,
 					exportTariffEntityId,
 					importPeakTariff,
 					importOffPeakTariff,
+					exportPeakTariff,
+					exportOffPeakTariff,
 					exportTariff,
 					selfSufficiencyEntityId,
 					carChargingEntityId,
@@ -643,12 +701,17 @@ export function saveCardInSections(
 	homeTodayEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	energyCostMode?: CardDraft['energyCostMode'],
 	importPeakTodayEntityId?: string,
 	importOffPeakTodayEntityId?: string,
+	exportPeakTodayEntityId?: string,
+	exportOffPeakTodayEntityId?: string,
 	importTariffEntityId?: string,
 	exportTariffEntityId?: string,
 	importPeakTariff?: string,
 	importOffPeakTariff?: string,
+	exportPeakTariff?: string,
+	exportOffPeakTariff?: string,
 	exportTariff?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
@@ -709,12 +772,17 @@ export function saveCardInSections(
 						homeTodayEntityId,
 						costTodayEntityId,
 						compensationTodayEntityId,
+						energyCostMode,
 						importPeakTodayEntityId,
 						importOffPeakTodayEntityId,
+						exportPeakTodayEntityId,
+						exportOffPeakTodayEntityId,
 						importTariffEntityId,
 						exportTariffEntityId,
 						importPeakTariff,
 						importOffPeakTariff,
+						exportPeakTariff,
+						exportOffPeakTariff,
 						exportTariff,
 						selfSufficiencyEntityId,
 						carChargingEntityId,
@@ -742,10 +810,7 @@ export function deleteCardInSidebar(cards: CardDraft[], cardId: string): CardDra
 	return cards.filter((card) => card.id !== cardId);
 }
 
-export function deleteCardInSections(
-	sections: ViewSectionDraft[],
-	cardId: string
-): ViewSectionDraft[] {
+export function deleteCardInSections(sections: ViewSectionDraft[], cardId: string): ViewSectionDraft[] {
 	return sections.map((section) => ({
 		...section,
 		cards: section.cards.filter((card) => card.id !== cardId)
@@ -781,9 +846,6 @@ export function saveSectionEdits(
 	);
 }
 
-export function deleteSectionById(
-	sections: ViewSectionDraft[],
-	sectionId: string
-): ViewSectionDraft[] {
+export function deleteSectionById(sections: ViewSectionDraft[], sectionId: string): ViewSectionDraft[] {
 	return sections.filter((section) => section.id !== sectionId);
 }

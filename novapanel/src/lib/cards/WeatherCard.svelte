@@ -15,10 +15,8 @@
 	const storeEntity = $derived(
 		entityId ? $entityStore.entities.find((entity) => entity.entityId === entityId) : undefined
 	);
-	const storeSun = $derived(
-		$entityStore.entities.find((entity) => entity.entityId === 'sun.sun')
-	);
-	const state = $derived(
+	const storeSun = $derived($entityStore.entities.find((entity) => entity.entityId === 'sun.sun'));
+	const weatherState = $derived(
 		storeEntity
 			? {
 					state: storeEntity.state,
@@ -26,8 +24,8 @@
 				}
 			: null
 	);
-	const attrs = $derived((state?.attributes as Record<string, unknown> | undefined) ?? {});
-	const condition = $derived(typeof state?.state === 'string' ? state.state : '');
+	const attrs = $derived((weatherState?.attributes as Record<string, unknown> | undefined) ?? {});
+	const condition = $derived(typeof weatherState?.state === 'string' ? weatherState.state : '');
 	const belowHorizon = $derived(storeSun?.state === 'below_horizon');
 	function translateCondition(value: string, language: LanguageCode) {
 		if (!value) return '';
@@ -47,34 +45,34 @@
 	}
 	const translatedCondition = $derived(translateCondition(condition, locale));
 	const ingressBase =
-		typeof window !== 'undefined' ? (((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '') as string) : '';
-	const skipMeteocon = $derived((condition || '').trim().toLowerCase() === 'clear-night');
+		typeof window !== 'undefined'
+			? (((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '') as string)
+			: '';
 	const meteoconSrc = $derived(
 		`${ingressBase}/weather/meteocons/${meteoconName(condition, belowHorizon)}.svg`
 	);
-	const temperature = $derived(
-		typeof attrs.temperature === 'number' ? Math.round(attrs.temperature) : null
-	);
+	const temperature = $derived(typeof attrs.temperature === 'number' ? Math.round(attrs.temperature) : null);
 	const unit = $derived(typeof attrs.temperature_unit === 'string' ? attrs.temperature_unit : '°');
+	const temperatureLabel = $derived(temperature !== null ? `${temperature}${unit}` : '--°');
 </script>
 
 {#if !entityId}
 	<div class="empty">{tLocal('cardTypeWeather', 'Weather')}</div>
-{:else if !state || condition === 'unavailable'}
+{:else if !weatherState || condition === 'unavailable' || condition === 'unknown'}
 	<div class="empty">{tLocal('statusUnavailable', 'Unavailable')}</div>
 {:else}
 	<div class="container">
 		<div class="icon">
-			{#if !iconFailed && !skipMeteocon}
+			{#if !iconFailed}
 				<img src={meteoconSrc} alt="" width="46" height="46" onerror={() => (iconFailed = true)} />
 			{:else}
-				<WeatherIcon condition={condition} night={belowHorizon} size={46} />
+				<WeatherIcon {condition} night={belowHorizon} size={46} />
 			{/if}
 		</div>
 		<div class="temperature">
-			{#if temperature !== null}{temperature}{unit}{/if}
+			{temperatureLabel}
 		</div>
-		<div class="state">{translatedCondition}</div>
+		<div class="weatherState">{translatedCondition}</div>
 	</div>
 {/if}
 
@@ -86,7 +84,7 @@
 		grid-template-rows: auto auto;
 		grid-template-areas:
 			'icon temp'
-			'icon state';
+			'icon weatherState';
 		align-items: center;
 		column-gap: 0.45rem;
 		row-gap: 0.05rem;
@@ -108,8 +106,8 @@
 		line-height: 1.55rem;
 	}
 
-	.state {
-		grid-area: state;
+	.weatherState {
+		grid-area: weatherState;
 		opacity: 0.9;
 		white-space: nowrap;
 		overflow: hidden;

@@ -1,9 +1,11 @@
 import type { LanguageCode } from '$lib/i18n';
 import { isPanelTheme, type PanelTheme } from '$lib/panel/theme';
+import { coerceCurrencyCode, DEFAULT_CURRENCY_CODE } from '$lib/currency';
 
 export type AddonConfigurationPayload = {
 	language?: string;
 	theme?: string;
+	currencyCode?: unknown;
 	cardLibraryTab?: 'sidebar' | 'view';
 	titles?: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: {
@@ -23,6 +25,7 @@ type Input = {
 	addonConfiguration: AddonConfigurationPayload;
 	selectedLanguage: LanguageCode;
 	selectedTheme: PanelTheme;
+	selectedCurrencyCode?: string;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: AddonConfigurationPayload['oauth'];
@@ -33,6 +36,7 @@ type Input = {
 export type Output = {
 	selectedLanguage: LanguageCode;
 	selectedTheme: PanelTheme;
+	selectedCurrencyCode: string;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: AddonConfigurationPayload['oauth'];
@@ -42,6 +46,7 @@ export type Output = {
 export function applyAddonConfigurationState(input: Input): Output {
 	let selectedLanguage = input.selectedLanguage;
 	let selectedTheme = input.selectedTheme;
+	let selectedCurrencyCode = coerceCurrencyCode(input.selectedCurrencyCode, DEFAULT_CURRENCY_CODE);
 	let activeCardLibraryTab = input.activeCardLibraryTab;
 	let customTitles = input.customTitles;
 	let oauth = input.oauth;
@@ -55,6 +60,7 @@ export function applyAddonConfigurationState(input: Input): Output {
 	if (isPanelTheme(input.addonConfiguration.theme)) {
 		selectedTheme = input.addonConfiguration.theme;
 	}
+	selectedCurrencyCode = coerceCurrencyCode(input.addonConfiguration.currencyCode, selectedCurrencyCode);
 	if (
 		input.addonConfiguration.cardLibraryTab === 'sidebar' ||
 		input.addonConfiguration.cardLibraryTab === 'view'
@@ -70,5 +76,13 @@ export function applyAddonConfigurationState(input: Input): Output {
 	if (input.addonConfiguration.mediaHub && typeof input.addonConfiguration.mediaHub === 'object') {
 		mediaHub = input.addonConfiguration.mediaHub;
 	}
-	return { selectedLanguage, selectedTheme, activeCardLibraryTab, customTitles, oauth, mediaHub };
+	return {
+		selectedLanguage,
+		selectedTheme,
+		selectedCurrencyCode,
+		activeCardLibraryTab,
+		customTitles,
+		oauth,
+		mediaHub
+	};
 }

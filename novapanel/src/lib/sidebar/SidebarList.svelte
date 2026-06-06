@@ -9,11 +9,11 @@
 		onDragStartItem?: (id: string) => void;
 		onDragEndItem?: () => void;
 		onDragOverValid?: (event: DragEvent) => void;
-	onDragOverItem?: (id: string, placement: 'before' | 'after') => void;
-	onDropOnItem?: (id: string, placement: 'before' | 'after') => void;
+		onDragOverItem?: (id: string, placement: 'before' | 'after') => void;
+		onDropOnItem?: (id: string, placement: 'before' | 'after') => void;
 		onDropAtEnd?: () => void;
-	activeDropTargetId?: string;
-	activeDropPlacement?: 'before' | 'after';
+		activeDropTargetId?: string;
+		activeDropPlacement?: 'before' | 'after';
 	};
 
 	let {
@@ -30,9 +30,7 @@
 		activeDropPlacement = 'before'
 	}: Props = $props();
 
-	let visibleItems = $derived(
-		[...items].filter((item) => item.visible).sort((a, b) => a.order - b.order)
-	);
+	let visibleItems = $derived([...items].filter((item) => item.visible).sort((a, b) => a.order - b.order));
 </script>
 
 <section
@@ -72,7 +70,7 @@
 				{onSelectItem}
 				onDragStart={onDragStartItem}
 				onDragEnd={onDragEndItem}
-				onDragOverValid={onDragOverValid}
+				{onDragOverValid}
 			/>
 		</div>
 	{/each}

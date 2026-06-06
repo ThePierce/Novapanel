@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
+	import { selectedLanguageStore, translate } from '$lib/i18n';
 
 	type ComponentLoader = () => Promise<{ default: Component<any> }>;
 
@@ -35,20 +36,20 @@
 	{@const Component = component}
 	<Component {...props} />
 {:else if loadError}
-	<div class="lazy-component-error" role="alert">Component kon niet worden geladen.</div>
+	<div class="lazy-component-error" role="alert">
+		{translate('Component kon niet worden geladen.', $selectedLanguageStore)}
+	</div>
 {/if}
 
 <style>
 	.lazy-component-error {
-		position: fixed;
-		inset: 50% auto auto 50%;
-		z-index: 9999;
-		transform: translate(-50%, -50%);
-		padding: 0.9rem 1rem;
+		width: 100%;
+		box-sizing: border-box;
+		padding: 0.65rem 0.75rem;
 		border: 1px solid rgba(248, 113, 113, 0.28);
-		border-radius: 16px;
-		background: rgba(15, 23, 42, 0.94);
+		border-radius: 10px;
+		background: rgba(127, 29, 29, 0.18);
 		color: #fecaca;
-		box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35);
+		font-size: 0.85rem;
 	}
 </style>

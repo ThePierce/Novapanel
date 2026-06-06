@@ -12,7 +12,6 @@
 		statusIcon?: string;
 		iconValidationState: 'idle' | 'checking' | 'ok' | 'error';
 		iconValidationMessage: string;
-		iconPreviewSrc: string;
 		onEntityIdChange: (value: string) => void;
 		onStatusIconChange: (value: string) => void;
 	};
@@ -23,13 +22,14 @@
 		statusIcon,
 		iconValidationState,
 		iconValidationMessage,
-		iconPreviewSrc,
 		onEntityIdChange,
 		onStatusIconChange
 	}: Props = $props();
 
 	const defaultIcon = $derived(fallbackIcon(kind));
-	const effectiveIcon = $derived((statusIcon && statusIcon.trim().length > 0) ? statusIcon.trim() : defaultIcon);
+	const effectiveIcon = $derived(
+		statusIcon && statusIcon.trim().length > 0 ? statusIcon.trim() : defaultIcon
+	);
 	const candidates = $derived(
 		$filteredEntities.filter((entity) =>
 			kind === 'device' ? isDeviceButtonEntityDomain(entity.domain) : entity.domain === kind
@@ -148,8 +148,8 @@
 		gap: 0.7rem;
 		padding: 0.7rem;
 		border-radius: 0.75rem;
-		background: rgba(255,255,255,0.055);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+		background: rgba(255, 255, 255, 0.055);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 	}
 	.entity-selected-icon {
 		width: 2.4rem;
@@ -158,7 +158,7 @@
 		place-items: center;
 		border-radius: 0.75rem;
 		color: #93c5fd;
-		background: rgba(147,197,253,0.14);
+		background: rgba(147, 197, 253, 0.14);
 	}
 	.entity-selected strong,
 	.entity-selected span {
@@ -166,11 +166,11 @@
 	}
 	.entity-selected strong {
 		font-size: 0.9rem;
-		color: rgba(255,255,255,0.9);
+		color: rgba(255, 255, 255, 0.9);
 	}
 	.entity-selected span {
 		margin-top: 0.12rem;
 		font-size: 0.75rem;
-		color: rgba(255,255,255,0.52);
+		color: rgba(255, 255, 255, 0.52);
 	}
 </style>

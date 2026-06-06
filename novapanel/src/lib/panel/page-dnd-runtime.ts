@@ -39,6 +39,22 @@ let dragGhostImage: HTMLImageElement | null = null;
 
 export function createPageDndRuntime(params: CreatePageDndRuntimeParams) {
 	const { browser, debugLog, getState, setState, applyDraftChange, applySidebarDraftChange } = params;
+	const setSectionViewDndState = (
+		patch: Parameters<typeof createSectionViewDndHandlers>[0] extends {
+			setState: (patch: infer Patch) => void;
+		}
+			? Patch
+			: never
+	) => {
+		setState(patch as Partial<DndRuntimeState>);
+	};
+	const setSidebarDndState = (
+		patch: Parameters<typeof createSidebarDndHandlers>[0] extends { setState: (patch: infer Patch) => void }
+			? Patch
+			: never
+	) => {
+		setState(patch as Partial<DndRuntimeState>);
+	};
 
 	function applyDragCursorIndicatorOnly(event: DragEvent) {
 		if (!browser) return;
@@ -49,8 +65,7 @@ export function createPageDndRuntime(params: CreatePageDndRuntimeParams) {
 		transfer.setData('text/plain', 'novapanel-drag');
 		if (!dragGhostImage) {
 			dragGhostImage = new Image();
-			dragGhostImage.src =
-				'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+			dragGhostImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 		}
 		transfer.setDragImage(dragGhostImage, 0, 0);
 	}
@@ -65,7 +80,7 @@ export function createPageDndRuntime(params: CreatePageDndRuntimeParams) {
 		dropViewCard
 	} = createSectionViewDndHandlers({
 		getState,
-		setState,
+		setState: setSectionViewDndState,
 		applyDraftChange,
 		debugLog
 	});
@@ -132,7 +147,7 @@ export function createPageDndRuntime(params: CreatePageDndRuntimeParams) {
 		handleSidebarValidDragOver
 	} = createSidebarDndHandlers({
 		getState,
-		setState,
+		setState: setSidebarDndState,
 		applySidebarDraftChange,
 		debugLog,
 		allowValidDrop

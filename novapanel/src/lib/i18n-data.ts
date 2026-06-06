@@ -26,9 +26,11 @@ export const translations = {
 		spotifyClientId: 'Spotify Client ID',
 		spotifyClientSecret: 'Spotify Client Secret',
 		spotifyRedirectUri: 'Spotify Redirect URI',
-		spotifyRedirectUriHelp: 'Gebruik de callback-URL die NovaPanel toont; bij ingress bevat die meestal /api/hassio_ingress/<token>/api/spotify/auth/callback',
+		spotifyRedirectUriHelp:
+			'Gebruik de callback-URL die NovaPanel toont; bij ingress bevat die meestal /api/hassio_ingress/<token>/api/spotify/auth/callback',
 		spotifyRedirectUriUseThis: 'Plaats deze redirect URL in het Spotify Dashboard:',
-		spotifyCredentialsLinkLabel: 'Vraag je Spotify API gegevens op via: https://developer.spotify.com/dashboard',
+		spotifyCredentialsLinkLabel:
+			'Vraag je Spotify API gegevens op via: https://developer.spotify.com/dashboard',
 		spotifyConnect: 'Verbind Spotify',
 		spotifyReconnect: 'Opnieuw verbinden',
 		spotifyStatusConnected: 'Spotify is gekoppeld',
@@ -204,8 +206,7 @@ export const translations = {
 		forecastTypeDaily: 'Dagelijks',
 		forecastTypeHourly: 'Uurlijks',
 		forecastTypeTwiceDaily: 'Tweemaal daags',
-		weekdayShortMon: 'Ma'
-		,
+		weekdayShortMon: 'Ma',
 		entityPicker: 'Entiteiten',
 		entityStatusConnecting: 'Verbinden met Home Assistant',
 		entityStatusReady: 'Entiteiten geladen',
@@ -252,9 +253,11 @@ export const translations = {
 		spotifyClientId: 'Spotify Client ID',
 		spotifyClientSecret: 'Spotify Client Secret',
 		spotifyRedirectUri: 'Spotify Redirect URI',
-		spotifyRedirectUriHelp: 'Use the callback URL NovaPanel shows; with ingress it usually contains /api/hassio_ingress/<token>/api/spotify/auth/callback',
+		spotifyRedirectUriHelp:
+			'Use the callback URL NovaPanel shows; with ingress it usually contains /api/hassio_ingress/<token>/api/spotify/auth/callback',
 		spotifyRedirectUriUseThis: 'Place this redirect URL in the Spotify Dashboard:',
-		spotifyCredentialsLinkLabel: 'Get your Spotify API credentials here: https://developer.spotify.com/dashboard',
+		spotifyCredentialsLinkLabel:
+			'Get your Spotify API credentials here: https://developer.spotify.com/dashboard',
 		spotifyConnect: 'Connect Spotify',
 		spotifyReconnect: 'Reconnect',
 		spotifyStatusConnected: 'Spotify is connected',
@@ -477,9 +480,11 @@ export const translations = {
 		spotifyClientId: 'Spotify Client ID',
 		spotifyClientSecret: 'Spotify Client Secret',
 		spotifyRedirectUri: 'Spotify Redirect URI',
-		spotifyRedirectUriHelp: 'Verwende die Callback-URL, die NovaPanel anzeigt; bei Ingress enthält sie normalerweise /api/hassio_ingress/<token>/api/spotify/auth/callback',
+		spotifyRedirectUriHelp:
+			'Verwende die Callback-URL, die NovaPanel anzeigt; bei Ingress enthält sie normalerweise /api/hassio_ingress/<token>/api/spotify/auth/callback',
 		spotifyRedirectUriUseThis: 'Diese Redirect-URL im Spotify Dashboard eintragen:',
-		spotifyCredentialsLinkLabel: 'Spotify API-Zugangsdaten hier abrufen: https://developer.spotify.com/dashboard',
+		spotifyCredentialsLinkLabel:
+			'Spotify API-Zugangsdaten hier abrufen: https://developer.spotify.com/dashboard',
 		spotifyConnect: 'Spotify verbinden',
 		spotifyReconnect: 'Erneut verbinden',
 		spotifyStatusConnected: 'Spotify ist verbunden',
@@ -635,7 +640,8 @@ export const translations = {
 		panelStateExport: 'Exportieren (.json)',
 		panelStateImport: 'Importieren (.json)',
 		panelStateImportOk: 'Import OK (auch auf dem Server gespeichert).',
-		panelStateImportOkLocal: 'Oberfläche aktualisiert; Speichern auf dem Server fehlgeschlagen (lokal gespeichert).',
+		panelStateImportOkLocal:
+			'Oberfläche aktualisiert; Speichern auf dem Server fehlgeschlagen (lokal gespeichert).',
 		panelStateImportError: 'Import fehlgeschlagen (ungültige JSON-Datei).',
 		loadingPanel: 'Panel wird geladen…',
 		recentlyAddedTracks: 'Kuerzlich hinzugefuegte Tracks',
@@ -702,9 +708,11 @@ export const translations = {
 		spotifyClientId: 'Spotify Client ID',
 		spotifyClientSecret: 'Spotify Client Secret',
 		spotifyRedirectUri: 'Spotify Redirect URI',
-		spotifyRedirectUriHelp: 'Utilisez l’URL de callback affichée par NovaPanel ; avec ingress elle contient généralement /api/hassio_ingress/<token>/api/spotify/auth/callback',
+		spotifyRedirectUriHelp:
+			'Utilisez l’URL de callback affichée par NovaPanel ; avec ingress elle contient généralement /api/hassio_ingress/<token>/api/spotify/auth/callback',
 		spotifyRedirectUriUseThis: 'Placez cette URL de redirection dans le tableau de bord Spotify :',
-		spotifyCredentialsLinkLabel: 'Obtenez vos identifiants API Spotify ici : https://developer.spotify.com/dashboard',
+		spotifyCredentialsLinkLabel:
+			'Obtenez vos identifiants API Spotify ici : https://developer.spotify.com/dashboard',
 		spotifyConnect: 'Connecter Spotify',
 		spotifyReconnect: 'Reconnecter',
 		spotifyStatusConnected: 'Spotify est connecté',
@@ -860,7 +868,8 @@ export const translations = {
 		panelStateExport: 'Exporter (.json)',
 		panelStateImport: 'Importer (.json)',
 		panelStateImportOk: 'Import réussi (également enregistré sur le serveur).',
-		panelStateImportOkLocal: 'Interface mise à jour ; écriture sur le serveur impossible (enregistré localement).',
+		panelStateImportOkLocal:
+			'Interface mise à jour ; écriture sur le serveur impossible (enregistré localement).',
 		panelStateImportError: 'Échec de l’import (fichier JSON invalide).',
 		loadingPanel: 'Chargement du panel…',
 		recentlyAddedTracks: 'Titres recemment ajoutes',
@@ -927,9 +936,11 @@ export const translations = {
 		spotifyClientId: 'Spotify Client ID',
 		spotifyClientSecret: 'Spotify Client Secret',
 		spotifyRedirectUri: 'Spotify Redirect URI',
-		spotifyRedirectUriHelp: 'Usa la URL de callback que muestra NovaPanel; con ingress normalmente contiene /api/hassio_ingress/<token>/api/spotify/auth/callback',
+		spotifyRedirectUriHelp:
+			'Usa la URL de callback que muestra NovaPanel; con ingress normalmente contiene /api/hassio_ingress/<token>/api/spotify/auth/callback',
 		spotifyRedirectUriUseThis: 'Coloca esta URL de redirección en el panel de Spotify:',
-		spotifyCredentialsLinkLabel: 'Obtén tus credenciales de API de Spotify aquí: https://developer.spotify.com/dashboard',
+		spotifyCredentialsLinkLabel:
+			'Obtén tus credenciales de API de Spotify aquí: https://developer.spotify.com/dashboard',
 		spotifyConnect: 'Conectar Spotify',
 		spotifyReconnect: 'Reconectar',
 		spotifyStatusConnected: 'Spotify está conectado',
@@ -1085,7 +1096,8 @@ export const translations = {
 		panelStateExport: 'Exportar (.json)',
 		panelStateImport: 'Importar (.json)',
 		panelStateImportOk: 'Importación correcta (también guardada en el servidor).',
-		panelStateImportOkLocal: 'Interfaz actualizada; fallo al guardar en el servidor (guardado solo localmente).',
+		panelStateImportOkLocal:
+			'Interfaz actualizada; fallo al guardar en el servidor (guardado solo localmente).',
 		panelStateImportError: 'Importación fallida (JSON no válido).',
 		loadingPanel: 'Cargando panel…',
 		recentlyAddedTracks: 'Pistas anadidas recientemente',

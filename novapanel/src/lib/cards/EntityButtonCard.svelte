@@ -15,43 +15,34 @@
 		onOpen: () => void;
 	};
 
-	let {
-		kind,
-		title = '',
-		entityId,
-		icon,
-		editMode = false,
-		onOpen
-	}: Props = $props();
+	let { kind, title = '', entityId, icon, editMode = false, onOpen }: Props = $props();
 
 	let busy = $state(false);
 
 	const entity = $derived(
 		$entityStore.entities.find((entry: HomeAssistantEntity) => entry.entityId === (entityId ?? ''))
 	);
-	const state = $derived((entity?.state ?? '').toLowerCase());
-	const isUnavailable = $derived(!entity || state === 'unavailable' || state === 'unknown');
+	const entityState = $derived((entity?.state ?? '').toLowerCase());
+	const isUnavailable = $derived(!entity || entityState === 'unavailable' || entityState === 'unknown');
+	const serviceDomain = $derived((entity?.domain || entityId?.split('.')[0] || '').toLowerCase());
 	const isActive = $derived(
 		kind === 'device'
 			? serviceDomain === 'lock'
-				? state === 'unlocked' || state === 'unlocking'
-				: state === 'on'
+				? entityState === 'unlocked' || entityState === 'unlocking'
+				: entityState === 'on'
 			: kind === 'climate'
-				? state !== 'off' && !isUnavailable
+				? entityState !== 'off' && !isUnavailable
 				: kind === 'cover'
-					? state === 'open' || state === 'opening'
+					? entityState === 'open' || entityState === 'opening'
 					: kind === 'vacuum'
-						? ['cleaning', 'returning', 'docked'].includes(state)
-						: ['playing', 'buffering', 'on'].includes(state)
+						? ['cleaning', 'returning'].includes(entityState)
+						: ['playing', 'buffering', 'on'].includes(entityState)
 	);
-	const serviceDomain = $derived((entity?.domain || entityId?.split('.')[0] || '').toLowerCase());
 	const displayName = $derived(
-		title && title.trim().length > 0
-			? title.trim()
-			: entity?.friendlyName ?? entityId ?? fallbackName(kind)
+		title && title.trim().length > 0 ? title.trim() : (entity?.friendlyName ?? entityId ?? fallbackName(kind))
 	);
 	const coverPosition = $derived(numericAttribute(entity, 'current_position'));
-	const cardIcon = $derived(iconForEntity(kind, icon, coverPosition, state));
+	const cardIcon = $derived(iconForEntity(kind, icon, coverPosition, entityState));
 	const accent = $derived(accentForKind(kind, isActive));
 	const accentSoft = $derived(softAccentForKind(kind, isActive));
 	const stateLabel = $derived(labelForEntity(kind, entity, isUnavailable));
@@ -79,19 +70,30 @@
 		return coverState === 'closed' || coverState === 'closing';
 	}
 
-	function coverIconForState(position: number | null, coverState: string, configuredIcon: string | undefined) {
+	function coverIconForState(
+		position: number | null,
+		coverState: string,
+		configuredIcon: string | undefined
+	) {
 		const configured = (configuredIcon ?? '').trim();
 		const normalized = configured.toLowerCase().replace(/^mdi:/, '');
 		const closed = isCoverClosed(position, coverState);
-		if (normalized.includes('blinds-horizontal')) return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
+		if (normalized.includes('blinds-horizontal'))
+			return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
 		if (normalized.includes('blinds')) return closed ? 'mdi:blinds' : 'mdi:blinds-open';
-		if (normalized.includes('window-shutter')) return closed ? 'mdi:window-shutter' : 'mdi:window-shutter-open';
+		if (normalized.includes('window-shutter'))
+			return closed ? 'mdi:window-shutter' : 'mdi:window-shutter-open';
 		if (normalized && !normalized.includes('curtains')) return configured;
 		if (normalized.includes('curtains')) return closed ? 'mdi:curtains-closed' : 'mdi:curtains';
 		return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
 	}
 
-	function iconForEntity(value: EntityButtonKind, configuredIcon: string | undefined, position: number | null, currentState: string) {
+	function iconForEntity(
+		value: EntityButtonKind,
+		configuredIcon: string | undefined,
+		position: number | null,
+		currentState: string
+	) {
 		if (value === 'cover') return coverIconForState(position, currentState, configuredIcon);
 		if (value === 'device' && serviceDomain === 'lock') {
 			const configured = (configuredIcon ?? '').trim();
@@ -100,7 +102,7 @@
 				? 'mdi:lock-open-outline'
 				: 'mdi:lock-outline';
 		}
-		return (configuredIcon && configuredIcon.trim().length > 0) ? configuredIcon.trim() : fallbackIcon(value);
+		return configuredIcon && configuredIcon.trim().length > 0 ? configuredIcon.trim() : fallbackIcon(value);
 	}
 
 	function accentForKind(value: EntityButtonKind, active: boolean) {
@@ -130,13 +132,18 @@
 		return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
 	}
 
-	function labelForEntity(value: EntityButtonKind, entry: HomeAssistantEntity | undefined, unavailable: boolean) {
+	function labelForEntity(
+		value: EntityButtonKind,
+		entry: HomeAssistantEntity | undefined,
+		unavailable: boolean
+	) {
 		if (unavailable) return translate('Niet beschikbaar', $selectedLanguageStore);
-		if (value === 'device') return formatState(state);
+		if (value === 'device') return formatState(entityState);
 		if (value === 'climate') {
 			const current = numericAttribute(entry, 'current_temperature');
 			const target = numericAttribute(entry, 'temperature');
-			if (current !== null && target !== null) return `${Math.round(current)}° · ${translate('doel', $selectedLanguageStore)} ${Math.round(target)}°`;
+			if (current !== null && target !== null)
+				return `${Math.round(current)}° · ${translate('doel', $selectedLanguageStore)} ${Math.round(target)}°`;
 			if (target !== null) return `${translate('Doel', $selectedLanguageStore)} ${Math.round(target)}°`;
 		}
 		if (value === 'cover') {
@@ -145,18 +152,18 @@
 				const openPct = Math.round(Math.max(0, Math.min(100, position)));
 				return `${openPct}%`;
 			}
-			if (state === 'open' || state === 'opening') return '100%';
-			if (state === 'closed' || state === 'closing') return '0%';
+			if (entityState === 'open' || entityState === 'opening') return '100%';
+			if (entityState === 'closed' || entityState === 'closing') return '0%';
 		}
 		if (value === 'vacuum') {
 			const battery = numericAttribute(entry, 'battery_level');
-			if (battery !== null) return `${formatState(state)} · ${Math.round(battery)}%`;
+			if (battery !== null) return `${formatState(entityState)} · ${Math.round(battery)}%`;
 		}
 		if (value === 'media_player') {
 			const title = entry?.attributes?.media_title;
 			if (typeof title === 'string' && title.trim().length > 0) return title.trim();
 		}
-		return formatState(state);
+		return formatState(entityState);
 	}
 
 	function handleOpen(event: MouseEvent | KeyboardEvent) {
@@ -175,19 +182,35 @@
 		busy = true;
 		try {
 			if (kind === 'climate') {
-				await callHaService('climate', state === 'off' ? 'turn_on' : 'turn_off', { entity_id: entityId });
+				await callHaService('climate', entityState === 'off' ? 'turn_on' : 'turn_off', {
+					entity_id: entityId
+				});
 			} else if (kind === 'device') {
 				if (serviceDomain === 'lock') {
-					await callHaService('lock', state === 'unlocked' || state === 'unlocking' ? 'lock' : 'unlock', { entity_id: entityId });
+					await callHaService(
+						'lock',
+						entityState === 'unlocked' || entityState === 'unlocking' ? 'lock' : 'unlock',
+						{ entity_id: entityId }
+					);
 				} else {
-					await callHaService(serviceDomain || 'switch', state === 'on' ? 'turn_off' : 'turn_on', { entity_id: entityId });
+					await callHaService(serviceDomain || 'switch', entityState === 'on' ? 'turn_off' : 'turn_on', {
+						entity_id: entityId
+					});
 				}
 			} else if (kind === 'cover') {
-				await callHaService('cover', state === 'open' || state === 'opening' ? 'close_cover' : 'open_cover', { entity_id: entityId });
+				await callHaService(
+					'cover',
+					entityState === 'open' || entityState === 'opening' ? 'close_cover' : 'open_cover',
+					{ entity_id: entityId }
+				);
 			} else if (kind === 'vacuum') {
-				await callHaService('vacuum', state === 'cleaning' ? 'pause' : 'start', { entity_id: entityId });
+				await callHaService('vacuum', entityState === 'cleaning' ? 'pause' : 'start', {
+					entity_id: entityId
+				});
 			} else {
-				await callHaService('media_player', state === 'playing' ? 'media_pause' : 'media_play', { entity_id: entityId });
+				await callHaService('media_player', entityState === 'playing' ? 'media_pause' : 'media_play', {
+					entity_id: entityId
+				});
 			}
 		} catch (error) {
 			console.error('Entity button action failed', error);
@@ -216,7 +239,12 @@
 	onkeydown={handleKeydown}
 >
 	<div class="entity-bg" aria-hidden="true"></div>
-	<button type="button" class="entity-icon-button" aria-label={`${displayName} ${translate('apply', $selectedLanguageStore)}`} onclick={quickAction}>
+	<button
+		type="button"
+		class="entity-icon-button"
+		aria-label={`${displayName} ${translate('apply', $selectedLanguageStore)}`}
+		onclick={quickAction}
+	>
 		<StatusIcon icon={cardIcon} size={20} />
 	</button>
 	<div class="entity-copy">
@@ -237,26 +265,26 @@
 		padding: 0.45rem 0.6rem;
 		border-radius: 12px;
 		color: rgba(255, 255, 255, 0.92);
-		background:
-			linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
-			#1f2738;
-		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.05);
+		background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)), #1f2738;
+		box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
 		box-sizing: border-box;
 		overflow: hidden;
 		cursor: pointer;
-		transition: transform 160ms ease, background 180ms ease, box-shadow 180ms ease;
+		transition:
+			transform 160ms ease,
+			background 180ms ease,
+			box-shadow 180ms ease;
 	}
 	.entity-button-card:hover {
 		transform: translateY(-1px);
 		box-shadow:
-			inset 0 0 0 0.5px rgba(255,255,255,0.08),
-			0 8px 22px rgba(0,0,0,0.22);
+			inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+			0 8px 22px rgba(0, 0, 0, 0.22);
 	}
 	.entity-button-card.is-active {
 		background:
 			radial-gradient(circle at 22% 18%, var(--entity-soft), transparent 44%),
-			linear-gradient(145deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03)),
-			#222b3c;
+			linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)), #222b3c;
 	}
 	.entity-button-card.is-unavailable {
 		opacity: 0.74;
@@ -278,9 +306,11 @@
 		border-radius: 11px;
 		color: var(--entity-accent);
 		background: var(--entity-soft);
-		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.07);
+		box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
 		cursor: pointer;
-		transition: transform 140ms ease, background 160ms ease;
+		transition:
+			transform 140ms ease,
+			background 160ms ease;
 		line-height: 0;
 	}
 	.entity-icon-button :global(svg) {
@@ -314,7 +344,7 @@
 		margin-top: 0.12rem;
 		font-size: 0.7rem;
 		font-weight: 500;
-		color: rgba(255,255,255,0.5);
+		color: rgba(255, 255, 255, 0.5);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;

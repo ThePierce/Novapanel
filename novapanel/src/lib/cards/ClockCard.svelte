@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
 	import { clockNow } from '$lib/cards/clock-time';
+	import { localeFor, selectedLanguageStore } from '$lib/i18n';
 
 	type Props = {
 		analogStyle?: 1 | 2 | 3 | 4;
@@ -43,8 +44,7 @@
 
 	function getLocale() {
 		if (locale && locale.length > 0) return locale;
-		if (typeof document !== 'undefined') return document.documentElement.lang || undefined;
-		return undefined;
+		return localeFor($selectedLanguageStore);
 	}
 
 	const digital = $derived(
@@ -82,23 +82,27 @@
 			<div class="ambient-glow" aria-hidden="true"></div>
 			{#if seconds}
 				<svg class="seconds-ring" viewBox="0 0 200 200" aria-hidden="true">
-					<circle cx="100" cy="100" r="94" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.6"/>
-					<circle cx="100" cy="100" r="94" fill="none" stroke="url(#secondsGrad)" stroke-width="1.2" stroke-linecap="round"
+					<circle cx="100" cy="100" r="94" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.6" />
+					<circle
+						cx="100"
+						cy="100"
+						r="94"
+						fill="none"
+						stroke="url(#secondsGrad)"
+						stroke-width="1.2"
+						stroke-linecap="round"
 						stroke-dasharray={`${(secondDeg / 360) * 590.6} 590.6`}
-						transform="rotate(-90 100 100)"/>
+						transform="rotate(-90 100 100)"
+					/>
 					<defs>
 						<linearGradient id="secondsGrad" x1="0" y1="0" x2="1" y2="1">
-							<stop offset="0%" stop-color="rgba(96,165,250,0)"/>
-							<stop offset="100%" stop-color="rgba(96,165,250,0.85)"/>
+							<stop offset="0%" stop-color="rgba(96,165,250,0)" />
+							<stop offset="100%" stop-color="rgba(96,165,250,0.85)" />
 						</linearGradient>
 					</defs>
 				</svg>
 			{/if}
-			<svg
-				viewBox="0 0 200 200"
-				xmlns="http://www.w3.org/2000/svg"
-				class={`clock clock-${analogKind}`}
-			>
+			<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class={`clock clock-${analogKind}`}>
 				{#if analogKind === 'classic'}
 					<defs>
 						<radialGradient id="classic-face" cx="50%" cy="42%" r="64%">
@@ -123,7 +127,7 @@
 					<circle cx="100" cy="100" r="88" fill="url(#classic-face)" stroke="#8d7a57" stroke-width="1.2" />
 					<circle cx="100" cy="100" r="84.5" fill="none" stroke="rgba(70,56,35,0.26)" stroke-width="0.8" />
 
-					{#each Array(60) as _, i}
+					{#each Array(60) as _, i (i)}
 						{@const angle = i * 6 - 90}
 						{@const isHour = i % 5 === 0}
 						{@const r1 = isHour ? 77 : 81}
@@ -142,7 +146,7 @@
 						/>
 					{/each}
 
-					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i}
+					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i (n)}
 						{@const angle = (i * 30 - 90) * (Math.PI / 180)}
 						{@const x = 100 + 66.5 * Math.cos(angle)}
 						{@const y = 100 + 66.5 * Math.sin(angle)}
@@ -237,10 +241,17 @@
 
 					<circle cx="100" cy="100" r="99" fill="#2c1e0d" />
 					<circle cx="100" cy="100" r="96" fill="url(#luxury-gold-bezel)" />
-					<circle cx="100" cy="100" r="87.5" fill="url(#luxury-gold-face)" stroke="#8e6e35" stroke-width="1.5" />
+					<circle
+						cx="100"
+						cy="100"
+						r="87.5"
+						fill="url(#luxury-gold-face)"
+						stroke="#8e6e35"
+						stroke-width="1.5"
+					/>
 					<circle cx="100" cy="100" r="82.5" fill="none" stroke="rgba(73,50,16,0.35)" stroke-width="0.7" />
 
-					{#each Array(60) as _, i}
+					{#each Array(60) as _, i (i)}
 						{@const angle = i * 6 - 90}
 						{@const isHour = i % 5 === 0}
 						{@const r1 = isHour ? 75.5 : 80}
@@ -259,7 +270,7 @@
 						/>
 					{/each}
 
-					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i}
+					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i (n)}
 						{@const angle = (i * 30 - 90) * (Math.PI / 180)}
 						{@const x = 100 + 66 * Math.cos(angle)}
 						{@const y = 100 + 66 * Math.sin(angle)}
@@ -351,10 +362,17 @@
 
 					<circle cx="100" cy="100" r="99" fill="#1e2834" />
 					<circle cx="100" cy="100" r="96" fill="url(#luxury-steel-bezel)" />
-					<circle cx="100" cy="100" r="87.5" fill="url(#luxury-steel-face)" stroke="#607285" stroke-width="1.5" />
+					<circle
+						cx="100"
+						cy="100"
+						r="87.5"
+						fill="url(#luxury-steel-face)"
+						stroke="#607285"
+						stroke-width="1.5"
+					/>
 					<circle cx="100" cy="100" r="82.5" fill="none" stroke="rgba(40,58,74,0.33)" stroke-width="0.7" />
 
-					{#each Array(60) as _, i}
+					{#each Array(60) as _, i (i)}
 						{@const angle = i * 6 - 90}
 						{@const isHour = i % 5 === 0}
 						{@const r1 = isHour ? 75.5 : 80}
@@ -373,7 +391,7 @@
 						/>
 					{/each}
 
-					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i}
+					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i (n)}
 						{@const angle = (i * 30 - 90) * (Math.PI / 180)}
 						{@const x = 100 + 66 * Math.cos(angle)}
 						{@const y = 100 + 66 * Math.sin(angle)}
@@ -430,7 +448,7 @@
 					<circle cx="100" cy="100" r="98" fill="#1a1a2e" />
 					<circle cx="100" cy="100" r="97" fill="none" stroke="#4fc3f7" stroke-width="0.8" opacity="0.4" />
 
-					{#each Array(60) as _, i}
+					{#each Array(60) as _, i (i)}
 						{@const angle = i * 6 - 90}
 						{@const isHour = i % 5 === 0}
 						{@const r1 = isHour ? 81 : 88}
@@ -448,7 +466,7 @@
 						/>
 					{/each}
 
-					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i}
+					{#each [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as n, i (n)}
 						{@const angle = (i * 30 - 90) * (Math.PI / 180)}
 						{@const x = 100 + 70 * Math.cos(angle)}
 						{@const y = 100 + 70 * Math.sin(angle)}
@@ -508,7 +526,7 @@
 						stroke-width="1"
 					/>
 
-					{#each Array(12) as _, i}
+					{#each Array(12) as _, i (i)}
 						{@const angle = (i * 30 - 90) * (Math.PI / 180)}
 						{@const x = 100 + 85 * Math.cos(angle)}
 						{@const y = 100 + 85 * Math.sin(angle)}
@@ -552,202 +570,218 @@
 					<circle cx="100" cy="100" r="5" fill="rgba(255,255,255,0.9)" />
 					{#if seconds}<circle cx="100" cy="100" r="2.5" fill="#f5a623" />{/if}
 				{:else}
-					<circle cx="100" cy="100" r="96" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
+					{#if analogKind === 'minimal'}
+						<circle cx="100" cy="100" r="96" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1" />
 
-					{#each [0, 90, 180, 270] as angle}
-						{@const x1 = 100 + 88 * Math.cos(((angle - 90) * Math.PI) / 180)}
-						{@const y1 = 100 + 88 * Math.sin(((angle - 90) * Math.PI) / 180)}
-						{@const x2 = 100 + 96 * Math.cos(((angle - 90) * Math.PI) / 180)}
-						{@const y2 = 100 + 96 * Math.sin(((angle - 90) * Math.PI) / 180)}
-						<line {x1} {y1} {x2} {y2} stroke="rgba(255,255,255,0.5)" stroke-width="2.5" />
-					{/each}
+						{#each [0, 90, 180, 270] as angle (angle)}
+							{@const x1 = 100 + 88 * Math.cos(((angle - 90) * Math.PI) / 180)}
+							{@const y1 = 100 + 88 * Math.sin(((angle - 90) * Math.PI) / 180)}
+							{@const x2 = 100 + 96 * Math.cos(((angle - 90) * Math.PI) / 180)}
+							{@const y2 = 100 + 96 * Math.sin(((angle - 90) * Math.PI) / 180)}
+							<line {x1} {y1} {x2} {y2} stroke="rgba(255,255,255,0.5)" stroke-width="2.5" />
+						{/each}
 
-					<line
-						x1={100 - 8 * Math.sin((hourDeg * Math.PI) / 180)}
-						y1={100 + 8 * Math.cos((hourDeg * Math.PI) / 180)}
-						x2={100 + 55 * Math.sin((hourDeg * Math.PI) / 180)}
-						y2={100 - 55 * Math.cos((hourDeg * Math.PI) / 180)}
-						stroke="white"
-						stroke-width="3.5"
-						stroke-linecap="round"
-					/>
-					<line
-						x1={100 - 12 * Math.sin((minuteDeg * Math.PI) / 180)}
-						y1={100 + 12 * Math.cos((minuteDeg * Math.PI) / 180)}
-						x2={100 + 75 * Math.sin((minuteDeg * Math.PI) / 180)}
-						y2={100 - 75 * Math.cos((minuteDeg * Math.PI) / 180)}
-						stroke="white"
-						stroke-width="2"
-						stroke-linecap="round"
-					/>
-					{#if seconds}
 						<line
-							x1={100 - 15 * Math.sin((secondDeg * Math.PI) / 180)}
-							y1={100 + 15 * Math.cos((secondDeg * Math.PI) / 180)}
-							x2={100 + 78 * Math.sin((secondDeg * Math.PI) / 180)}
-							y2={100 - 78 * Math.cos((secondDeg * Math.PI) / 180)}
-							stroke="#f5a623"
-							stroke-width="1.5"
+							x1={100 - 8 * Math.sin((hourDeg * Math.PI) / 180)}
+							y1={100 + 8 * Math.cos((hourDeg * Math.PI) / 180)}
+							x2={100 + 55 * Math.sin((hourDeg * Math.PI) / 180)}
+							y2={100 - 55 * Math.cos((hourDeg * Math.PI) / 180)}
+							stroke="white"
+							stroke-width="3.5"
 							stroke-linecap="round"
 						/>
-					{/if}
-					<circle cx="100" cy="100" r="3.5" fill="white" />
-					{#if seconds}<circle cx="100" cy="100" r="2" fill="#f5a623" />{/if}
-				{:else if analogKind === 'aurora'}
-					<defs>
-						<!-- Outer glass bezel with conic gradient -->
-						<radialGradient id="aurora-bezel" cx="50%" cy="40%" r="65%">
-							<stop offset="0%" stop-color="rgba(40,52,80,0.85)" />
-							<stop offset="60%" stop-color="rgba(20,28,48,0.95)" />
-							<stop offset="100%" stop-color="rgba(10,14,28,1)" />
-						</radialGradient>
-						<!-- Face inner gradient -->
-						<radialGradient id="aurora-face" cx="50%" cy="42%" r="60%">
-							<stop offset="0%" stop-color="rgba(30,42,72,0.55)" />
-							<stop offset="55%" stop-color="rgba(15,22,42,0.85)" />
-							<stop offset="100%" stop-color="rgba(8,12,24,0.95)" />
-						</radialGradient>
-						<!-- Highlight reflection on top of glass -->
-						<radialGradient id="aurora-glass" cx="35%" cy="22%" r="50%">
-							<stop offset="0%" stop-color="rgba(255,255,255,0.18)" />
-							<stop offset="60%" stop-color="rgba(255,255,255,0.04)" />
-							<stop offset="100%" stop-color="rgba(255,255,255,0)" />
-						</radialGradient>
-						<!-- Hour hand gradient — solid white -->
-						<linearGradient id="aurora-hour" x1="0%" y1="0%" x2="0%" y2="100%">
-							<stop offset="0%" stop-color="#ffffff" />
-							<stop offset="100%" stop-color="#a8c5ff" />
-						</linearGradient>
-						<!-- Minute hand gradient — cyan glow -->
-						<linearGradient id="aurora-minute" x1="0%" y1="0%" x2="0%" y2="100%">
-							<stop offset="0%" stop-color="#ffffff" />
-							<stop offset="50%" stop-color="#7dd3fc" />
-							<stop offset="100%" stop-color="#22d3ee" />
-						</linearGradient>
-						<!-- Second hand — orange-amber accent -->
-						<linearGradient id="aurora-second" x1="0%" y1="0%" x2="0%" y2="100%">
-							<stop offset="0%" stop-color="#fde68a" />
-							<stop offset="100%" stop-color="#f59e0b" />
-						</linearGradient>
-						<!-- Glow filter for hands -->
-						<filter id="aurora-glow" x="-50%" y="-50%" width="200%" height="200%">
-							<feGaussianBlur stdDeviation="2" result="blur"/>
-							<feMerge>
-								<feMergeNode in="blur"/>
-								<feMergeNode in="SourceGraphic"/>
-							</feMerge>
-						</filter>
-					</defs>
-
-					<!-- Outer ring -->
-					<circle cx="100" cy="100" r="99" fill="url(#aurora-bezel)" />
-					<!-- Thin gradient ring (color rim) -->
-					<circle cx="100" cy="100" r="96" fill="none" stroke="url(#aurora-minute)" stroke-width="0.6" opacity="0.45"/>
-					<circle cx="100" cy="100" r="93" fill="url(#aurora-face)" />
-
-					<!-- Faint inner ring track -->
-					<circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>
-
-					<!-- 60 minute ticks: glowing where hour, faded otherwise -->
-					{#each Array(60) as _, i}
-						{@const angle = i * 6 - 90}
-						{@const isHour = i % 5 === 0}
-						{@const r1 = isHour ? 78 : 84}
-						{@const r2 = isHour ? 88 : 87}
-						{@const x1 = 100 + r1 * Math.cos((angle * Math.PI) / 180)}
-						{@const y1 = 100 + r1 * Math.sin((angle * Math.PI) / 180)}
-						{@const x2 = 100 + r2 * Math.cos((angle * Math.PI) / 180)}
-						{@const y2 = 100 + r2 * Math.sin((angle * Math.PI) / 180)}
 						<line
-							{x1}
-							{y1}
-							{x2}
-							{y2}
-							stroke={isHour ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.18)'}
-							stroke-width={isHour ? 2 : 0.8}
+							x1={100 - 12 * Math.sin((minuteDeg * Math.PI) / 180)}
+							y1={100 + 12 * Math.cos((minuteDeg * Math.PI) / 180)}
+							x2={100 + 75 * Math.sin((minuteDeg * Math.PI) / 180)}
+							y2={100 - 75 * Math.cos((minuteDeg * Math.PI) / 180)}
+							stroke="white"
+							stroke-width="2"
 							stroke-linecap="round"
 						/>
-					{/each}
-
-					<!-- 12, 3, 6, 9 emphasis dots — pulsing -->
-					{#each [0, 3, 6, 9] as i}
-						{@const angle = (i * 30 - 90) * (Math.PI / 180)}
-						{@const x = 100 + 92 * Math.cos(angle)}
-						{@const y = 100 + 92 * Math.sin(angle)}
-						<circle cx={x} cy={y} r="1.6" fill="#7dd3fc">
-							<animate attributeName="opacity" values="1;0.4;1" dur="3s" repeatCount="indefinite" begin={`${i * 0.3}s`}/>
-						</circle>
-					{/each}
-
-					<!-- Concentric subtle rings at center -->
-					<circle cx="100" cy="100" r="22" fill="none" stroke="rgba(125,211,252,0.10)" stroke-width="0.5"/>
-					<circle cx="100" cy="100" r="14" fill="none" stroke="rgba(125,211,252,0.18)" stroke-width="0.5"/>
-
-					<!-- HOUR hand — wide white blade -->
-					<g filter="url(#aurora-glow)">
-						<line
-							x1={100 - 6 * Math.sin((hourDeg * Math.PI) / 180)}
-							y1={100 + 6 * Math.cos((hourDeg * Math.PI) / 180)}
-							x2={100 + 48 * Math.sin((hourDeg * Math.PI) / 180)}
-							y2={100 - 48 * Math.cos((hourDeg * Math.PI) / 180)}
-							stroke="url(#aurora-hour)"
-							stroke-width="5"
-							stroke-linecap="round"
-							opacity="0.95"
-						/>
-					</g>
-
-					<!-- MINUTE hand — cyan with tip glow -->
-					<g filter="url(#aurora-glow)">
-						<line
-							x1={100 - 8 * Math.sin((minuteDeg * Math.PI) / 180)}
-							y1={100 + 8 * Math.cos((minuteDeg * Math.PI) / 180)}
-							x2={100 + 70 * Math.sin((minuteDeg * Math.PI) / 180)}
-							y2={100 - 70 * Math.cos((minuteDeg * Math.PI) / 180)}
-							stroke="url(#aurora-minute)"
-							stroke-width="3"
-							stroke-linecap="round"
-						/>
-						<!-- Tip dot for extra glow -->
-						<circle
-							cx={100 + 70 * Math.sin((minuteDeg * Math.PI) / 180)}
-							cy={100 - 70 * Math.cos((minuteDeg * Math.PI) / 180)}
-							r="2"
-							fill="#7dd3fc"
-							opacity="0.85"
-						/>
-					</g>
-
-					<!-- SECOND hand — thin amber -->
-					{#if seconds}
-						<g filter="url(#aurora-glow)">
+						{#if seconds}
 							<line
-								x1={100 - 18 * Math.sin((secondDeg * Math.PI) / 180)}
-								y1={100 + 18 * Math.cos((secondDeg * Math.PI) / 180)}
-								x2={100 + 80 * Math.sin((secondDeg * Math.PI) / 180)}
-								y2={100 - 80 * Math.cos((secondDeg * Math.PI) / 180)}
-								stroke="url(#aurora-second)"
-								stroke-width="1.4"
+								x1={100 - 15 * Math.sin((secondDeg * Math.PI) / 180)}
+								y1={100 + 15 * Math.cos((secondDeg * Math.PI) / 180)}
+								x2={100 + 78 * Math.sin((secondDeg * Math.PI) / 180)}
+								y2={100 - 78 * Math.cos((secondDeg * Math.PI) / 180)}
+								stroke="#f5a623"
+								stroke-width="1.5"
 								stroke-linecap="round"
 							/>
-							<!-- Counterweight back-tip -->
-							<circle
-								cx={100 - 18 * Math.sin((secondDeg * Math.PI) / 180)}
-								cy={100 + 18 * Math.cos((secondDeg * Math.PI) / 180)}
-								r="2.2"
-								fill="#f59e0b"
+						{/if}
+						<circle cx="100" cy="100" r="3.5" fill="white" />
+						{#if seconds}<circle cx="100" cy="100" r="2" fill="#f5a623" />{/if}
+					{:else if analogKind === 'aurora'}
+						<defs>
+							<!-- Outer glass bezel with conic gradient -->
+							<radialGradient id="aurora-bezel" cx="50%" cy="40%" r="65%">
+								<stop offset="0%" stop-color="rgba(40,52,80,0.85)" />
+								<stop offset="60%" stop-color="rgba(20,28,48,0.95)" />
+								<stop offset="100%" stop-color="rgba(10,14,28,1)" />
+							</radialGradient>
+							<!-- Face inner gradient -->
+							<radialGradient id="aurora-face" cx="50%" cy="42%" r="60%">
+								<stop offset="0%" stop-color="rgba(30,42,72,0.55)" />
+								<stop offset="55%" stop-color="rgba(15,22,42,0.85)" />
+								<stop offset="100%" stop-color="rgba(8,12,24,0.95)" />
+							</radialGradient>
+							<!-- Highlight reflection on top of glass -->
+							<radialGradient id="aurora-glass" cx="35%" cy="22%" r="50%">
+								<stop offset="0%" stop-color="rgba(255,255,255,0.18)" />
+								<stop offset="60%" stop-color="rgba(255,255,255,0.04)" />
+								<stop offset="100%" stop-color="rgba(255,255,255,0)" />
+							</radialGradient>
+							<!-- Hour hand gradient — solid white -->
+							<linearGradient id="aurora-hour" x1="0%" y1="0%" x2="0%" y2="100%">
+								<stop offset="0%" stop-color="#ffffff" />
+								<stop offset="100%" stop-color="#a8c5ff" />
+							</linearGradient>
+							<!-- Minute hand gradient — cyan glow -->
+							<linearGradient id="aurora-minute" x1="0%" y1="0%" x2="0%" y2="100%">
+								<stop offset="0%" stop-color="#ffffff" />
+								<stop offset="50%" stop-color="#7dd3fc" />
+								<stop offset="100%" stop-color="#22d3ee" />
+							</linearGradient>
+							<!-- Second hand — orange-amber accent -->
+							<linearGradient id="aurora-second" x1="0%" y1="0%" x2="0%" y2="100%">
+								<stop offset="0%" stop-color="#fde68a" />
+								<stop offset="100%" stop-color="#f59e0b" />
+							</linearGradient>
+							<!-- Glow filter for hands -->
+							<filter id="aurora-glow" x="-50%" y="-50%" width="200%" height="200%">
+								<feGaussianBlur stdDeviation="2" result="blur" />
+								<feMerge>
+									<feMergeNode in="blur" />
+									<feMergeNode in="SourceGraphic" />
+								</feMerge>
+							</filter>
+						</defs>
+
+						<!-- Outer ring -->
+						<circle cx="100" cy="100" r="99" fill="url(#aurora-bezel)" />
+						<!-- Thin gradient ring (color rim) -->
+						<circle
+							cx="100"
+							cy="100"
+							r="96"
+							fill="none"
+							stroke="url(#aurora-minute)"
+							stroke-width="0.6"
+							opacity="0.45"
+						/>
+						<circle cx="100" cy="100" r="93" fill="url(#aurora-face)" />
+
+						<!-- Faint inner ring track -->
+						<circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" />
+
+						<!-- 60 minute ticks: glowing where hour, faded otherwise -->
+						{#each Array(60) as _, i (i)}
+							{@const angle = i * 6 - 90}
+							{@const isHour = i % 5 === 0}
+							{@const r1 = isHour ? 78 : 84}
+							{@const r2 = isHour ? 88 : 87}
+							{@const x1 = 100 + r1 * Math.cos((angle * Math.PI) / 180)}
+							{@const y1 = 100 + r1 * Math.sin((angle * Math.PI) / 180)}
+							{@const x2 = 100 + r2 * Math.cos((angle * Math.PI) / 180)}
+							{@const y2 = 100 + r2 * Math.sin((angle * Math.PI) / 180)}
+							<line
+								{x1}
+								{y1}
+								{x2}
+								{y2}
+								stroke={isHour ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.18)'}
+								stroke-width={isHour ? 2 : 0.8}
+								stroke-linecap="round"
+							/>
+						{/each}
+
+						<!-- 12, 3, 6, 9 emphasis dots — pulsing -->
+						{#each [0, 3, 6, 9] as i (i)}
+							{@const angle = (i * 30 - 90) * (Math.PI / 180)}
+							{@const x = 100 + 92 * Math.cos(angle)}
+							{@const y = 100 + 92 * Math.sin(angle)}
+							<circle cx={x} cy={y} r="1.6" fill="#7dd3fc">
+								<animate
+									attributeName="opacity"
+									values="1;0.4;1"
+									dur="3s"
+									repeatCount="indefinite"
+									begin={`${i * 0.3}s`}
+								/>
+							</circle>
+						{/each}
+
+						<!-- Concentric subtle rings at center -->
+						<circle cx="100" cy="100" r="22" fill="none" stroke="rgba(125,211,252,0.10)" stroke-width="0.5" />
+						<circle cx="100" cy="100" r="14" fill="none" stroke="rgba(125,211,252,0.18)" stroke-width="0.5" />
+
+						<!-- HOUR hand — wide white blade -->
+						<g filter="url(#aurora-glow)">
+							<line
+								x1={100 - 6 * Math.sin((hourDeg * Math.PI) / 180)}
+								y1={100 + 6 * Math.cos((hourDeg * Math.PI) / 180)}
+								x2={100 + 48 * Math.sin((hourDeg * Math.PI) / 180)}
+								y2={100 - 48 * Math.cos((hourDeg * Math.PI) / 180)}
+								stroke="url(#aurora-hour)"
+								stroke-width="5"
+								stroke-linecap="round"
+								opacity="0.95"
 							/>
 						</g>
+
+						<!-- MINUTE hand — cyan with tip glow -->
+						<g filter="url(#aurora-glow)">
+							<line
+								x1={100 - 8 * Math.sin((minuteDeg * Math.PI) / 180)}
+								y1={100 + 8 * Math.cos((minuteDeg * Math.PI) / 180)}
+								x2={100 + 70 * Math.sin((minuteDeg * Math.PI) / 180)}
+								y2={100 - 70 * Math.cos((minuteDeg * Math.PI) / 180)}
+								stroke="url(#aurora-minute)"
+								stroke-width="3"
+								stroke-linecap="round"
+							/>
+							<!-- Tip dot for extra glow -->
+							<circle
+								cx={100 + 70 * Math.sin((minuteDeg * Math.PI) / 180)}
+								cy={100 - 70 * Math.cos((minuteDeg * Math.PI) / 180)}
+								r="2"
+								fill="#7dd3fc"
+								opacity="0.85"
+							/>
+						</g>
+
+						<!-- SECOND hand — thin amber -->
+						{#if seconds}
+							<g filter="url(#aurora-glow)">
+								<line
+									x1={100 - 18 * Math.sin((secondDeg * Math.PI) / 180)}
+									y1={100 + 18 * Math.cos((secondDeg * Math.PI) / 180)}
+									x2={100 + 80 * Math.sin((secondDeg * Math.PI) / 180)}
+									y2={100 - 80 * Math.cos((secondDeg * Math.PI) / 180)}
+									stroke="url(#aurora-second)"
+									stroke-width="1.4"
+									stroke-linecap="round"
+								/>
+								<!-- Counterweight back-tip -->
+								<circle
+									cx={100 - 18 * Math.sin((secondDeg * Math.PI) / 180)}
+									cy={100 + 18 * Math.cos((secondDeg * Math.PI) / 180)}
+									r="2.2"
+									fill="#f59e0b"
+								/>
+							</g>
+						{/if}
+
+						<!-- Center hub: layered for depth -->
+						<circle cx="100" cy="100" r="6" fill="#0a0e1c" />
+						<circle cx="100" cy="100" r="5" fill="url(#aurora-minute)" />
+						<circle cx="100" cy="100" r="3.2" fill="#0a0e1c" />
+						<circle cx="100" cy="100" r="1.8" fill="#7dd3fc" />
+
+						<!-- Glass reflection overlay on top -->
+						<circle cx="100" cy="100" r="93" fill="url(#aurora-glass)" pointer-events="none" />
 					{/if}
-
-					<!-- Center hub: layered for depth -->
-					<circle cx="100" cy="100" r="6" fill="#0a0e1c"/>
-					<circle cx="100" cy="100" r="5" fill="url(#aurora-minute)"/>
-					<circle cx="100" cy="100" r="3.2" fill="#0a0e1c"/>
-					<circle cx="100" cy="100" r="1.8" fill="#7dd3fc"/>
-
-					<!-- Glass reflection overlay on top -->
-					<circle cx="100" cy="100" r="93" fill="url(#aurora-glass)" pointer-events="none"/>
 				{/if}
 			</svg>
 		</div>
@@ -788,30 +822,33 @@
 	/* Glass disc — frosted backdrop behind the clock */
 	.glass-disc {
 		position: absolute;
-		top: 50%; left: 50%;
+		top: 50%;
+		left: 50%;
 		transform: translate(-50%, -50%);
 		width: min(96%, 200px);
 		aspect-ratio: 1;
 		border-radius: 50%;
-		background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.05), rgba(255,255,255,0.01) 60%);
-		border: 0.5px solid rgba(255,255,255,0.06);
+		background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01) 60%);
+		border: 0.5px solid rgba(255, 255, 255, 0.06);
 		box-shadow:
-			inset 0 1px 0 rgba(255,255,255,0.07),
-			inset 0 -1px 0 rgba(0,0,0,0.3),
-			0 12px 40px rgba(0,0,0,0.45);
+			inset 0 1px 0 rgba(255, 255, 255, 0.07),
+			inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+			0 12px 40px rgba(0, 0, 0, 0.45);
 		backdrop-filter: blur(12px) saturate(1.1);
 		-webkit-backdrop-filter: blur(12px) saturate(1.1);
 		pointer-events: none;
 		z-index: 0;
-		transition: transform 0.5s ease, box-shadow 0.5s ease;
+		transition:
+			transform 0.5s ease,
+			box-shadow 0.5s ease;
 	}
 	.clock-card:hover .glass-disc {
 		transform: translate(-50%, -50%) scale(1.03);
 		box-shadow:
-			inset 0 1px 0 rgba(255,255,255,0.12),
-			inset 0 -1px 0 rgba(0,0,0,0.3),
-			0 16px 50px rgba(0,0,0,0.55),
-			0 0 40px rgba(96,165,250,0.18);
+			inset 0 1px 0 rgba(255, 255, 255, 0.12),
+			inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+			0 16px 50px rgba(0, 0, 0, 0.55),
+			0 0 40px rgba(96, 165, 250, 0.18);
 	}
 
 	/* In compact (sidebar) mode, drop the glass-disc and ambient-glow so the
@@ -824,16 +861,17 @@
 	/* Multi-color ambient glow — slow rotating radial */
 	.ambient-glow {
 		position: absolute;
-		top: 50%; left: 50%;
+		top: 50%;
+		left: 50%;
 		transform: translate(-50%, -50%);
 		width: 100%;
 		aspect-ratio: 1;
 		max-width: 100%;
 		border-radius: 50%;
 		background:
-			radial-gradient(circle at 30% 30%, rgba(96,165,250,0.30), transparent 50%),
-			radial-gradient(circle at 70% 70%, rgba(167,139,250,0.22), transparent 50%),
-			radial-gradient(circle at 50% 90%, rgba(34,211,238,0.18), transparent 55%);
+			radial-gradient(circle at 30% 30%, rgba(96, 165, 250, 0.3), transparent 50%),
+			radial-gradient(circle at 70% 70%, rgba(167, 139, 250, 0.22), transparent 50%),
+			radial-gradient(circle at 50% 90%, rgba(34, 211, 238, 0.18), transparent 55%);
 		filter: blur(30px);
 		pointer-events: none;
 		z-index: -1;
@@ -841,14 +879,19 @@
 		animation: glow-rotate 20s linear infinite;
 	}
 	@keyframes glow-rotate {
-		from { transform: translate(-50%, -50%) rotate(0deg); }
-		to { transform: translate(-50%, -50%) rotate(360deg); }
+		from {
+			transform: translate(-50%, -50%) rotate(0deg);
+		}
+		to {
+			transform: translate(-50%, -50%) rotate(360deg);
+		}
 	}
 
 	/* Seconds ring — thin progress ring around the clock */
 	.seconds-ring {
 		position: absolute;
-		top: 50%; left: 50%;
+		top: 50%;
+		left: 50%;
 		transform: translate(-50%, -50%);
 		width: 100%;
 		max-width: 188px;
@@ -856,7 +899,7 @@
 		aspect-ratio: 1;
 		pointer-events: none;
 		z-index: 1;
-		filter: drop-shadow(0 0 4px rgba(96,165,250,0.4));
+		filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.4));
 	}
 	.clock-card.compact .seconds-ring {
 		max-width: 158px;
@@ -867,10 +910,8 @@
 		max-width: 168px;
 		height: auto;
 		display: block;
-		filter:
-			drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55))
-			drop-shadow(0 0 18px rgba(96,165,250,0.18))
-			drop-shadow(0 0 1px rgba(255,255,255,0.10));
+		filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(96, 165, 250, 0.18))
+			drop-shadow(0 0 1px rgba(255, 255, 255, 0.1));
 		position: relative;
 		z-index: 2;
 		transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -893,9 +934,9 @@
 		letter-spacing: -0.025em;
 		color: #fff;
 		text-shadow:
-			0 2px 16px rgba(0,0,0,0.4),
-			0 0 32px rgba(96,165,250,0.30),
-			0 0 1px rgba(255,255,255,0.20);
+			0 2px 16px rgba(0, 0, 0, 0.4),
+			0 0 32px rgba(96, 165, 250, 0.3),
+			0 0 1px rgba(255, 255, 255, 0.2);
 		position: relative;
 		z-index: 1;
 	}

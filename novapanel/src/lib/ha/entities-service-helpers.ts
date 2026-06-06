@@ -5,10 +5,7 @@ export type HassConnection = {
 		callback: (message: unknown) => void,
 		params: Record<string, unknown>
 	) => Promise<() => void>;
-	subscribeEvents?: (
-		callback: (message: unknown) => void,
-		eventType?: string
-	) => Promise<() => void>;
+	subscribeEvents?: (callback: (message: unknown) => void, eventType?: string) => Promise<() => void>;
 	sendMessage?: (params: Record<string, unknown>) => void;
 	sendMessagePromise?: (params: Record<string, unknown>) => Promise<unknown>;
 	connected?: boolean;
@@ -31,7 +28,9 @@ type NovaWindow = Window & {
 
 const RESERVED_NOVA_BASE_SEGMENTS = new Set(['api', '_app', 'favicon.ico', 'hacsfiles', 'energy-asset']);
 
-function getCurrentNovaAppBase(pathname = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'): string {
+function getCurrentNovaAppBase(
+	pathname = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'
+): string {
 	const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`;
 	const ingressMatch = normalized.match(/^(\/api\/hassio_ingress\/[^/]+)/);
 	if (ingressMatch?.[1]) return ingressMatch[1];
@@ -39,6 +38,8 @@ function getCurrentNovaAppBase(pathname = typeof window !== 'undefined' ? window
 	if (!firstSegment || RESERVED_NOVA_BASE_SEGMENTS.has(firstSegment)) return '';
 	return `/${firstSegment}`;
 }
+
+import { fetchWithTimeout } from '$lib/fetch-with-timeout';
 
 export type HomeAssistantEntity = {
 	entityId: string;
@@ -251,10 +252,14 @@ export function getNovaWebSocketCandidates(apiPath: string): string[] {
 export async function getHaConnectionConfig(): Promise<HaConnectionConfig | null> {
 	for (const candidate of getNovaApiCandidates('/api/ha/connection')) {
 		try {
-			const response = await fetch(candidate, {
-				credentials: 'same-origin',
-				cache: 'no-store'
-			});
+			const response = await fetchWithTimeout(
+				candidate,
+				{
+					credentials: 'same-origin',
+					cache: 'no-store'
+				},
+				6000
+			);
 			if (!response.ok) continue;
 			const contentType = response.headers.get('content-type') || '';
 			if (!contentType.includes('application/json')) continue;

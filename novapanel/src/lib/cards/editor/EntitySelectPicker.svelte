@@ -16,18 +16,15 @@
 		onChange: (value: string) => void;
 	};
 
-	let {
-		label,
-		value = '',
-		options,
-		placeholder = '',
-		searchPlaceholder = '',
-		onChange
-	}: Props = $props();
+	let { label, value = '', options, placeholder = '', searchPlaceholder = '', onChange }: Props = $props();
 
 	let searchQuery = $state('');
-	const effectivePlaceholder = $derived(placeholder || translate('Kies een entiteit', $selectedLanguageStore));
-	const effectiveSearchPlaceholder = $derived(searchPlaceholder || translate('Zoek in entiteiten...', $selectedLanguageStore));
+	const effectivePlaceholder = $derived(
+		placeholder || translate('Kies een entiteit', $selectedLanguageStore)
+	);
+	const effectiveSearchPlaceholder = $derived(
+		searchPlaceholder || translate('Zoek in entiteiten...', $selectedLanguageStore)
+	);
 
 	function optionLabel(option: EntityOption) {
 		const name = option.friendlyName?.trim();
@@ -39,9 +36,10 @@
 		const filtered =
 			query.length === 0
 				? options
-				: options.filter((option) =>
-						optionLabel(option).toLowerCase().includes(query) ||
-						option.entityId.toLowerCase().includes(query)
+				: options.filter(
+						(option) =>
+							optionLabel(option).toLowerCase().includes(query) ||
+							option.entityId.toLowerCase().includes(query)
 					);
 		const selected = value ? options.find((option) => option.entityId === value) : undefined;
 		if (selected && !filtered.some((option) => option.entityId === selected.entityId)) {
@@ -55,11 +53,7 @@
 	<span class="np-label">{label}</span>
 	<div class="entity-search-bar">
 		<TablerIcon name="search" size={14} />
-		<input
-			type="text"
-			placeholder={effectiveSearchPlaceholder}
-			bind:value={searchQuery}
-		/>
+		<input type="text" placeholder={effectiveSearchPlaceholder} bind:value={searchQuery} />
 		{#if searchQuery}
 			<button
 				type="button"
@@ -89,14 +83,14 @@
 	.np-label {
 		font-size: 0.78rem;
 		font-weight: 700;
-		color: rgba(255,255,255,0.68);
+		color: rgba(255, 255, 255, 0.68);
 	}
 	select {
 		width: 100%;
 		height: 2.45rem;
-		border: 1px solid rgba(255,255,255,0.09);
+		border: 1px solid rgba(255, 255, 255, 0.09);
 		border-radius: 0.55rem;
-		background: rgba(255,255,255,0.075);
+		background: rgba(255, 255, 255, 0.075);
 		color: #f5f5f5;
 		padding: 0 0.75rem;
 		font: inherit;
@@ -108,24 +102,24 @@
 		align-items: center;
 		gap: 0.45rem;
 		padding: 0.45rem 0.55rem;
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 0.65rem;
-		background: rgba(255,255,255,0.045);
+		background: rgba(255, 255, 255, 0.045);
 	}
 	.entity-search-bar :global(i) {
-		color: rgba(255,255,255,0.4);
+		color: rgba(255, 255, 255, 0.4);
 	}
 	.entity-search-bar input {
 		min-width: 0;
 		border: 0;
 		outline: 0;
 		background: transparent;
-		color: rgba(255,255,255,0.84);
+		color: rgba(255, 255, 255, 0.84);
 		font: inherit;
 		font-size: 0.78rem;
 	}
 	.entity-search-bar input::placeholder {
-		color: rgba(255,255,255,0.35);
+		color: rgba(255, 255, 255, 0.35);
 	}
 	.entity-search-bar button {
 		width: 1.45rem;
@@ -134,8 +128,8 @@
 		border-radius: 0.45rem;
 		display: grid;
 		place-items: center;
-		background: rgba(255,255,255,0.08);
-		color: rgba(255,255,255,0.62);
+		background: rgba(255, 255, 255, 0.08);
+		color: rgba(255, 255, 255, 0.62);
 		cursor: pointer;
 	}
 </style>

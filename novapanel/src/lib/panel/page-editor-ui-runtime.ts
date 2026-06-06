@@ -61,12 +61,17 @@ type EditorUiState = {
 	cardEditorHomeTodayEntityId?: string;
 	cardEditorCostTodayEntityId?: string;
 	cardEditorCompensationTodayEntityId?: string;
+	cardEditorEnergyCostMode?: CardDraft['energyCostMode'];
 	cardEditorImportPeakTodayEntityId?: string;
 	cardEditorImportOffPeakTodayEntityId?: string;
+	cardEditorExportPeakTodayEntityId?: string;
+	cardEditorExportOffPeakTodayEntityId?: string;
 	cardEditorImportTariffEntityId?: string;
 	cardEditorExportTariffEntityId?: string;
 	cardEditorImportPeakTariff?: string;
 	cardEditorImportOffPeakTariff?: string;
+	cardEditorExportPeakTariff?: string;
+	cardEditorExportOffPeakTariff?: string;
 	cardEditorExportTariff?: string;
 	cardEditorSelfSufficiencyEntityId?: string;
 	cardEditorCarChargingEntityId?: string;
@@ -95,12 +100,17 @@ type EditorUiState = {
 	cardEditorInitialHomeTodayEntityId?: string;
 	cardEditorInitialCostTodayEntityId?: string;
 	cardEditorInitialCompensationTodayEntityId?: string;
+	cardEditorInitialEnergyCostMode?: CardDraft['energyCostMode'];
 	cardEditorInitialImportPeakTodayEntityId?: string;
 	cardEditorInitialImportOffPeakTodayEntityId?: string;
+	cardEditorInitialExportPeakTodayEntityId?: string;
+	cardEditorInitialExportOffPeakTodayEntityId?: string;
 	cardEditorInitialImportTariffEntityId?: string;
 	cardEditorInitialExportTariffEntityId?: string;
 	cardEditorInitialImportPeakTariff?: string;
 	cardEditorInitialImportOffPeakTariff?: string;
+	cardEditorInitialExportPeakTariff?: string;
+	cardEditorInitialExportOffPeakTariff?: string;
 	cardEditorInitialExportTariff?: string;
 	cardEditorInitialSelfSufficiencyEntityId?: string;
 	cardEditorInitialCarChargingEntityId?: string;
@@ -249,73 +259,83 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorStatusEntityAliases: next.statusEntityAliases ?? {},
 			cardEditorStatusEntityIconOverrides: next.statusEntityIconOverrides ?? {},
 			cardEditorStatusIcon: next.statusIcon,
-				cardEditorNetEntityId: next.netEntityId ?? '',
-				cardEditorSolarEntityId: next.solarEntityId ?? '',
-				cardEditorBatteryEntityId: next.batteryEntityId ?? '',
-				cardEditorGridEntityId: next.gridEntityId ?? '',
-				cardEditorBatteryChargeEntityId: next.batteryChargeEntityId ?? '',
-				cardEditorImportTodayEntityId: next.importTodayEntityId ?? '',
-				cardEditorExportTodayEntityId: next.exportTodayEntityId ?? '',
-				cardEditorSolarTodayEntityId: next.solarTodayEntityId ?? '',
-				cardEditorHomeTodayEntityId: next.homeTodayEntityId ?? '',
-				cardEditorCostTodayEntityId: next.costTodayEntityId ?? '',
-				cardEditorCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
-				cardEditorImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
-				cardEditorImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
-				cardEditorImportTariffEntityId: next.importTariffEntityId ?? '',
-				cardEditorExportTariffEntityId: next.exportTariffEntityId ?? '',
-				cardEditorImportPeakTariff: tariffInputValue(next.importPeakTariff),
-				cardEditorImportOffPeakTariff: tariffInputValue(next.importOffPeakTariff),
-				cardEditorExportTariff: tariffInputValue(next.exportTariff),
-				cardEditorSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
-				cardEditorCarChargingEntityId: next.carChargingEntityId ?? '',
-				cardEditorCarCableEntityId: next.carCableEntityId ?? '',
-				cardEditorCarChargingPowerEntityId: next.carChargingPowerEntityId ?? '',
-				cardEditorEnergyDeviceEntityIds: next.energyDeviceEntityIds ?? [],
-				cardEditorEnergyDeviceTodayEntityIds: next.energyDeviceTodayEntityIds ?? [],
-				cardEditorEnergyDeviceAliases: next.energyDeviceAliases ?? {},
-				cardEditorHasCustomDayNoCar: next.hasCustomDayNoCar ?? false,
-				cardEditorHasCustomDayWithCar: next.hasCustomDayWithCar ?? false,
-				cardEditorHasCustomNightNoCar: next.hasCustomNightNoCar ?? false,
-				cardEditorHasCustomNightWithCar: next.hasCustomNightWithCar ?? false,
-				cardEditorAnchorsDayNoCar: next.anchorsDayNoCar,
-				cardEditorAnchorsDayWithCar: next.anchorsDayWithCar,
-				cardEditorAnchorsNightNoCar: next.anchorsNightNoCar,
-				cardEditorAnchorsNightWithCar: next.anchorsNightWithCar,
-				cardEditorInitialNetEntityId: next.netEntityId ?? '',
-				cardEditorInitialSolarEntityId: next.solarEntityId ?? '',
-				cardEditorInitialBatteryEntityId: next.batteryEntityId ?? '',
-				cardEditorInitialGridEntityId: next.gridEntityId ?? '',
-				cardEditorInitialBatteryChargeEntityId: next.batteryChargeEntityId ?? '',
-				cardEditorInitialImportTodayEntityId: next.importTodayEntityId ?? '',
-				cardEditorInitialExportTodayEntityId: next.exportTodayEntityId ?? '',
-				cardEditorInitialSolarTodayEntityId: next.solarTodayEntityId ?? '',
-				cardEditorInitialHomeTodayEntityId: next.homeTodayEntityId ?? '',
-				cardEditorInitialCostTodayEntityId: next.costTodayEntityId ?? '',
-				cardEditorInitialCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
-				cardEditorInitialImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
-				cardEditorInitialImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
-				cardEditorInitialImportTariffEntityId: next.importTariffEntityId ?? '',
-				cardEditorInitialExportTariffEntityId: next.exportTariffEntityId ?? '',
-				cardEditorInitialImportPeakTariff: tariffInputValue(next.importPeakTariff),
-				cardEditorInitialImportOffPeakTariff: tariffInputValue(next.importOffPeakTariff),
-				cardEditorInitialExportTariff: tariffInputValue(next.exportTariff),
-				cardEditorInitialSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
-				cardEditorInitialCarChargingEntityId: next.carChargingEntityId ?? '',
-				cardEditorInitialCarCableEntityId: next.carCableEntityId ?? '',
-				cardEditorInitialCarChargingPowerEntityId: next.carChargingPowerEntityId ?? '',
-				cardEditorInitialEnergyDeviceEntityIds: next.energyDeviceEntityIds ?? [],
-				cardEditorInitialEnergyDeviceTodayEntityIds: next.energyDeviceTodayEntityIds ?? [],
-				cardEditorInitialHasCustomDayNoCar: next.hasCustomDayNoCar ?? false,
-				cardEditorInitialHasCustomDayWithCar: next.hasCustomDayWithCar ?? false,
-				cardEditorInitialHasCustomNightNoCar: next.hasCustomNightNoCar ?? false,
-				cardEditorInitialHasCustomNightWithCar: next.hasCustomNightWithCar ?? false,
-				cardEditorInitialAnchorsDayNoCar: next.anchorsDayNoCar,
-				cardEditorInitialAnchorsDayWithCar: next.anchorsDayWithCar,
-				cardEditorInitialAnchorsNightNoCar: next.anchorsNightNoCar,
-				cardEditorInitialAnchorsNightWithCar: next.anchorsNightWithCar,
-				cardEditorCameras: next.cameras ?? [],
-				cardEditorInitialCameras: next.cameras ?? [],
+			cardEditorNetEntityId: next.netEntityId ?? '',
+			cardEditorSolarEntityId: next.solarEntityId ?? '',
+			cardEditorBatteryEntityId: next.batteryEntityId ?? '',
+			cardEditorGridEntityId: next.gridEntityId ?? '',
+			cardEditorBatteryChargeEntityId: next.batteryChargeEntityId ?? '',
+			cardEditorImportTodayEntityId: next.importTodayEntityId ?? '',
+			cardEditorExportTodayEntityId: next.exportTodayEntityId ?? '',
+			cardEditorSolarTodayEntityId: next.solarTodayEntityId ?? '',
+			cardEditorHomeTodayEntityId: next.homeTodayEntityId ?? '',
+			cardEditorCostTodayEntityId: next.costTodayEntityId ?? '',
+			cardEditorCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
+			cardEditorEnergyCostMode: next.energyCostMode ?? 'peak_offpeak',
+			cardEditorImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
+			cardEditorImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
+			cardEditorExportPeakTodayEntityId: next.exportPeakTodayEntityId ?? '',
+			cardEditorExportOffPeakTodayEntityId: next.exportOffPeakTodayEntityId ?? '',
+			cardEditorImportTariffEntityId: next.importTariffEntityId ?? '',
+			cardEditorExportTariffEntityId: next.exportTariffEntityId ?? '',
+			cardEditorImportPeakTariff: tariffInputValue(next.importPeakTariff),
+			cardEditorImportOffPeakTariff: tariffInputValue(next.importOffPeakTariff),
+			cardEditorExportPeakTariff: tariffInputValue(next.exportPeakTariff),
+			cardEditorExportOffPeakTariff: tariffInputValue(next.exportOffPeakTariff),
+			cardEditorExportTariff: tariffInputValue(next.exportTariff),
+			cardEditorSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
+			cardEditorCarChargingEntityId: next.carChargingEntityId ?? '',
+			cardEditorCarCableEntityId: next.carCableEntityId ?? '',
+			cardEditorCarChargingPowerEntityId: next.carChargingPowerEntityId ?? '',
+			cardEditorEnergyDeviceEntityIds: next.energyDeviceEntityIds ?? [],
+			cardEditorEnergyDeviceTodayEntityIds: next.energyDeviceTodayEntityIds ?? [],
+			cardEditorEnergyDeviceAliases: next.energyDeviceAliases ?? {},
+			cardEditorHasCustomDayNoCar: next.hasCustomDayNoCar ?? false,
+			cardEditorHasCustomDayWithCar: next.hasCustomDayWithCar ?? false,
+			cardEditorHasCustomNightNoCar: next.hasCustomNightNoCar ?? false,
+			cardEditorHasCustomNightWithCar: next.hasCustomNightWithCar ?? false,
+			cardEditorAnchorsDayNoCar: next.anchorsDayNoCar,
+			cardEditorAnchorsDayWithCar: next.anchorsDayWithCar,
+			cardEditorAnchorsNightNoCar: next.anchorsNightNoCar,
+			cardEditorAnchorsNightWithCar: next.anchorsNightWithCar,
+			cardEditorInitialNetEntityId: next.netEntityId ?? '',
+			cardEditorInitialSolarEntityId: next.solarEntityId ?? '',
+			cardEditorInitialBatteryEntityId: next.batteryEntityId ?? '',
+			cardEditorInitialGridEntityId: next.gridEntityId ?? '',
+			cardEditorInitialBatteryChargeEntityId: next.batteryChargeEntityId ?? '',
+			cardEditorInitialImportTodayEntityId: next.importTodayEntityId ?? '',
+			cardEditorInitialExportTodayEntityId: next.exportTodayEntityId ?? '',
+			cardEditorInitialSolarTodayEntityId: next.solarTodayEntityId ?? '',
+			cardEditorInitialHomeTodayEntityId: next.homeTodayEntityId ?? '',
+			cardEditorInitialCostTodayEntityId: next.costTodayEntityId ?? '',
+			cardEditorInitialCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
+			cardEditorInitialEnergyCostMode: next.energyCostMode ?? 'peak_offpeak',
+			cardEditorInitialImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
+			cardEditorInitialImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
+			cardEditorInitialExportPeakTodayEntityId: next.exportPeakTodayEntityId ?? '',
+			cardEditorInitialExportOffPeakTodayEntityId: next.exportOffPeakTodayEntityId ?? '',
+			cardEditorInitialImportTariffEntityId: next.importTariffEntityId ?? '',
+			cardEditorInitialExportTariffEntityId: next.exportTariffEntityId ?? '',
+			cardEditorInitialImportPeakTariff: tariffInputValue(next.importPeakTariff),
+			cardEditorInitialImportOffPeakTariff: tariffInputValue(next.importOffPeakTariff),
+			cardEditorInitialExportPeakTariff: tariffInputValue(next.exportPeakTariff),
+			cardEditorInitialExportOffPeakTariff: tariffInputValue(next.exportOffPeakTariff),
+			cardEditorInitialExportTariff: tariffInputValue(next.exportTariff),
+			cardEditorInitialSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
+			cardEditorInitialCarChargingEntityId: next.carChargingEntityId ?? '',
+			cardEditorInitialCarCableEntityId: next.carCableEntityId ?? '',
+			cardEditorInitialCarChargingPowerEntityId: next.carChargingPowerEntityId ?? '',
+			cardEditorInitialEnergyDeviceEntityIds: next.energyDeviceEntityIds ?? [],
+			cardEditorInitialEnergyDeviceTodayEntityIds: next.energyDeviceTodayEntityIds ?? [],
+			cardEditorInitialHasCustomDayNoCar: next.hasCustomDayNoCar ?? false,
+			cardEditorInitialHasCustomDayWithCar: next.hasCustomDayWithCar ?? false,
+			cardEditorInitialHasCustomNightNoCar: next.hasCustomNightNoCar ?? false,
+			cardEditorInitialHasCustomNightWithCar: next.hasCustomNightWithCar ?? false,
+			cardEditorInitialAnchorsDayNoCar: next.anchorsDayNoCar,
+			cardEditorInitialAnchorsDayWithCar: next.anchorsDayWithCar,
+			cardEditorInitialAnchorsNightNoCar: next.anchorsNightNoCar,
+			cardEditorInitialAnchorsNightWithCar: next.anchorsNightWithCar,
+			cardEditorCameras: next.cameras ?? [],
+			cardEditorInitialCameras: next.cameras ?? [],
 			cardEditorInitialTitle: next.initialTitle,
 			cardEditorInitialType: next.initialType,
 			cardEditorInitialEntityId: next.initialEntityId,
@@ -340,7 +360,7 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorInitialStatusEntityAliases: next.initialStatusEntityAliases ?? {},
 			cardEditorInitialStatusEntityIconOverrides: next.initialStatusEntityIconOverrides ?? {},
 			cardEditorInitialStatusIcon: next.initialStatusIcon,
-				cardEditorInitialEnergyDeviceAliases: next.initialEnergyDeviceAliases ?? {},
+			cardEditorInitialEnergyDeviceAliases: next.initialEnergyDeviceAliases ?? {},
 			cardEditorOpen: true,
 			settingsOpen: false,
 			cardLibraryOpen: false,
@@ -391,7 +411,8 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 		const state = getState();
 		const selected = cardCatalog.find((card) => card.id === cardCatalogId);
 		if (!selected || !state.editMode) return;
-		const nextIndex = state.panelDraftHistory.present.viewSections.flatMap((section) => section.cards).length + 1;
+		const nextIndex =
+			state.panelDraftHistory.present.viewSections.flatMap((section) => section.cards).length + 1;
 		const result = addCardFromCatalogRuntime({
 			selected,
 			activeViewSectionId: state.activeViewSectionId,
@@ -464,12 +485,17 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			homeTodayEntityId: state.cardEditorHomeTodayEntityId,
 			costTodayEntityId: state.cardEditorCostTodayEntityId,
 			compensationTodayEntityId: state.cardEditorCompensationTodayEntityId,
+			energyCostMode: state.cardEditorEnergyCostMode,
 			importPeakTodayEntityId: state.cardEditorImportPeakTodayEntityId,
 			importOffPeakTodayEntityId: state.cardEditorImportOffPeakTodayEntityId,
+			exportPeakTodayEntityId: state.cardEditorExportPeakTodayEntityId,
+			exportOffPeakTodayEntityId: state.cardEditorExportOffPeakTodayEntityId,
 			importTariffEntityId: state.cardEditorImportTariffEntityId,
 			exportTariffEntityId: state.cardEditorExportTariffEntityId,
 			importPeakTariff: state.cardEditorImportPeakTariff,
 			importOffPeakTariff: state.cardEditorImportOffPeakTariff,
+			exportPeakTariff: state.cardEditorExportPeakTariff,
+			exportOffPeakTariff: state.cardEditorExportOffPeakTariff,
 			exportTariff: state.cardEditorExportTariff,
 			selfSufficiencyEntityId: state.cardEditorSelfSufficiencyEntityId,
 			carChargingEntityId: state.cardEditorCarChargingEntityId,

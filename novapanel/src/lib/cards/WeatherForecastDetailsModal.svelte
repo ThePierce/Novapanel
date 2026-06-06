@@ -3,7 +3,15 @@
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { entityStore } from '$lib/ha/entities-store';
 	import { subscribeWeatherForecastDirect } from '$lib/ha/weather-forecast-service';
-	import { translate, translations, type LanguageCode, type TranslationKey } from '$lib/i18n';
+	import {
+		isLanguageCode,
+		localeFor,
+		translate,
+		translations,
+		type LanguageCode,
+		type TranslationKey
+	} from '$lib/i18n';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
 
 	type Props = {
 		t: (key: TranslationKey) => string;
@@ -38,34 +46,56 @@
 		const id = entityId;
 		const type = forecastType;
 		void subscribeForecast(id, type);
-		return () => { unsub?.(); unsub = null; };
+		return () => {
+			unsub?.();
+			unsub = null;
+		};
 	});
 
 	const shown = $derived(forecast.slice(0, Math.max(1, Math.min(7, daysToShow))));
-	const storeSun = $derived(
-		$entityStore.entities.find((entity) => entity.entityId === 'sun.sun')
-	);
-	const belowHorizon = $derived(
-		storeSun?.state === 'below_horizon'
-	);
-	const sunAttrs = $derived(
-		storeSun?.attributes ?? {}
-	);
+	const storeSun = $derived($entityStore.entities.find((entity) => entity.entityId === 'sun.sun'));
+	const sunAttrs = $derived(storeSun?.attributes ?? {});
+	const activeLanguage = $derived(isLanguageCode(locale) ? locale : 'nl');
+	const activeLocale = $derived(localeFor(activeLanguage));
 
-	const ingressBase = typeof window !== 'undefined'
-		? (((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '') as string)
-		: '';
+	const ingressBase =
+		typeof window !== 'undefined'
+			? (((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '') as string)
+			: '';
 
 	// --- helpers ---
-	const COMPASS_NL = ['N','NNO','NO','ONO','O','OZO','ZO','ZZO','Z','ZZW','ZW','WZW','W','WNW','NW','NNW'];
+	const COMPASS_POINTS: Record<LanguageCode, string[]> = {
+		nl: ['N', 'NNO', 'NO', 'ONO', 'O', 'OZO', 'ZO', 'ZZO', 'Z', 'ZZW', 'ZW', 'WZW', 'W', 'WNW', 'NW', 'NNW'],
+		de: ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'],
+		en: ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'],
+		fr: ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'],
+		es: ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO']
+	};
 	function bearingToCompass(deg: number): string {
-		return COMPASS_NL[Math.round(deg / 22.5) % 16] ?? '';
+		return COMPASS_POINTS[activeLanguage][Math.round(deg / 22.5) % 16] ?? '';
 	}
-	function toBeaufort(kmh: number): number {
-		if (kmh < 1) return 0; if (kmh < 6) return 1; if (kmh < 12) return 2;
-		if (kmh < 20) return 3; if (kmh < 29) return 4; if (kmh < 39) return 5;
-		if (kmh < 50) return 6; if (kmh < 62) return 7; if (kmh < 75) return 8;
-		if (kmh < 89) return 9; if (kmh < 103) return 10; if (kmh < 118) return 11;
+	function windSpeedToKmh(speed: number, unit: unknown): number {
+		const normalized = typeof unit === 'string' ? unit.trim().toLowerCase() : 'km/h';
+		if (normalized === 'm/s' || normalized === 'mps') return speed * 3.6;
+		if (normalized === 'mph') return speed * 1.609344;
+		if (normalized === 'kn' || normalized === 'kt' || normalized === 'kts' || normalized.includes('knot'))
+			return speed * 1.852;
+		return speed;
+	}
+	function toBeaufort(speed: number, unit: unknown = 'km/h'): number {
+		const kmh = windSpeedToKmh(speed, unit);
+		if (kmh < 1) return 0;
+		if (kmh < 6) return 1;
+		if (kmh < 12) return 2;
+		if (kmh < 20) return 3;
+		if (kmh < 29) return 4;
+		if (kmh < 39) return 5;
+		if (kmh < 50) return 6;
+		if (kmh < 62) return 7;
+		if (kmh < 75) return 8;
+		if (kmh < 89) return 9;
+		if (kmh < 103) return 10;
+		if (kmh < 118) return 11;
 		return 12;
 	}
 	function meteoconName(value: string, night: boolean): string {
@@ -77,32 +107,41 @@
 	function tCondition(value: string): string {
 		if (!value) return '';
 		const key = `weather_${value.replace(/-/g, '_')}`;
-		const catalog = translations[locale as LanguageCode] as Record<string, string>;
+		const catalog = translations[activeLanguage] as Record<string, string>;
 		return catalog[key as string] ?? value;
 	}
 	function getTodaySunTime(isoStr: unknown): string {
 		if (typeof isoStr !== 'string') return '';
 		try {
 			const d = new Date(isoStr);
-			const today = new Date(); today.setHours(0, 0, 0, 0);
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
 			const tomorrow = new Date(today.getTime() + 86400000);
 			const target = d >= tomorrow ? new Date(d.getTime() - 86400000) : d;
-			return target.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-		} catch { return ''; }
+			return target.toLocaleTimeString(activeLocale, { hour: '2-digit', minute: '2-digit' });
+		} catch {
+			return '';
+		}
 	}
 	function dayLabel(dt: string): { name: string; date: string } {
 		if (!dt) return { name: '-', date: '' };
 		try {
 			const d = new Date(dt);
-			const today = new Date(); today.setHours(0, 0, 0, 0);
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
 			const tomorrow = new Date(today.getTime() + 86400000);
 			const isToday = d >= today && d < tomorrow;
 			const isTomorrow = d >= tomorrow && d < new Date(tomorrow.getTime() + 86400000);
-			const name = isToday ? translate('Vandaag', locale as LanguageCode) : isTomorrow ? translate('Morgen', locale as LanguageCode)
-				: d.toLocaleDateString(locale, { weekday: 'long' });
-			const date = d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+			const name = isToday
+				? translate('Vandaag', activeLanguage)
+				: isTomorrow
+					? translate('Morgen', activeLanguage)
+					: d.toLocaleDateString(activeLocale, { weekday: 'long' });
+			const date = d.toLocaleDateString(activeLocale, { day: 'numeric', month: 'short' });
 			return { name, date };
-		} catch { return { name: '-', date: '' }; }
+		} catch {
+			return { name: '-', date: '' };
+		}
 	}
 
 	// --- derived ---
@@ -110,8 +149,12 @@
 	const sunsetTime = $derived(getTodaySunTime(sunAttrs.next_setting));
 	// Shared min/max across all days for the temp-range bar
 	const globalRange = $derived.by(() => {
-		const highs = shown.map((i) => (typeof i.temperature === 'number' ? i.temperature : null)).filter((v): v is number => v !== null);
-		const lows = shown.map((i) => (typeof i.templow === 'number' ? i.templow : null)).filter((v): v is number => v !== null);
+		const highs = shown
+			.map((i) => (typeof i.temperature === 'number' ? i.temperature : null))
+			.filter((v): v is number => v !== null);
+		const lows = shown
+			.map((i) => (typeof i.templow === 'number' ? i.templow : null))
+			.filter((v): v is number => v !== null);
 		const all = [...highs, ...lows];
 		if (all.length === 0) return { min: 0, max: 1 };
 		const min = Math.floor(Math.min(...all));
@@ -121,22 +164,47 @@
 </script>
 
 <button type="button" class="modal-overlay" onclick={onClose} aria-label={t('closeOverlay')}></button>
-<section class="settings-modal app-popup weather-forecast-detail-modal np-detail" role="dialog" aria-modal="true" aria-label={t('cardTypeWeatherForecast')}>
+<div
+	class="settings-modal app-popup weather-forecast-detail-modal np-detail"
+	role="dialog"
+	aria-modal="true"
+	aria-label={t('cardTypeWeatherForecast')}
+	use:modalBehavior={{ onClose }}
+>
 	<div class="np-detail-head" style="--np-tint: rgba(34,211,238,0.18); --np-color: #22d3ee;">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
 		<div class="np-detail-head-icon"><TablerIcon name="cloud-storm" size={22} /></div>
 		<div class="np-detail-head-text">
 			<div class="np-detail-head-title">{t('cardTypeWeatherForecast')}</div>
-			<div class="np-detail-head-sub">{translate('Voorspelling voor de komende dagen', locale as LanguageCode)}</div>
+			<div class="np-detail-head-sub">
+				{translate('Voorspelling voor de komende dagen', activeLanguage)}
+			</div>
 		</div>
 		<div class="np-forecast-sun-times">
 			{#if sunriseTime}
 				<span class="sun-item">
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M12 3v2M5.22 5.22l1.42 1.42M3 12h2M5.22 18.78l1.42-1.42M12 21v-2M18.78 18.78l-1.42-1.42M21 12h-2M18.78 5.22l-1.42 1.42" stroke="#ffd35a" stroke-width="2" stroke-linecap="round"/>
-						<path d="M4 17h16" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
-						<path d="M12 7a5 5 0 0 1 5 5" stroke="#ffd35a" stroke-width="2" stroke-linecap="round" fill="none"/>
-						<path d="M12 7a5 5 0 0 0-5 5" stroke="#ffd35a" stroke-width="2" stroke-linecap="round" fill="none"/>
+						<path
+							d="M12 3v2M5.22 5.22l1.42 1.42M3 12h2M5.22 18.78l1.42-1.42M12 21v-2M18.78 18.78l-1.42-1.42M21 12h-2M18.78 5.22l-1.42 1.42"
+							stroke="#ffd35a"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
+						<path d="M4 17h16" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" />
+						<path
+							d="M12 7a5 5 0 0 1 5 5"
+							stroke="#ffd35a"
+							stroke-width="2"
+							stroke-linecap="round"
+							fill="none"
+						/>
+						<path
+							d="M12 7a5 5 0 0 0-5 5"
+							stroke="#ffd35a"
+							stroke-width="2"
+							stroke-linecap="round"
+							fill="none"
+						/>
 					</svg>
 					{sunriseTime}
 				</span>
@@ -144,22 +212,39 @@
 			{#if sunsetTime}
 				<span class="sun-item sun-item-set">
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<path d="M12 3v2M5.22 5.22l1.42 1.42M3 12h2M5.22 18.78l1.42-1.42M12 21v-2M18.78 18.78l-1.42-1.42M21 12h-2M18.78 5.22l-1.42 1.42" stroke="#e57373" stroke-width="2" stroke-linecap="round"/>
-						<path d="M4 17h16" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round"/>
-						<path d="M12 17a5 5 0 0 1-5-5" stroke="#e57373" stroke-width="2" stroke-linecap="round" fill="none"/>
-						<path d="M12 17a5 5 0 0 0 5-5" stroke="#e57373" stroke-width="2" stroke-linecap="round" fill="none"/>
+						<path
+							d="M12 3v2M5.22 5.22l1.42 1.42M3 12h2M5.22 18.78l1.42-1.42M12 21v-2M18.78 18.78l-1.42-1.42M21 12h-2M18.78 5.22l-1.42 1.42"
+							stroke="#e57373"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
+						<path d="M4 17h16" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" />
+						<path
+							d="M12 17a5 5 0 0 1-5-5"
+							stroke="#e57373"
+							stroke-width="2"
+							stroke-linecap="round"
+							fill="none"
+						/>
+						<path
+							d="M12 17a5 5 0 0 0 5-5"
+							stroke="#e57373"
+							stroke-width="2"
+							stroke-linecap="round"
+							fill="none"
+						/>
 					</svg>
 					{sunsetTime}
 				</span>
 			{/if}
 		</div>
-		</div>
+	</div>
 
 	<div class="forecast-body">
 		{#if !entityId}
 			<div class="empty-state">{t('cardTypeWeatherForecast')}</div>
 		{:else if shown.length === 0}
-			<div class="empty-state">{translate('Voorspelling laden…', locale as LanguageCode)}</div>
+			<div class="empty-state">{translate('Voorspelling laden…', activeLanguage)}</div>
 		{:else}
 			<div class="day-list">
 				{#each shown as item, idx (idx)}
@@ -167,7 +252,8 @@
 					{@const high = typeof item.temperature === 'number' ? Math.round(item.temperature) : null}
 					{@const low = typeof item.templow === 'number' ? Math.round(item.templow) : null}
 					{@const precip = typeof item.precipitation === 'number' ? item.precipitation : null}
-					{@const precipProb = typeof item.precipitation_probability === 'number' ? item.precipitation_probability : null}
+					{@const precipProb =
+						typeof item.precipitation_probability === 'number' ? item.precipitation_probability : null}
 					{@const speed = typeof item.wind_speed === 'number' ? item.wind_speed : null}
 					{@const bearing = typeof item.wind_bearing === 'number' ? item.wind_bearing : null}
 					{@const cond = typeof item.condition === 'string' ? item.condition : ''}
@@ -186,8 +272,13 @@
 						</div>
 						<div class="day-icon">
 							{#if !iconFailed[idx] && !skipMc && cond}
-								<img src={src} alt={tCondition(cond)} width="44" height="44"
-									onerror={() => (iconFailed = { ...iconFailed, [idx]: true })} />
+								<img
+									{src}
+									alt={tCondition(cond)}
+									width="44"
+									height="44"
+									onerror={() => (iconFailed = { ...iconFailed, [idx]: true })}
+								/>
 							{:else if cond}
 								<WeatherIcon condition={cond} night={false} size={44} />
 							{/if}
@@ -197,7 +288,10 @@
 							<span class="day-temp-low">{low === null ? '' : `${low}°`}</span>
 							<div class="day-temp-bar">
 								{#if lowPct !== null && highPct !== null}
-									<div class="day-temp-fill" style="left: {lowPct}%; width: {Math.max(2, highPct - lowPct)}%;"></div>
+									<div
+										class="day-temp-fill"
+										style="left: {lowPct}%; width: {Math.max(2, highPct - lowPct)}%;"
+									></div>
 								{:else if highPct !== null}
 									<div class="day-temp-fill" style="left: {Math.max(0, highPct - 2)}%; width: 2%;"></div>
 								{/if}
@@ -208,13 +302,18 @@
 							{#if precipProb !== null && precipProb > 0}
 								<span class="day-extra precip">💧 {precipProb}%</span>
 							{:else if precip !== null && precip > 0}
-								<span class="day-extra precip">💧 {precip.toFixed(1)}mm</span>
+								<span class="day-extra precip"
+									>💧 {precip.toLocaleString(activeLocale, {
+										minimumFractionDigits: 1,
+										maximumFractionDigits: 1
+									})}mm</span
+								>
 							{/if}
 							{#if speed !== null}
 								<span class="day-extra wind">
 									{#if bearing !== null}
 										<span class="day-wind-arrow" style="transform:rotate({bearing + 180}deg)">↑</span>
-										{bearingToCompass(bearing)}{toBeaufort(speed)}
+										{bearingToCompass(bearing)}{toBeaufort(speed, item.wind_speed_unit)}
 									{:else}
 										💨 {Math.round(speed)} km/h
 									{/if}
@@ -226,47 +325,133 @@
 			</div>
 		{/if}
 	</div>
-</section>
+</div>
 
 <style>
 	.modal-overlay {
-		position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-		border: 0; padding: 0; margin: 0; z-index: 40; cursor: default;
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+		border: 0;
+		padding: 0;
+		margin: 0;
+		z-index: 40;
+		cursor: default;
 	}
 	.np-detail.settings-modal {
-		position: fixed; top: 50%; left: 50%;
+		position: fixed;
+		top: 50%;
+		left: 50%;
 		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
-		border: 0.5px solid rgba(255,255,255,0.08);
-		border-radius: 18px; padding: 0; z-index: 60;
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
+		border-radius: 18px;
+		padding: 0;
+		z-index: 60;
 		transform: translate(-50%, -50%);
 		overflow: hidden;
 	}
-	.np-detail.settings-modal::before { content: ''; position: absolute; top: 0; left: 50%; width: 60%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); transform: translateX(-50%); pointer-events: none; }
+	.np-detail.settings-modal::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		width: 60%;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+		transform: translateX(-50%);
+		pointer-events: none;
+	}
 	.app-popup {
 		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
 		height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
 		max-height: calc(100vh - 1.5rem);
-		display: grid; grid-template-rows: auto 1fr; overflow: hidden;
+		display: grid;
+		grid-template-rows: auto 1fr;
+		overflow: hidden;
 	}
 
 	/* Premium detail-modal header */
-	.np-detail-head { padding: 18px 22px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 12px; position: relative; overflow: hidden; flex-shrink: 0; }
-	.np-detail-head-glow { position: absolute; top: -100px; left: -40px; width: 220px; height: 220px; background: radial-gradient(circle, var(--np-tint, rgba(96,165,250,0.18)), transparent 70%); pointer-events: none; filter: blur(20px); }
-	.np-detail-head-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--np-tint); border: 0.5px solid rgba(255,255,255,0.10); color: var(--np-color); flex-shrink: 0; position: relative; z-index: 1; }
-	.np-detail-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
-	.np-detail-head-title { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; color: #f5f5f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.np-detail-head-sub { font-size: 11.5px; color: rgba(255,255,255,0.5); margin-top: 3px; }
-	.np-forecast-sun-times { display: flex; align-items: center; gap: 0.7rem; position: relative; z-index: 1; flex-shrink: 0; }
+	.np-detail-head {
+		padding: 18px 22px 14px;
+		border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		position: relative;
+		overflow: hidden;
+		flex-shrink: 0;
+	}
+	.np-detail-head-glow {
+		position: absolute;
+		top: -100px;
+		left: -40px;
+		width: 220px;
+		height: 220px;
+		background: radial-gradient(circle, var(--np-tint, rgba(96, 165, 250, 0.18)), transparent 70%);
+		pointer-events: none;
+		filter: blur(20px);
+	}
+	.np-detail-head-icon {
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
+		display: grid;
+		place-items: center;
+		background: var(--np-tint);
+		border: 0.5px solid rgba(255, 255, 255, 0.1);
+		color: var(--np-color);
+		flex-shrink: 0;
+		position: relative;
+		z-index: 1;
+	}
+	.np-detail-head-text {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		z-index: 1;
+	}
+	.np-detail-head-title {
+		font-size: 15px;
+		font-weight: 500;
+		letter-spacing: -0.01em;
+		line-height: 1.2;
+		color: #f5f5f5;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.np-detail-head-sub {
+		font-size: 11.5px;
+		color: rgba(255, 255, 255, 0.5);
+		margin-top: 3px;
+	}
+	.np-forecast-sun-times {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		position: relative;
+		z-index: 1;
+		flex-shrink: 0;
+	}
 
 	.sun-item {
-		display: flex; align-items: center; gap: 5px;
-		font-size: 12.5px; font-weight: 500; white-space: nowrap;
-		color: rgba(255,255,255,0.85);
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 12.5px;
+		font-weight: 500;
+		white-space: nowrap;
+		color: rgba(255, 255, 255, 0.85);
 	}
-	.sun-item-set { opacity: 0.85; }
+	.sun-item-set {
+		opacity: 0.85;
+	}
 
 	.forecast-body {
-		overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column;
+		overflow-y: auto;
+		overflow-x: hidden;
+		display: flex;
+		flex-direction: column;
 		min-height: 0;
 		padding: 14px 22px 22px;
 		-webkit-overflow-scrolling: touch;
@@ -275,11 +460,20 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-	.forecast-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+	.forecast-body::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
 
 	.empty-state {
-		display: flex; align-items: center; justify-content: center;
-		flex: 1; color: rgba(255,255,255,0.45); font-size: 13px; padding: 32px 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex: 1;
+		color: rgba(255, 255, 255, 0.45);
+		font-size: 13px;
+		padding: 32px 0;
 	}
 
 	/* Day list */
@@ -294,48 +488,59 @@
 		scrollbar-width: none;
 		padding-right: 4px;
 	}
-	.day-list::-webkit-scrollbar { width: 0; height: 0; display: none; }
+	.day-list::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
 
 	.day-card {
 		display: grid;
 		grid-template-columns: 110px 56px minmax(0, 1fr) auto;
 		grid-template-rows: auto auto;
 		grid-template-areas:
-			"label icon condition extras"
-			"label icon temp temp";
+			'label icon condition extras'
+			'label icon temp temp';
 		align-items: center;
 		gap: 4px 14px;
 		padding: 12px 14px;
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 		border-radius: 13px;
-		transition: background 0.15s, border-color 0.15s, transform 0.15s;
+		transition:
+			background 0.15s,
+			border-color 0.15s,
+			transform 0.15s;
 	}
 	.day-card:hover {
-		background: rgba(255,255,255,0.04);
-		border-color: rgba(255,255,255,0.13);
+		background: rgba(255, 255, 255, 0.04);
+		border-color: rgba(255, 255, 255, 0.13);
 		transform: translateY(-1px);
 	}
 	.day-card.today {
-		background: linear-gradient(135deg, rgba(34,211,238,0.06), transparent 60%), rgba(255,255,255,0.035);
-		border-color: rgba(34,211,238,0.20);
+		background:
+			linear-gradient(135deg, rgba(34, 211, 238, 0.06), transparent 60%), rgba(255, 255, 255, 0.035);
+		border-color: rgba(34, 211, 238, 0.2);
 	}
 
 	.day-label {
 		grid-area: label;
-		display: flex; flex-direction: column; gap: 2px;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
 		min-width: 0;
 		align-self: center;
 	}
 	.day-name {
-		font-weight: 600; font-size: 14px;
+		font-weight: 600;
+		font-size: 14px;
 		text-transform: capitalize;
 		color: #fff;
 		letter-spacing: -0.005em;
 	}
 	.day-date {
 		font-size: 11px;
-		color: rgba(255,255,255,0.45);
+		color: rgba(255, 255, 255, 0.45);
 		font-weight: 500;
 	}
 
@@ -343,14 +548,17 @@
 		grid-area: icon;
 		display: grid;
 		place-items: center;
-		width: 56px; height: 56px;
+		width: 56px;
+		height: 56px;
 	}
-	.day-icon img { display: block; }
+	.day-icon img {
+		display: block;
+	}
 
 	.day-condition {
 		grid-area: condition;
 		font-size: 12.5px;
-		color: rgba(255,255,255,0.75);
+		color: rgba(255, 255, 255, 0.75);
 		font-weight: 500;
 		text-transform: capitalize;
 		min-width: 0;
@@ -368,7 +576,7 @@
 	}
 	.day-temp-low {
 		font-size: 12.5px;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 500;
 		font-variant-numeric: tabular-nums;
 		min-width: 22px;
@@ -384,7 +592,7 @@
 	.day-temp-bar {
 		flex: 1;
 		height: 4px;
-		background: rgba(255,255,255,0.06);
+		background: rgba(255, 255, 255, 0.06);
 		border-radius: 999px;
 		position: relative;
 		overflow: hidden;
@@ -392,7 +600,8 @@
 	}
 	.day-temp-fill {
 		position: absolute;
-		top: 0; bottom: 0;
+		top: 0;
+		bottom: 0;
 		background: linear-gradient(90deg, #60a5fa 0%, #22d3ee 50%, #fbbf24 100%);
 		border-radius: 999px;
 	}
@@ -409,12 +618,14 @@
 		align-items: center;
 		gap: 3px;
 		font-size: 11.5px;
-		color: rgba(255,255,255,0.7);
+		color: rgba(255, 255, 255, 0.7);
 		font-weight: 500;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 	}
-	.day-extra.precip { color: #93c5fd; }
+	.day-extra.precip {
+		color: #93c5fd;
+	}
 	.day-wind-arrow {
 		display: inline-block;
 		font-size: 12px;

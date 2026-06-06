@@ -18,10 +18,7 @@ function normalizeGroupInput(value: unknown): LightGroup[] {
 	if (!Array.isArray(value)) return [];
 	return value.filter(
 		(g): g is LightGroup =>
-			g &&
-			typeof g.id === 'string' &&
-			typeof g.name === 'string' &&
-			Array.isArray(g.entityIds)
+			g && typeof g.id === 'string' && typeof g.name === 'string' && Array.isArray(g.entityIds)
 	);
 }
 
@@ -56,7 +53,9 @@ export function encodeLightGroupEntityId(cardId: string, groupId: string): strin
 	return `${LIGHT_GROUP_ENTITY_PREFIX}${encodeURIComponent(cardId)}:${encodeURIComponent(groupId)}`;
 }
 
-export function decodeLightGroupEntityId(entityId: string | undefined): { cardId: string; groupId: string } | null {
+export function decodeLightGroupEntityId(
+	entityId: string | undefined
+): { cardId: string; groupId: string } | null {
 	const value = entityId?.trim() ?? '';
 	if (!value.startsWith(LIGHT_GROUP_ENTITY_PREFIX)) return null;
 	const payload = value.slice(LIGHT_GROUP_ENTITY_PREFIX.length);
@@ -76,7 +75,9 @@ export function isLightGroupEntityId(entityId: string | undefined): boolean {
 	return decodeLightGroupEntityId(entityId) !== null;
 }
 
-export function resolveLightGroupEntityId(entityId: string | undefined): (LightGroup & { cardId: string }) | null {
+export function resolveLightGroupEntityId(
+	entityId: string | undefined
+): (LightGroup & { cardId: string }) | null {
 	const ref = decodeLightGroupEntityId(entityId);
 	if (!ref) return null;
 	const group = loadLightGroups(ref.cardId).find((item) => item.id === ref.groupId);

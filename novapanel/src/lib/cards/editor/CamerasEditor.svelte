@@ -13,9 +13,7 @@
 
 	let { cameras = [], onCamerasChange }: Props = $props();
 
-	const cameraEntities = $derived(
-		$filteredEntities.filter((e) => e.domain === 'camera')
-	);
+	const cameraEntities = $derived($filteredEntities.filter((e) => e.domain === 'camera'));
 
 	function entityLabel(entityId: string): string {
 		const ent = cameraEntities.find((e) => e.entityId === entityId);
@@ -61,11 +59,17 @@
 		onCamerasChange(next);
 	}
 
-	const status = $derived((() => {
-		if (cameras.length === 0) return { status: 'required' as const, label: translate("geen camera's", $selectedLanguageStore) };
-		const large = cameras.filter((c) => c.isLarge).length;
-		return { status: 'filled' as const, label: `${cameras.length} ${translate("Camera's", $selectedLanguageStore).toLowerCase()} · ${large} ${translate('groot', $selectedLanguageStore)}` };
-	})());
+	const status = $derived(
+		(() => {
+			if (cameras.length === 0)
+				return { status: 'required' as const, label: translate("geen camera's", $selectedLanguageStore) };
+			const large = cameras.filter((c) => c.isLarge).length;
+			return {
+				status: 'filled' as const,
+				label: `${cameras.length} ${translate("Camera's", $selectedLanguageStore).toLowerCase()} · ${large} ${translate('groot', $selectedLanguageStore)}`
+			};
+		})()
+	);
 
 	const availableEntities = $derived(
 		cameraEntities.filter((e) => !cameras.some((c) => c.entityId === e.entityId))
@@ -73,16 +77,28 @@
 	const filteredAvailableEntities = $derived.by(() => {
 		const query = cameraSearchQuery.trim().toLowerCase();
 		if (query.length === 0) return availableEntities;
-		return availableEntities.filter((entity) =>
-			entity.friendlyName.toLowerCase().includes(query) ||
-			entity.entityId.toLowerCase().includes(query)
+		return availableEntities.filter(
+			(entity) =>
+				entity.friendlyName.toLowerCase().includes(query) || entity.entityId.toLowerCase().includes(query)
 		);
 	});
 </script>
 
-<EditorSection title={translate("Camera's", $selectedLanguageStore)} icon="device-cctv" tone="blue" status={status.status} statusLabel={status.label} open>
+<EditorSection
+	title={translate("Camera's", $selectedLanguageStore)}
+	icon="device-cctv"
+	tone="blue"
+	status={status.status}
+	statusLabel={status.label}
+	open
+>
 	<div class="camera-editor-scroll" bind:this={cameraScrollEl}>
-		<div class="np-help">{translate("Voeg camera-entiteiten toe en bepaal welke groot worden weergegeven (Apple Home stijl). Zet Advanced Camera Card aan voor de HA custom-card; extra YAML is optioneel.", $selectedLanguageStore)}</div>
+		<div class="np-help">
+			{translate(
+				'Voeg camera-entiteiten toe en bepaal welke groot worden weergegeven (Apple Home stijl). Zet Advanced Camera Card aan voor de HA custom-card; extra YAML is optioneel.',
+				$selectedLanguageStore
+			)}
+		</div>
 
 		{#if cameras.length === 0}
 			<div class="cameras-empty">{translate("Nog geen camera's geselecteerd.", $selectedLanguageStore)}</div>
@@ -100,20 +116,40 @@
 								</div>
 							</div>
 							<div class="camera-item-order">
-								<button type="button" class="np-mini-btn ghost" disabled={idx === 0} onclick={() => moveCamera(idx, -1)} aria-label={translate('Omhoog', $selectedLanguageStore)}>
+								<button
+									type="button"
+									class="np-mini-btn ghost"
+									disabled={idx === 0}
+									onclick={() => moveCamera(idx, -1)}
+									aria-label={translate('Omhoog', $selectedLanguageStore)}
+								>
 									<TablerIcon name="arrow-up" size={13} />
 								</button>
-								<button type="button" class="np-mini-btn ghost" disabled={idx === cameras.length - 1} onclick={() => moveCamera(idx, 1)} aria-label={translate('Omlaag', $selectedLanguageStore)}>
+								<button
+									type="button"
+									class="np-mini-btn ghost"
+									disabled={idx === cameras.length - 1}
+									onclick={() => moveCamera(idx, 1)}
+									aria-label={translate('Omlaag', $selectedLanguageStore)}
+								>
 									<TablerIcon name="arrow-down" size={13} />
 								</button>
-								<button type="button" class="np-mini-btn ghost danger" onclick={() => removeCamera(idx)} aria-label={translate('Verwijderen', $selectedLanguageStore)}>
+								<button
+									type="button"
+									class="np-mini-btn ghost danger"
+									onclick={() => removeCamera(idx)}
+									aria-label={translate('Verwijderen', $selectedLanguageStore)}
+								>
 									<TablerIcon name="trash" size={13} />
 								</button>
 							</div>
 						</div>
 						<div class="camera-item-fields">
 							<label class="np-field">
-								<span class="np-label">{translate('Naam', $selectedLanguageStore)} <span class="np-hint">({translate('optioneel', $selectedLanguageStore)})</span></span>
+								<span class="np-label"
+									>{translate('Naam', $selectedLanguageStore)}
+									<span class="np-hint">({translate('optioneel', $selectedLanguageStore)})</span></span
+								>
 								<input
 									type="text"
 									class="np-input"
@@ -127,7 +163,8 @@
 									<input
 										type="checkbox"
 										checked={cam.isLarge ?? false}
-										onchange={(e) => updateCamera(idx, { isLarge: (e.currentTarget as HTMLInputElement).checked })}
+										onchange={(e) =>
+											updateCamera(idx, { isLarge: (e.currentTarget as HTMLInputElement).checked })}
 									/>
 									<span class="camera-toggle-label">
 										<TablerIcon name="layout-grid" size={13} />
@@ -138,7 +175,8 @@
 									<input
 										type="checkbox"
 										checked={cam.useAdvanced ?? false}
-										onchange={(e) => updateCamera(idx, { useAdvanced: (e.currentTarget as HTMLInputElement).checked })}
+										onchange={(e) =>
+											updateCamera(idx, { useAdvanced: (e.currentTarget as HTMLInputElement).checked })}
 									/>
 									<span class="camera-toggle-label">
 										<TablerIcon name="cards" size={13} />
@@ -148,13 +186,17 @@
 							</div>
 							{#if cam.useAdvanced}
 								<label class="np-field camera-advanced-field">
-									<span class="np-label">Advanced Camera Card config <span class="np-hint">(YAML)</span></span>
+									<span class="np-label">Advanced Camera Card config <span class="np-hint">(YAML)</span></span
+									>
 									<textarea
 										class="np-input mono camera-advanced-config"
 										rows="6"
 										value={cam.advancedConfig ?? ''}
-										placeholder={'type: custom:advanced-camera-card\ncameras:\n  - camera_entity: ' + cam.entityId + '\nlive:\n  auto_play:\n    - visible\n    - selected\n  auto_unmute:\n    - visible\n    - selected\n  show_image_during_load: true'}
-										oninput={(e) => updateCamera(idx, { advancedConfig: (e.currentTarget as HTMLTextAreaElement).value })}
+										placeholder={'type: custom:advanced-camera-card\ncameras:\n  - camera_entity: ' +
+											cam.entityId +
+											'\nlive:\n  auto_play:\n    - visible\n    - selected\n  auto_unmute:\n    - visible\n    - selected\n  show_image_during_load: true'}
+										oninput={(e) =>
+											updateCamera(idx, { advancedConfig: (e.currentTarget as HTMLTextAreaElement).value })}
 									></textarea>
 								</label>
 							{/if}
@@ -165,7 +207,12 @@
 		{/if}
 
 		<div class="cameras-add">
-			<button type="button" class="np-mini-btn primary" onclick={() => (pickerOpen = !pickerOpen)} disabled={availableEntities.length === 0}>
+			<button
+				type="button"
+				class="np-mini-btn primary"
+				onclick={() => (pickerOpen = !pickerOpen)}
+				disabled={availableEntities.length === 0}
+			>
 				<TablerIcon name="plus" size={13} />
 				{translate('Camera toevoegen', $selectedLanguageStore)} ({availableEntities.length})
 			</button>
@@ -189,9 +236,13 @@
 						{/if}
 					</div>
 					{#if availableEntities.length === 0}
-						<div class="cameras-empty-small">{translate('Alle camera-entiteiten zijn al toegevoegd.', $selectedLanguageStore)}</div>
+						<div class="cameras-empty-small">
+							{translate('Alle camera-entiteiten zijn al toegevoegd.', $selectedLanguageStore)}
+						</div>
 					{:else if filteredAvailableEntities.length === 0}
-						<div class="cameras-empty-small">{translate('Geen camera-entiteiten gevonden.', $selectedLanguageStore)}</div>
+						<div class="cameras-empty-small">
+							{translate('Geen camera-entiteiten gevonden.', $selectedLanguageStore)}
+						</div>
 					{:else}
 						{#each filteredAvailableEntities as ent (ent.entityId)}
 							<button
@@ -237,21 +288,21 @@
 	}
 	.np-help {
 		font-size: 11px;
-		color: rgba(255,255,255,0.45);
+		color: rgba(255, 255, 255, 0.45);
 		line-height: 1.4;
 		overflow-wrap: anywhere;
 	}
 	.cameras-empty {
 		text-align: center;
 		padding: 22px 12px;
-		color: rgba(255,255,255,0.45);
+		color: rgba(255, 255, 255, 0.45);
 		font-size: 13px;
-		border: 0.5px dashed rgba(255,255,255,0.10);
+		border: 0.5px dashed rgba(255, 255, 255, 0.1);
 		border-radius: 10px;
 	}
 	.cameras-empty-small {
 		padding: 14px;
-		color: rgba(255,255,255,0.45);
+		color: rgba(255, 255, 255, 0.45);
 		font-size: 12.5px;
 		text-align: center;
 	}
@@ -261,8 +312,8 @@
 		gap: 10px;
 	}
 	.camera-item {
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 12px;
 		padding: 12px;
 	}
@@ -274,14 +325,18 @@
 		min-width: 0;
 	}
 	.camera-item-icon {
-		width: 28px; height: 28px;
+		width: 28px;
+		height: 28px;
 		border-radius: 8px;
-		display: grid; place-items: center;
-		background: rgba(96,165,250,0.15);
+		display: grid;
+		place-items: center;
+		background: rgba(96, 165, 250, 0.15);
 		color: #60a5fa;
 		flex-shrink: 0;
 	}
-	.camera-item-info { min-width: 0; }
+	.camera-item-info {
+		min-width: 0;
+	}
 	.camera-item-name {
 		font-size: 13.5px;
 		font-weight: 500;
@@ -314,7 +369,7 @@
 		font-size: 10.5px;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
-		color: rgba(255,255,255,0.5);
+		color: rgba(255, 255, 255, 0.5);
 		font-weight: 500;
 	}
 	.np-hint {
@@ -327,9 +382,9 @@
 		min-width: 0;
 		box-sizing: border-box;
 		height: auto;
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 9px;
-		background: rgba(255,255,255,0.04);
+		background: rgba(255, 255, 255, 0.04);
 		color: #f5f5f5;
 		padding: 9px 11px;
 		font-size: 13px;
@@ -337,9 +392,9 @@
 	}
 	.np-input:focus {
 		outline: none;
-		border-color: rgba(96,165,250,0.45);
-		background: rgba(96,165,250,0.06);
-		box-shadow: 0 0 0 3px rgba(96,165,250,0.08);
+		border-color: rgba(96, 165, 250, 0.45);
+		background: rgba(96, 165, 250, 0.06);
+		box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.08);
 	}
 	.camera-item-toggles {
 		display: flex;
@@ -357,7 +412,8 @@
 	}
 	.camera-toggle input {
 		accent-color: #60a5fa;
-		width: 14px; height: 14px;
+		width: 14px;
+		height: 14px;
 		cursor: pointer;
 	}
 	.camera-toggle-label {
@@ -365,7 +421,7 @@
 		align-items: center;
 		gap: 5px;
 		font-size: 12.5px;
-		color: rgba(255,255,255,0.75);
+		color: rgba(255, 255, 255, 0.75);
 	}
 	.camera-advanced-config {
 		display: block;
@@ -404,8 +460,8 @@
 		max-height: 220px;
 		overflow-y: auto;
 		overflow-x: hidden;
-		background: rgba(0,0,0,0.25);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		background: rgba(0, 0, 0, 0.25);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 10px;
 		padding: 6px;
 		-webkit-overflow-scrolling: touch;
@@ -418,24 +474,24 @@
 		gap: 0.45rem;
 		margin-bottom: 6px;
 		padding: 0.45rem 0.55rem;
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 0.65rem;
-		background: rgba(255,255,255,0.045);
+		background: rgba(255, 255, 255, 0.045);
 	}
 	.entity-search-bar :global(i) {
-		color: rgba(255,255,255,0.4);
+		color: rgba(255, 255, 255, 0.4);
 	}
 	.entity-search-bar input {
 		min-width: 0;
 		border: 0;
 		outline: 0;
 		background: transparent;
-		color: rgba(255,255,255,0.84);
+		color: rgba(255, 255, 255, 0.84);
 		font: inherit;
 		font-size: 0.78rem;
 	}
 	.entity-search-bar input::placeholder {
-		color: rgba(255,255,255,0.35);
+		color: rgba(255, 255, 255, 0.35);
 	}
 	.entity-search-bar button {
 		width: 1.45rem;
@@ -444,8 +500,8 @@
 		border-radius: 0.45rem;
 		display: grid;
 		place-items: center;
-		background: rgba(255,255,255,0.08);
-		color: rgba(255,255,255,0.62);
+		background: rgba(255, 255, 255, 0.08);
+		color: rgba(255, 255, 255, 0.62);
 		cursor: pointer;
 	}
 	.camera-picker-row {
@@ -465,7 +521,9 @@
 		max-width: 100%;
 		box-sizing: border-box;
 	}
-	.camera-picker-row:hover { background: rgba(255,255,255,0.05); }
+	.camera-picker-row:hover {
+		background: rgba(255, 255, 255, 0.05);
+	}
 	.camera-picker-name {
 		font-size: 13px;
 		overflow: hidden;

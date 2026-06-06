@@ -22,6 +22,7 @@ export type EnergyFlowKey =
 	| 'batteryToHome'
 	| 'batteryToCar';
 export type EnergyFlowWaypoints = Partial<Record<EnergyFlowKey, EnergyAnchorPoint[]>>;
+export type EnergyCostMode = 'sensor' | 'peak_offpeak' | 'dynamic';
 export type EnergyAnchors = {
 	solar: EnergyAnchorPoint;
 	battery: EnergyAnchorPoint;
@@ -60,10 +61,16 @@ export type CardDraft = {
 	homeTodayEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	/** Energy: expliciete kostenmodus om vaste piek/dal, exacte sensoren en dynamische schatting niet te mixen */
+	energyCostMode?: EnergyCostMode;
 	/** Energy: kWh-vandaag teller voor piek/hoog tarief */
 	importPeakTodayEntityId?: string;
 	/** Energy: kWh-vandaag teller voor dal/laag tarief */
 	importOffPeakTodayEntityId?: string;
+	/** Energy: teruglevering kWh-vandaag teller voor piek/hoog tarief */
+	exportPeakTodayEntityId?: string;
+	/** Energy: teruglevering kWh-vandaag teller voor dal/laag tarief */
+	exportOffPeakTodayEntityId?: string;
 	/** Energy: optionele actuele importtarief-sensor voor variabele/dynamische contracten */
 	importTariffEntityId?: string;
 	/** Energy: optionele actuele teruglevertarief-sensor */
@@ -72,7 +79,11 @@ export type CardDraft = {
 	importPeakTariff?: number;
 	/** Energy: handmatig dal/laag tarief in euro per kWh */
 	importOffPeakTariff?: number;
-	/** Energy: handmatig teruglevertarief in euro per kWh */
+	/** Energy: handmatig teruglever-piek/hoog tarief in euro per kWh */
+	exportPeakTariff?: number;
+	/** Energy: handmatig teruglever-dal/laag tarief in euro per kWh */
+	exportOffPeakTariff?: number;
+	/** Energy: legacy handmatig enkel teruglevertarief in euro per kWh */
 	exportTariff?: number;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
@@ -164,6 +175,7 @@ export type MediaHubConfig = {
 export type PanelConfiguration = {
 	language: string;
 	theme?: PanelTheme;
+	currencyCode?: string;
 	cardLibraryTab?: 'sidebar' | 'view';
 	titles?: {
 		cardLibrary?: string;
@@ -171,6 +183,7 @@ export type PanelConfiguration = {
 	};
 	oauth?: OAuthConfig;
 	mediaHub?: MediaHubConfig;
+	updatedAt?: number;
 };
 
 export type PanelDashboardLayout = {

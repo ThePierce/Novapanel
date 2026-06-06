@@ -5,8 +5,8 @@
 
 	type Props = {
 		t: (key: string) => string;
-		analogStyle?: string;
-		digitalStyle?: string;
+		analogStyle?: 1 | 2 | 3 | 4;
+		digitalStyle?: 1 | 2 | 3 | 4;
 		clockStyle?: ClockStyle;
 		clockShowAnalog?: boolean;
 		clockShowDigital?: boolean;
@@ -23,7 +23,14 @@
 	let p: Props = $props();
 </script>
 
-<EditorSection title={p.t('Stijl en weergave')} icon="palette" tone="cyan" status="filled" statusLabel={p.clockStyle ?? 'digital'} open>
+<EditorSection
+	title={p.t('Stijl en weergave')}
+	icon="palette"
+	tone="cyan"
+	status="filled"
+	statusLabel={p.clockStyle ?? 'digital'}
+	open
+>
 	<div class="np-help">{p.t('Kies wat de klok toont: digitaal, analoog of beide.')}</div>
 	<div class="np-grid-2">
 		<div class="np-field">
@@ -36,7 +43,8 @@
 					p.onClockShowAnalogChange(value === 'analog' || value === 'both');
 					p.onClockShowDigitalChange(value === 'digital' || value === 'both');
 					if (value === 'digital') p.onClockStyleChange('digital');
-					if (value !== 'digital' && (p.clockStyle ?? 'digital') === 'digital') p.onClockStyleChange('classic');
+					if (value !== 'digital' && (p.clockStyle ?? 'digital') === 'digital')
+						p.onClockStyleChange('classic');
 				}}
 			>
 				<option value="digital">{p.t('clockModeDigital')}</option>
@@ -49,7 +57,8 @@
 			<select
 				class="np-input"
 				value={p.clockStyle ?? 'digital'}
-				onchange={(event) => p.onClockStyleChange((event.currentTarget as HTMLSelectElement).value as ClockStyle)}
+				onchange={(event) =>
+					p.onClockStyleChange((event.currentTarget as HTMLSelectElement).value as ClockStyle)}
 			>
 				<option value="digital">{p.t('clockStyleDigital')}</option>
 				<option value="aurora">Aurora ✨</option>
@@ -81,7 +90,14 @@
 		</label>
 	</div>
 </EditorSection>
-<EditorSection title={p.t('Live voorbeeld')} icon="eye" tone="purple" status="filled" statusLabel="real-time" open>
+<EditorSection
+	title={p.t('Live voorbeeld')}
+	icon="eye"
+	tone="purple"
+	status="filled"
+	statusLabel="real-time"
+	open
+>
 	<div class="np-preview-frame">
 		<ClockCard
 			analogStyle={p.analogStyle}

@@ -37,12 +37,17 @@ export type CardEditorOpenState = {
 	homeTodayEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	energyCostMode?: CardDraft['energyCostMode'];
 	importPeakTodayEntityId?: string;
 	importOffPeakTodayEntityId?: string;
+	exportPeakTodayEntityId?: string;
+	exportOffPeakTodayEntityId?: string;
 	importTariffEntityId?: string;
 	exportTariffEntityId?: string;
 	importPeakTariff?: number;
 	importOffPeakTariff?: number;
+	exportPeakTariff?: number;
+	exportOffPeakTariff?: number;
 	exportTariff?: number;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
@@ -72,17 +77,24 @@ export type CardEditorOpenState = {
 	initialHomeTodayEntityId?: string;
 	initialCostTodayEntityId?: string;
 	initialCompensationTodayEntityId?: string;
+	initialEnergyCostMode?: CardDraft['energyCostMode'];
 	initialImportPeakTodayEntityId?: string;
 	initialImportOffPeakTodayEntityId?: string;
+	initialExportPeakTodayEntityId?: string;
+	initialExportOffPeakTodayEntityId?: string;
 	initialImportTariffEntityId?: string;
 	initialExportTariffEntityId?: string;
 	initialImportPeakTariff?: number;
 	initialImportOffPeakTariff?: number;
+	initialExportPeakTariff?: number;
+	initialExportOffPeakTariff?: number;
 	initialExportTariff?: number;
 	initialSelfSufficiencyEntityId?: string;
 	initialCarChargingEntityId?: string;
 	initialCarCableEntityId?: string;
 	initialCarChargingPowerEntityId?: string;
+	initialEnergyDeviceEntityIds?: string[];
+	initialEnergyDeviceTodayEntityIds?: string[];
 	initialHasCustomDayNoCar?: boolean;
 	initialHasCustomDayWithCar?: boolean;
 	initialHasCustomNightNoCar?: boolean;
@@ -151,7 +163,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 	return {
 		title: card.title,
 		type: card.cardType,
-		entityId: card.cardType === 'alarm_panel' ? card.alarmEntityId ?? card.entityId : card.entityId,
+		entityId: card.cardType === 'alarm_panel' ? (card.alarmEntityId ?? card.entityId) : card.entityId,
 		analogStyle,
 		digitalStyle,
 		clockStyle: card.clockStyle,
@@ -184,12 +196,17 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		homeTodayEntityId: card.homeTodayEntityId,
 		costTodayEntityId: card.costTodayEntityId,
 		compensationTodayEntityId: card.compensationTodayEntityId,
+		energyCostMode: card.energyCostMode,
 		importPeakTodayEntityId: card.importPeakTodayEntityId,
 		importOffPeakTodayEntityId: card.importOffPeakTodayEntityId,
+		exportPeakTodayEntityId: card.exportPeakTodayEntityId,
+		exportOffPeakTodayEntityId: card.exportOffPeakTodayEntityId,
 		importTariffEntityId: card.importTariffEntityId,
 		exportTariffEntityId: card.exportTariffEntityId,
 		importPeakTariff: card.importPeakTariff,
 		importOffPeakTariff: card.importOffPeakTariff,
+		exportPeakTariff: card.exportPeakTariff,
+		exportOffPeakTariff: card.exportOffPeakTariff,
 		exportTariff: card.exportTariff,
 		selfSufficiencyEntityId: card.selfSufficiencyEntityId,
 		carChargingEntityId: card.carChargingEntityId,
@@ -209,7 +226,7 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		cameras: card.cameras,
 		initialTitle: card.title,
 		initialType: card.cardType,
-		initialEntityId: card.cardType === 'alarm_panel' ? card.alarmEntityId ?? card.entityId : card.entityId,
+		initialEntityId: card.cardType === 'alarm_panel' ? (card.alarmEntityId ?? card.entityId) : card.entityId,
 		initialAnalogStyle: analogStyle,
 		initialDigitalStyle: digitalStyle,
 		initialClockStyle: card.clockStyle,
@@ -242,12 +259,17 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		initialHomeTodayEntityId: card.homeTodayEntityId,
 		initialCostTodayEntityId: card.costTodayEntityId,
 		initialCompensationTodayEntityId: card.compensationTodayEntityId,
+		initialEnergyCostMode: card.energyCostMode,
 		initialImportPeakTodayEntityId: card.importPeakTodayEntityId,
 		initialImportOffPeakTodayEntityId: card.importOffPeakTodayEntityId,
+		initialExportPeakTodayEntityId: card.exportPeakTodayEntityId,
+		initialExportOffPeakTodayEntityId: card.exportOffPeakTodayEntityId,
 		initialImportTariffEntityId: card.importTariffEntityId,
 		initialExportTariffEntityId: card.exportTariffEntityId,
 		initialImportPeakTariff: card.importPeakTariff,
 		initialImportOffPeakTariff: card.importOffPeakTariff,
+		initialExportPeakTariff: card.exportPeakTariff,
+		initialExportOffPeakTariff: card.exportOffPeakTariff,
 		initialExportTariff: card.exportTariff,
 		initialSelfSufficiencyEntityId: card.selfSufficiencyEntityId,
 		initialCarChargingEntityId: card.carChargingEntityId,

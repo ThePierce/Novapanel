@@ -6,6 +6,8 @@
 	import EntitySelectPicker from '$lib/cards/editor/EntitySelectPicker.svelte';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
+	import { getCardDraftTitle, getCardTypeIcon } from '$lib/cards/card-meta';
 
 	type Props = {
 		t: (key: TranslationKey) => string;
@@ -109,10 +111,7 @@
 		);
 	}
 
-	function withSelected(
-		entities: HomeAssistantEntity[],
-		selectedEntityId: string
-	): HomeAssistantEntity[] {
+	function withSelected(entities: HomeAssistantEntity[], selectedEntityId: string): HomeAssistantEntity[] {
 		const selected = selectedEntityId
 			? $entityStore.entities.find((entity) => entity.entityId === selectedEntityId)
 			: undefined;
@@ -134,61 +133,47 @@
 	}
 
 	const temperatureEntities = $derived(
-		withSelected(
-			sensorOptions(isTemperatureCandidate),
-			sectionEditorHeaderTemperatureEntityId
-		)
+		withSelected(sensorOptions(isTemperatureCandidate), sectionEditorHeaderTemperatureEntityId)
 	);
 	const humidityEntities = $derived(
-		withSelected(
-			sensorOptions(isHumidityCandidate),
-			sectionEditorHeaderHumidityEntityId
-		)
+		withSelected(sensorOptions(isHumidityCandidate), sectionEditorHeaderHumidityEntityId)
 	);
 	const pressureEntities = $derived(
-		withSelected(
-			sensorOptions(isPressureCandidate),
-			sectionEditorHeaderPressureEntityId
-		)
+		withSelected(sensorOptions(isPressureCandidate), sectionEditorHeaderPressureEntityId)
 	);
-
-	function cardIcon(cardType: string): string {
-		if (cardType === 'light_button' || cardType === 'lights_status') return 'bulb';
-		if (cardType === 'device_button') return 'plug';
-		if (cardType === 'climate_button') return 'temperature';
-		if (cardType === 'cover_button') return 'blinds';
-		if (cardType === 'vacuum_button') return 'robot';
-		if (cardType === 'media_player_button') return 'device-speaker';
-		if (cardType === 'devices_status') return 'plug';
-		if (cardType === 'openings_status') return 'door';
-		if (cardType === 'availability_status') return 'wifi';
-		if (cardType === 'media_players_status') return 'device-speaker';
-		if (cardType === 'weather' || cardType === 'weather_forecast') return 'cloud';
-		if (cardType === 'alarm_panel') return 'shield-lock';
-		if (cardType === 'energy') return 'bolt';
-		if (cardType === 'cameras_strip') return 'device-cctv';
-		if (cardType === 'date') return 'calendar';
-		return 'square';
-	}
-
-	function cardTitle(card: CardDraft, index: number): string {
-		const title = card.title?.trim();
-		return title || `${getLocalizedCardLabel(card.cardType)} ${index + 1}`;
-	}
 </script>
 
 <button type="button" class="modal-overlay" onclick={onClose} aria-label={t('closeOverlay')}></button>
-<section class="settings-modal app-popup card-editor-modal" role="dialog" aria-modal="true" aria-label={t('addSection')}>
+<div
+	class="settings-modal app-popup card-editor-modal"
+	role="dialog"
+	aria-modal="true"
+	aria-label={t('addSection')}
+	use:modalBehavior={{ onClose, initialFocus: '#section-editor-title' }}
+>
 	<div class="settings-modal-head">
 		<h3>{t('addSection')}</h3>
 	</div>
 	<div class="tab-content card-editor-content">
 		<label for="section-editor-title">{t('sectionTitle')}</label>
-		<input id="section-editor-title" type="text" value={sectionEditorTitle} oninput={(event) => onSetTitle((event.currentTarget as HTMLInputElement).value)} />
+		<input
+			id="section-editor-title"
+			type="text"
+			value={sectionEditorTitle}
+			oninput={(event) => onSetTitle((event.currentTarget as HTMLInputElement).value)}
+		/>
 		<label for="section-editor-icon">{translate('Popup icoon', $selectedLanguageStore)}</label>
 		<div class="section-icon-input">
-			<span class="section-icon-preview"><TablerIcon name={sectionEditorIcon || 'layout-grid'} size={18} /></span>
-			<input id="section-editor-icon" type="text" value={sectionEditorIcon} placeholder="layout-grid" oninput={(event) => onSetIcon((event.currentTarget as HTMLInputElement).value)} />
+			<span class="section-icon-preview"
+				><TablerIcon name={sectionEditorIcon || 'layout-grid'} size={18} /></span
+			>
+			<input
+				id="section-editor-icon"
+				type="text"
+				value={sectionEditorIcon}
+				placeholder="layout-grid"
+				oninput={(event) => onSetIcon((event.currentTarget as HTMLInputElement).value)}
+			/>
 		</div>
 		<div class="section-header-sensors" class:open={headerSensorsExpanded}>
 			<button
@@ -232,19 +217,32 @@
 			{/if}
 		</div>
 		<label for="section-editor-column">{t('columns')}</label>
-		<select id="section-editor-column" value={sectionEditorColumn} onchange={(event) => onSetColumn(Number((event.currentTarget as HTMLSelectElement).value))}>
+		<select
+			id="section-editor-column"
+			value={sectionEditorColumn}
+			onchange={(event) => onSetColumn(Number((event.currentTarget as HTMLSelectElement).value))}
+		>
 			{#each Array.from({ length: selectedColumns }, (_, index) => index + 1) as column (column)}
 				<option value={column}>{t('columns')} {column}</option>
 			{/each}
 		</select>
 		<label for="section-editor-span">{t('sectionSpan')}</label>
-		<select id="section-editor-span" value={sectionEditorSpan} onchange={(event) => onSetSpan(Number((event.currentTarget as HTMLSelectElement).value))}>
+		<select
+			id="section-editor-span"
+			value={sectionEditorSpan}
+			onchange={(event) => onSetSpan(Number((event.currentTarget as HTMLSelectElement).value))}
+		>
 			{#each Array.from({ length: selectedColumns }, (_, index) => index + 1) as span (span)}
 				<option value={span}>{span}</option>
 			{/each}
 		</select>
 		<label for="section-editor-card-columns">{t('sectionCardLayout')}</label>
-		<select id="section-editor-card-columns" value={sectionEditorCardColumns} onchange={(event) => onSetCardColumns(Number((event.currentTarget as HTMLSelectElement).value) as 1 | 2)}>
+		<select
+			id="section-editor-card-columns"
+			value={sectionEditorCardColumns}
+			onchange={(event) =>
+				onSetCardColumns(Number((event.currentTarget as HTMLSelectElement).value) as 1 | 2)}
+		>
 			<option value={1}>{t('fullWidthCards')}</option>
 			<option value={2}>{t('halfWidthCards')}</option>
 		</select>
@@ -267,11 +265,14 @@
 							<input
 								type="checkbox"
 								checked={card.hiddenInSection !== true}
-								onchange={(event) => onSetCardVisible(card.id, (event.currentTarget as HTMLInputElement).checked)}
+								onchange={(event) =>
+									onSetCardVisible(card.id, (event.currentTarget as HTMLInputElement).checked)}
 							/>
-							<span class="section-card-icon"><TablerIcon name={cardIcon(card.cardType)} size={18} /></span>
+							<span class="section-card-icon"
+								><TablerIcon name={getCardTypeIcon(card.cardType)} size={18} /></span
+							>
 							<span class="section-card-copy">
-								<strong>{cardTitle(card, index)}</strong>
+								<strong>{getCardDraftTitle(card, index, getLocalizedCardLabel)}</strong>
 								<small>{getLocalizedCardLabel(card.cardType)}</small>
 							</span>
 						</label>
@@ -288,21 +289,90 @@
 			{t('save')}
 		</button>
 	</div>
-</section>
+</div>
 
 <style>
-	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.36); border: 0; padding: 0; margin: 0; z-index: 40; cursor: default; }
-	.settings-modal { position: fixed; top: 50%; left: 50%; background: #121722; border: 1px solid #2e384d; border-radius: 0.6rem; padding: 1rem; z-index: 60; transform: translate(-50%, -50%); }
-	.app-popup { width: min(var(--popup-width, 850px), calc(100vw - 1.5rem)); height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem)); max-height: calc(100vh - 1.5rem); display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; }
-	.card-editor-modal { grid-template-rows: auto 1fr auto; }
-	.settings-modal-head { display: flex; align-items: center; justify-content: space-between; }
-	.settings-modal-head h3 { margin: 0; font-size: 1rem; }
-	.tab-content { margin-top: 0.75rem; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 0.2rem; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
-	.tab-content::-webkit-scrollbar { width: 0; height: 0; display: none; }
-	.card-editor-content { display: grid; gap: 0.6rem; align-content: start; }
-	.card-editor-content input, .card-editor-content select { height: 2.2rem; border-radius: 0.4rem; border: 0; background: rgba(255,255,255,0.08); color: #f5f5f5; padding: 0 0.7rem; }
-	.section-icon-input { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.55rem; }
-	.section-icon-input input { min-width: 0; }
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.36);
+		border: 0;
+		padding: 0;
+		margin: 0;
+		z-index: 40;
+		cursor: default;
+	}
+	.settings-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		background: #121722;
+		border: 1px solid #2e384d;
+		border-radius: 0.6rem;
+		padding: 1rem;
+		z-index: 60;
+		transform: translate(-50%, -50%);
+	}
+	.app-popup {
+		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
+		height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
+		max-height: calc(100vh - 1.5rem);
+		display: grid;
+		grid-template-rows: auto auto 1fr;
+		overflow: hidden;
+	}
+	.card-editor-modal {
+		grid-template-rows: auto 1fr auto;
+	}
+	.settings-modal-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.settings-modal-head h3 {
+		margin: 0;
+		font-size: 1rem;
+	}
+	.tab-content {
+		margin-top: 0.75rem;
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+		padding-right: 0.2rem;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
+		touch-action: pan-y;
+	}
+	.tab-content::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
+	.card-editor-content {
+		display: grid;
+		gap: 0.6rem;
+		align-content: start;
+	}
+	.card-editor-content input,
+	.card-editor-content select {
+		height: 2.2rem;
+		border-radius: 0.4rem;
+		border: 0;
+		background: rgba(255, 255, 255, 0.08);
+		color: #f5f5f5;
+		padding: 0 0.7rem;
+	}
+	.section-icon-input {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: center;
+		gap: 0.55rem;
+	}
+	.section-icon-input input {
+		min-width: 0;
+	}
 	.section-icon-preview {
 		width: 2.2rem;
 		height: 2.2rem;
@@ -310,16 +380,16 @@
 		place-items: center;
 		border-radius: 0.55rem;
 		color: #60a5fa;
-		background: rgba(96,165,250,0.16);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+		background: rgba(96, 165, 250, 0.16);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 	}
 	.section-header-sensors {
 		display: grid;
 		margin: 0.15rem 0 0.25rem;
 		padding: 0;
-		border: 1px solid rgba(255,255,255,0.08);
+		border: 1px solid rgba(255, 255, 255, 0.08);
 		border-radius: 0.7rem;
-		background: rgba(255,255,255,0.035);
+		background: rgba(255, 255, 255, 0.035);
 		overflow: hidden;
 	}
 	.section-header-sensors-head {
@@ -331,7 +401,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.75rem;
-		color: rgba(255,255,255,0.76);
+		color: rgba(255, 255, 255, 0.76);
 		font-size: 0.82rem;
 		font-weight: 760;
 		text-align: left;
@@ -350,7 +420,7 @@
 		display: grid;
 		place-items: center;
 		flex: 0 0 auto;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		transition: transform 0.16s ease;
 	}
 	.section-header-sensors-chevron.open {
@@ -364,16 +434,19 @@
 		gap: 0.65rem;
 		padding: 0 0.75rem 0.75rem;
 	}
-	.section-order-actions { display: flex; gap: 0.5rem; }
+	.section-order-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
 	.section-visibility {
 		display: grid;
 		gap: 0.55rem;
 		margin-top: 0.25rem;
 		padding-top: 0.75rem;
-		border-top: 1px solid rgba(255,255,255,0.08);
+		border-top: 1px solid rgba(255, 255, 255, 0.08);
 	}
 	.section-visibility-head {
-		color: rgba(255,255,255,0.82);
+		color: rgba(255, 255, 255, 0.82);
 		font-size: 0.85rem;
 		font-weight: 760;
 	}
@@ -390,10 +463,8 @@
 		gap: 0.72rem;
 		padding: 0.55rem 0.62rem;
 		border-radius: 14px;
-		background:
-			linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
-			#20293a;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.055);
+		background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)), #20293a;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
 		cursor: pointer;
 	}
 	.section-visibility-row input {
@@ -409,8 +480,8 @@
 		place-items: center;
 		border-radius: 13px;
 		color: #60a5fa;
-		background: rgba(96,165,250,0.16);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+		background: rgba(96, 165, 250, 0.16);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 	}
 	.section-card-copy {
 		min-width: 0;
@@ -430,13 +501,33 @@
 		font-weight: 750;
 	}
 	.section-card-copy small {
-		color: rgba(255,255,255,0.54);
+		color: rgba(255, 255, 255, 0.54);
 		font-size: 0.78rem;
 		font-weight: 650;
 	}
-	.card-editor-actions { display: flex; justify-content: space-between; margin-top: 0.8rem; }
-	.delete-btn, .save-btn, .history-btn { height: 2.2rem; padding: 0 0.9rem; border-radius: 0.4rem; border: 0; color: #ffffff; cursor: pointer; }
-	.delete-btn { background: #b73232; }
-	.save-btn { background: #c89d1b; }
-	.history-btn { background: rgba(255,255,255,0.08); color: #f5f5f5; }
+	.card-editor-actions {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 0.8rem;
+	}
+	.delete-btn,
+	.save-btn,
+	.history-btn {
+		height: 2.2rem;
+		padding: 0 0.9rem;
+		border-radius: 0.4rem;
+		border: 0;
+		color: #ffffff;
+		cursor: pointer;
+	}
+	.delete-btn {
+		background: #b73232;
+	}
+	.save-btn {
+		background: #c89d1b;
+	}
+	.history-btn {
+		background: rgba(255, 255, 255, 0.08);
+		color: #f5f5f5;
+	}
 </style>

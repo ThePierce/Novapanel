@@ -1,6 +1,12 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount } from 'svelte';
-	import { isLanguageCode, languageOptions, loadStoredLanguage, setLanguage, type LanguageCode } from '$lib/i18n';
+	import { onMount } from 'svelte';
+	import {
+		isLanguageCode,
+		languageOptions,
+		loadStoredLanguage,
+		setLanguage,
+		type LanguageCode
+	} from '$lib/i18n';
 
 	type Props = {
 		selectedLanguage?: LanguageCode;
@@ -10,11 +16,8 @@
 
 	let { selectedLanguage = 'nl', label = 'Language', onLanguageChange }: Props = $props();
 
-	const dispatch = createEventDispatcher<{ change: { language: LanguageCode } }>();
-
 	function emitChange() {
 		onLanguageChange?.(selectedLanguage);
-		dispatch('change', { language: selectedLanguage });
 	}
 
 	function handleLanguageChange(event: Event) {

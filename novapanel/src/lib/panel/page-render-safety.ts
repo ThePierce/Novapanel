@@ -1,5 +1,9 @@
 import type { CardDraft, ViewSectionDraft } from '$lib/persistence/panel-state';
-import { buildRenderedSidebarCards, buildRenderedViewSections, buildSidebarItems } from '$lib/panel/render-helpers';
+import {
+	buildRenderedSidebarCards,
+	buildRenderedViewSections,
+	buildSidebarItems
+} from '$lib/panel/render-helpers';
 
 type DebugLogFn = (event: string, payload: Record<string, unknown>) => void;
 

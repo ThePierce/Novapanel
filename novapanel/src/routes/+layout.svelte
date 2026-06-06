@@ -12,7 +12,6 @@
 	<title>Nova Panel</title>
 	<meta name="description" content="Nova Panel" />
 	<meta charset="utf-8" />
-	<script type="module" src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 </svelte:head>
 
 {@render children?.()}
@@ -32,6 +31,19 @@
 
 	:global(*, *::before, *::after) {
 		box-sizing: border-box;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(*),
+		:global(*::before),
+		:global(*::after) {
+			animation-delay: 0ms !important;
+			animation-duration: 1ms !important;
+			animation-iteration-count: 1 !important;
+			scroll-behavior: auto !important;
+			transition-delay: 0ms !important;
+			transition-duration: 1ms !important;
+		}
 	}
 
 	:global(html),

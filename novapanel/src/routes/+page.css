@@ -30,22 +30,22 @@
 	--np-shell: #121722;
 	--np-panel: #171d29;
 	--np-card: #20293a;
-	--np-card-soft: rgba(255,255,255,0.035);
+	--np-card-soft: rgba(255, 255, 255, 0.035);
 	--np-modal-bg: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
 	--np-text: #f5f5f5;
-	--np-heading: rgba(255,255,255,0.88);
-	--np-muted: rgba(255,255,255,0.54);
-	--np-muted-strong: rgba(255,255,255,0.68);
+	--np-heading: rgba(255, 255, 255, 0.88);
+	--np-muted: rgba(255, 255, 255, 0.54);
+	--np-muted-strong: rgba(255, 255, 255, 0.68);
 	--np-border: #262e3f;
-	--np-hairline: rgba(255,255,255,0.075);
-	--np-button-bg: rgba(255,255,255,0.08);
-	--np-button-hover: rgba(255,255,255,0.14);
-	--np-chip-bg: rgba(255,255,255,0.075);
-	--np-chip-text: rgba(255,255,255,0.86);
+	--np-hairline: rgba(255, 255, 255, 0.075);
+	--np-button-bg: rgba(255, 255, 255, 0.08);
+	--np-button-hover: rgba(255, 255, 255, 0.14);
+	--np-chip-bg: rgba(255, 255, 255, 0.075);
+	--np-chip-text: rgba(255, 255, 255, 0.86);
 	--np-accent: #68d8a3;
-	--np-accent-soft: rgba(104,216,163,0.16);
-	--np-shadow: rgba(0,0,0,0.34);
-	--np-overlay-bg: rgba(0,0,0,0.45);
+	--np-accent-soft: rgba(104, 216, 163, 0.16);
+	--np-shadow: rgba(0, 0, 0, 0.34);
+	--np-overlay-bg: rgba(0, 0, 0, 0.45);
 	position: fixed;
 	inset: 0;
 	display: grid;
@@ -64,43 +64,43 @@
 	--np-shell: #1b1c1f;
 	--np-panel: #202226;
 	--np-card: #2d3034;
-	--np-card-soft: rgba(255,255,255,0.04);
+	--np-card-soft: rgba(255, 255, 255, 0.04);
 	--np-modal-bg: linear-gradient(180deg, #24262b 0%, #151619 100%);
 	--np-text: #f2f0ea;
-	--np-heading: rgba(242,240,234,0.9);
-	--np-muted: rgba(242,240,234,0.56);
-	--np-muted-strong: rgba(242,240,234,0.7);
+	--np-heading: rgba(242, 240, 234, 0.9);
+	--np-muted: rgba(242, 240, 234, 0.56);
+	--np-muted-strong: rgba(242, 240, 234, 0.7);
 	--np-border: #34373d;
-	--np-hairline: rgba(242,240,234,0.09);
-	--np-button-bg: rgba(242,240,234,0.085);
-	--np-button-hover: rgba(242,240,234,0.15);
-	--np-chip-bg: rgba(229,185,88,0.10);
-	--np-chip-text: rgba(246,238,216,0.88);
+	--np-hairline: rgba(242, 240, 234, 0.09);
+	--np-button-bg: rgba(242, 240, 234, 0.085);
+	--np-button-hover: rgba(242, 240, 234, 0.15);
+	--np-chip-bg: rgba(229, 185, 88, 0.1);
+	--np-chip-text: rgba(246, 238, 216, 0.88);
 	--np-accent: #e5b958;
-	--np-accent-soft: rgba(229,185,88,0.18);
+	--np-accent-soft: rgba(229, 185, 88, 0.18);
 }
 
 .app-shell[data-theme='daylight'] {
 	--np-bg: #f5f5f7;
-	--np-shell: rgba(255,255,255,0.76);
-	--np-panel: rgba(255,255,255,0.82);
-	--np-card: rgba(255,255,255,0.88);
-	--np-card-soft: rgba(255,255,255,0.58);
-	--np-modal-bg: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,247,250,0.92) 100%);
+	--np-shell: rgba(255, 255, 255, 0.76);
+	--np-panel: rgba(255, 255, 255, 0.82);
+	--np-card: rgba(255, 255, 255, 0.88);
+	--np-card-soft: rgba(255, 255, 255, 0.58);
+	--np-modal-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 247, 250, 0.92) 100%);
 	--np-text: #1d1d1f;
-	--np-heading: rgba(29,29,31,0.92);
-	--np-muted: rgba(60,60,67,0.58);
-	--np-muted-strong: rgba(60,60,67,0.72);
-	--np-border: rgba(60,60,67,0.16);
-	--np-hairline: rgba(60,60,67,0.12);
-	--np-button-bg: rgba(120,120,128,0.12);
-	--np-button-hover: rgba(120,120,128,0.18);
-	--np-chip-bg: rgba(0,122,255,0.10);
-	--np-chip-text: rgba(29,29,31,0.78);
+	--np-heading: rgba(29, 29, 31, 0.92);
+	--np-muted: rgba(60, 60, 67, 0.58);
+	--np-muted-strong: rgba(60, 60, 67, 0.72);
+	--np-border: rgba(60, 60, 67, 0.16);
+	--np-hairline: rgba(60, 60, 67, 0.12);
+	--np-button-bg: rgba(120, 120, 128, 0.12);
+	--np-button-hover: rgba(120, 120, 128, 0.18);
+	--np-chip-bg: rgba(0, 122, 255, 0.1);
+	--np-chip-text: rgba(29, 29, 31, 0.78);
 	--np-accent: #007aff;
-	--np-accent-soft: rgba(0,122,255,0.14);
-	--np-shadow: rgba(60,60,67,0.16);
-	--np-overlay-bg: rgba(245,245,247,0.42);
+	--np-accent-soft: rgba(0, 122, 255, 0.14);
+	--np-shadow: rgba(60, 60, 67, 0.16);
+	--np-overlay-bg: rgba(245, 245, 247, 0.42);
 	color-scheme: light;
 }
 
@@ -109,20 +109,20 @@
 	--np-shell: #10231d;
 	--np-panel: #132b24;
 	--np-card: #17332b;
-	--np-card-soft: rgba(216,190,134,0.04);
+	--np-card-soft: rgba(216, 190, 134, 0.04);
 	--np-modal-bg: linear-gradient(180deg, #17352e 0%, #0d1d18 100%);
 	--np-text: #f2f4ec;
-	--np-heading: rgba(242,244,236,0.9);
-	--np-muted: rgba(242,244,236,0.55);
-	--np-muted-strong: rgba(242,244,236,0.7);
+	--np-heading: rgba(242, 244, 236, 0.9);
+	--np-muted: rgba(242, 244, 236, 0.55);
+	--np-muted-strong: rgba(242, 244, 236, 0.7);
 	--np-border: #234439;
-	--np-hairline: rgba(242,244,236,0.08);
-	--np-button-bg: rgba(242,244,236,0.08);
-	--np-button-hover: rgba(242,244,236,0.14);
-	--np-chip-bg: rgba(198,161,91,0.12);
-	--np-chip-text: rgba(246,237,214,0.88);
+	--np-hairline: rgba(242, 244, 236, 0.08);
+	--np-button-bg: rgba(242, 244, 236, 0.08);
+	--np-button-hover: rgba(242, 244, 236, 0.14);
+	--np-chip-bg: rgba(198, 161, 91, 0.12);
+	--np-chip-text: rgba(246, 237, 214, 0.88);
 	--np-accent: #c6a15b;
-	--np-accent-soft: rgba(198,161,91,0.18);
+	--np-accent-soft: rgba(198, 161, 91, 0.18);
 }
 
 .app-shell .sidebar-shell,
@@ -225,20 +225,25 @@
 }
 
 .app-shell .settings-actions {
-	background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--np-bg) 72%, transparent) 100%) !important;
+	background: linear-gradient(
+		180deg,
+		transparent 0%,
+		color-mix(in srgb, var(--np-bg) 72%, transparent) 100%
+	) !important;
 }
 
 .app-shell[data-theme='daylight'] .card-item:not(.camera-strip-card-item):not(.light-button-card-item),
 .app-shell[data-theme='daylight'] .np-detail-head-icon,
 .app-shell[data-theme='daylight'] .theme-preview {
-	box-shadow: inset 0 0 0 1px rgba(60,60,67,0.07), 0 9px 24px rgba(60,60,67,0.08) !important;
+	box-shadow:
+		inset 0 0 0 1px rgba(60, 60, 67, 0.07),
+		0 9px 24px rgba(60, 60, 67, 0.08) !important;
 }
 
 .app-shell[data-theme='daylight'] {
 	background:
-		radial-gradient(circle at 16% 10%, rgba(255,204,0,0.08), transparent 26rem),
-		radial-gradient(circle at 86% 8%, rgba(0,122,255,0.08), transparent 24rem),
-		#f5f5f7;
+		radial-gradient(circle at 16% 10%, rgba(255, 204, 0, 0.08), transparent 26rem),
+		radial-gradient(circle at 86% 8%, rgba(0, 122, 255, 0.08), transparent 24rem), #f5f5f7;
 }
 
 .app-shell[data-theme='daylight'] .sidebar-shell,
@@ -271,203 +276,208 @@
 .app-shell[data-theme='daylight'] .availability-card,
 .app-shell[data-theme='daylight'] .entity-row,
 .app-shell[data-theme='daylight'] .theme-option {
-	background: rgba(255,255,255,0.72) !important;
-	border-color: rgba(60,60,67,0.11) !important;
+	background: rgba(255, 255, 255, 0.72) !important;
+	border-color: rgba(60, 60, 67, 0.11) !important;
 }
 
 .app-shell[data-theme='daylight'] .np-detail-tabs {
-	background: rgba(118,118,128,0.10) !important;
+	background: rgba(118, 118, 128, 0.1) !important;
 }
 
 .app-shell[data-theme='daylight'] .np-detail-tabs button.active,
 .app-shell[data-theme='daylight'] .theme-option.active,
 .app-shell[data-theme='daylight'] .column-controls button.active {
-	background: rgba(0,122,255,0.12) !important;
-	border-color: rgba(0,122,255,0.26) !important;
+	background: rgba(0, 122, 255, 0.12) !important;
+	border-color: rgba(0, 122, 255, 0.26) !important;
 	color: #007aff !important;
 }
 
 .app-shell[data-theme='daylight'] .save-btn {
 	background: linear-gradient(180deg, #0a84ff 0%, #007aff 100%) !important;
-	border-color: rgba(0,122,255,0.34) !important;
+	border-color: rgba(0, 122, 255, 0.34) !important;
 	color: #ffffff !important;
-	box-shadow: 0 8px 22px rgba(0,122,255,0.24), inset 0 1px 0 rgba(255,255,255,0.42) !important;
+	box-shadow:
+		0 8px 22px rgba(0, 122, 255, 0.24),
+		inset 0 1px 0 rgba(255, 255, 255, 0.42) !important;
 }
 
 .app-shell[data-theme='daylight'] .save-btn :global(.mdi-mask) {
 	--mask-color: #ffffff;
 }
 
-.app-shell[data-theme='daylight'] :where(
-	.card-title,
-	.name,
-	.summary,
-	.light-name,
-	.light-state,
-	.entity-name,
-	.entity-state,
-	.alarm-name,
-	.alarm-state,
-	.welcome-title,
-	.welcome-subtitle,
-	.row-weekday,
-	.row-date,
-	.row-sep,
-	.np-detail-head-title,
-	.np-detail-head-text h3,
-	.np-detail-head-sub,
-	.np-detail-section-title,
-	.np-detail-area-header,
-	.np-detail-empty,
-	.np-label,
-	.np-help,
-	.np-hint,
-	.np-section-title,
-	.np-section-meta,
-	.np-editor-head-title,
-	.np-editor-head-sub,
-	.settings-section-head,
-	.settings-section-head h4,
-	.integration-toggle,
-	.integration-toggle-name,
-	.integration-help-text,
-	.integration-status,
-	.theme-option-name,
-	.library-tile-title,
-	.library-tile-meta,
-	.section-card-main,
-	.section-card-copy,
-	.status-hero-num,
-	.status-hero-num-label,
-	.status-hero-sub,
-	.status-hero-extra-label,
-	.status-hero-extra-value,
-	.availability-main,
-	.availability-main > span,
-	.availability-sub,
-	.availability-ok-title,
-	.availability-ok-sub,
-	.area-header,
-	.empty-row,
-	.stat-label,
-	.stat-value,
-	.summary-label,
-	.summary-value,
-	.summary-foot,
-	.hero-value,
-	.hero-label,
-	.device-bar-name,
-	.device-bar-value,
-	.legend-name,
-	.legend-value,
-	.chart-title,
-	.day-name,
-	.day-temp-row,
-	.empty-state,
-	.alias-editor-name,
-	.alias-editor-id,
-	.alias-icon-preview,
-	.ap-master-left,
-	.ap-master-total,
-	.ap-area-name,
-	.ap-area-count,
-	.ap-area-list-title,
-	.ap-area-list-summary,
-	.ap-area-row-name,
-	.lg-name,
-	.lg-count-pill,
-	.lg-tag,
-	.camera-item-name,
-	.camera-picker-name,
-	.wc-title-sub,
-	.wc-day-name,
-	.wc-month-name,
-	.wc-all-day-label,
-	.wc-status,
-	.wc-event-modal-title,
-	.wc-person-modal-title,
-	.now-title,
-	.now-artist,
-	.now-source,
-	.player-tile-name,
-	.player-tile-status,
-	.block-head,
-	.block-empty,
-	.bridge-label,
-	.bridge-sub,
-	.sp-now-title,
-	.sp-now-artist,
-	.sp-now-progress,
-	.sp-queue-title,
-	.sp-queue-name,
-	.sp-queue-artist,
-	.sp-search-empty,
-	.sp-art-name,
-	.sp-art-sub,
-	.tin-result-name,
-	.tin-result-sub
-) {
+.app-shell[data-theme='daylight']
+	:where(
+		.card-title,
+		.name,
+		.summary,
+		.light-name,
+		.light-state,
+		.entity-name,
+		.entity-state,
+		.alarm-name,
+		.alarm-state,
+		.welcome-title,
+		.welcome-subtitle,
+		.row-weekday,
+		.row-date,
+		.row-sep,
+		.np-detail-head-title,
+		.np-detail-head-text h3,
+		.np-detail-head-sub,
+		.np-detail-section-title,
+		.np-detail-area-header,
+		.np-detail-empty,
+		.np-label,
+		.np-help,
+		.np-hint,
+		.np-section-title,
+		.np-section-meta,
+		.np-editor-head-title,
+		.np-editor-head-sub,
+		.settings-section-head,
+		.settings-section-head h4,
+		.integration-toggle,
+		.integration-toggle-name,
+		.integration-help-text,
+		.integration-status,
+		.theme-option-name,
+		.library-tile-title,
+		.library-tile-meta,
+		.section-card-main,
+		.section-card-copy,
+		.status-hero-num,
+		.status-hero-num-label,
+		.status-hero-sub,
+		.status-hero-extra-label,
+		.status-hero-extra-value,
+		.availability-main,
+		.availability-main > span,
+		.availability-sub,
+		.availability-ok-title,
+		.availability-ok-sub,
+		.area-header,
+		.empty-row,
+		.stat-label,
+		.stat-value,
+		.summary-label,
+		.summary-value,
+		.summary-foot,
+		.hero-value,
+		.hero-label,
+		.device-bar-name,
+		.device-bar-value,
+		.legend-name,
+		.legend-value,
+		.chart-title,
+		.day-name,
+		.day-temp-row,
+		.empty-state,
+		.alias-editor-name,
+		.alias-editor-id,
+		.alias-icon-preview,
+		.ap-master-left,
+		.ap-master-total,
+		.ap-area-name,
+		.ap-area-count,
+		.ap-area-list-title,
+		.ap-area-list-summary,
+		.ap-area-row-name,
+		.lg-name,
+		.lg-count-pill,
+		.lg-tag,
+		.camera-item-name,
+		.camera-picker-name,
+		.wc-title-sub,
+		.wc-day-name,
+		.wc-month-name,
+		.wc-all-day-label,
+		.wc-status,
+		.wc-event-modal-title,
+		.wc-person-modal-title,
+		.now-title,
+		.now-artist,
+		.now-source,
+		.player-tile-name,
+		.player-tile-status,
+		.block-head,
+		.block-empty,
+		.bridge-label,
+		.bridge-sub,
+		.sp-now-title,
+		.sp-now-artist,
+		.sp-now-progress,
+		.sp-queue-title,
+		.sp-queue-name,
+		.sp-queue-artist,
+		.sp-search-empty,
+		.sp-art-name,
+		.sp-art-sub,
+		.tin-result-name,
+		.tin-result-sub
+	) {
 	color: var(--np-text) !important;
 }
 
-.app-shell[data-theme='daylight'] :where(
-	.summary,
-	.light-state,
-	.entity-state,
-	.alarm-state,
-	.np-detail-head-sub,
-	.np-detail-section-title,
-	.np-detail-area-header,
-	.np-help,
-	.np-hint,
-	.np-section-meta,
-	.np-editor-head-sub,
-	.integration-help-text,
-	.availability-sub,
-	.availability-ok-sub,
-	.status-hero-num-label,
-	.status-hero-sub,
-	.status-hero-extra-label,
-	.stat-label,
-	.summary-label,
-	.summary-foot,
-	.hero-label,
-	.legend-value,
-	.empty-state,
-	.alias-editor-id,
-	.ap-master-total,
-	.ap-area-count,
-	.ap-area-list-summary,
-	.bridge-sub,
-	.sp-now-artist,
-	.sp-now-progress,
-	.sp-queue-artist,
-	.sp-art-sub,
-	.tin-result-sub,
-	.player-tile-status
-) {
+.app-shell[data-theme='daylight']
+	:where(
+		.summary,
+		.light-state,
+		.entity-state,
+		.alarm-state,
+		.np-detail-head-sub,
+		.np-detail-section-title,
+		.np-detail-area-header,
+		.np-help,
+		.np-hint,
+		.np-section-meta,
+		.np-editor-head-sub,
+		.integration-help-text,
+		.availability-sub,
+		.availability-ok-sub,
+		.status-hero-num-label,
+		.status-hero-sub,
+		.status-hero-extra-label,
+		.stat-label,
+		.summary-label,
+		.summary-foot,
+		.hero-label,
+		.legend-value,
+		.empty-state,
+		.alias-editor-id,
+		.ap-master-total,
+		.ap-area-count,
+		.ap-area-list-summary,
+		.bridge-sub,
+		.sp-now-artist,
+		.sp-now-progress,
+		.sp-queue-artist,
+		.sp-art-sub,
+		.tin-result-sub,
+		.player-tile-status
+	) {
 	color: var(--np-muted) !important;
 }
 
-.app-shell[data-theme='daylight'] :where(
-	input,
-	select,
-	textarea,
-	.np-input,
-	.rename-input,
-	.library-section-rename-input,
-	.sp-search-input,
-	.tin-search-input,
-	.spotify-target,
-	.lg-name-input
-) {
-	background: rgba(255,255,255,0.82) !important;
-	border-color: rgba(60,60,67,0.14) !important;
+.app-shell[data-theme='daylight']
+	:where(
+		input,
+		select,
+		textarea,
+		.np-input,
+		.rename-input,
+		.library-section-rename-input,
+		.sp-search-input,
+		.tin-search-input,
+		.spotify-target,
+		.lg-name-input
+	) {
+	background: rgba(255, 255, 255, 0.82) !important;
+	border-color: rgba(60, 60, 67, 0.14) !important;
 	color: var(--np-text) !important;
 }
 
 .app-shell[data-theme='daylight'] :where(input, textarea, .np-input)::placeholder {
-	color: rgba(60,60,67,0.34) !important;
+	color: rgba(60, 60, 67, 0.34) !important;
 }
 
 :global(html),
@@ -488,6 +498,31 @@
 	   main-zone in the second column. */
 	grid-column: 2;
 	grid-row: 1;
+}
+
+.ha-offline-banner {
+	position: absolute;
+	top: 12px;
+	right: 14px;
+	z-index: 25;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	max-width: min(460px, calc(100% - 28px));
+	padding: 8px 11px;
+	border: 1px solid rgba(248, 113, 113, 0.28);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--np-bg) 82%, rgba(248, 113, 113, 0.22));
+	color: var(--np-text);
+	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.26);
+	font-size: 0.82rem;
+	line-height: 1.25;
+	pointer-events: none;
+}
+
+.ha-offline-time {
+	color: var(--np-muted-strong);
+	white-space: nowrap;
 }
 
 :global(.sidebar-shell) {
@@ -517,7 +552,7 @@
 	z-index: 60;
 	transform: translateX(0);
 	transition: transform 240ms ease;
-	box-shadow: 8px 0 32px rgba(0,0,0,0.45);
+	box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
 }
 .app-shell.is-mobile :global(.sidebar-shell) {
 	transform: translateX(-100%);
@@ -536,8 +571,8 @@
 	cursor: default;
 }
 
-[class*="modal-overlay"],
-[class*="-overlay"][class*="modal"] {
+[class*='modal-overlay'],
+[class*='-overlay'][class*='modal'] {
 	backdrop-filter: blur(10px) saturate(1.05) !important;
 	-webkit-backdrop-filter: blur(10px) saturate(1.05) !important;
 	background: var(--np-overlay-bg) !important;
@@ -717,7 +752,7 @@
 	height: 2px;
 	background: #60a5fa;
 	border-radius: 999px;
-	box-shadow: 0 0 8px rgba(96,165,250,0.5);
+	box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
 	opacity: 0.9;
 	pointer-events: none;
 	z-index: 10;
@@ -834,7 +869,7 @@
 	left: 50%;
 	width: 60%;
 	height: 1px;
-	background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
 	transform: translateX(-50%);
 	pointer-events: none;
 	z-index: 5;
@@ -1084,9 +1119,8 @@
 
 .card-item.week-calendar-card-item {
 	background:
-		radial-gradient(circle at 18% 12%, rgba(56,189,248,0.12), transparent 34%),
-		linear-gradient(145deg, var(--np-card-soft), rgba(255,255,255,0.025)),
-		var(--np-panel);
+		radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.12), transparent 34%),
+		linear-gradient(145deg, var(--np-card-soft), rgba(255, 255, 255, 0.025)), var(--np-panel);
 	box-shadow: inset 0 0 0 1px var(--np-hairline);
 	padding: 0;
 	min-height: 30rem;
@@ -1103,12 +1137,12 @@
 .card-item.week-calendar-card-item.week-calendar-expanded {
 	cursor: default;
 	box-shadow:
-		inset 0 0 0 1px rgba(56,189,248,0.16),
-		0 16px 40px rgba(0,0,0,0.18);
+		inset 0 0 0 1px rgba(56, 189, 248, 0.16),
+		0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
 .card-item.week-calendar-card-item:focus-visible {
-	outline: 2px solid rgba(56,189,248,0.72);
+	outline: 2px solid rgba(56, 189, 248, 0.72);
 	outline-offset: 3px;
 }
 
@@ -1230,11 +1264,11 @@
 		max-width: 320px;
 		z-index: 60;
 		transform: translateX(0);
-		box-shadow: 8px 0 32px rgba(0,0,0,0.45);
+		box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
 	}
 
 	.app-popup,
-	:global([class*="-modal"][role="dialog"]),
+	:global([class*='-modal'][role='dialog']),
 	:global(.energy-modal),
 	:global(.weather-modal),
 	:global(.weather-forecast-modal),
@@ -1317,35 +1351,44 @@
 	min-height: 0;
 	flex: 1;
 }
-.np-detail-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.np-detail-body::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
+}
 
 /* Premium tegel — basis voor entity-rijen, kpi-blokken, etc */
 .np-detail-tile {
-	background: rgba(255,255,255,0.025);
-	border: 0.5px solid rgba(255,255,255,0.07);
+	background: rgba(255, 255, 255, 0.025);
+	border: 0.5px solid rgba(255, 255, 255, 0.07);
 	border-radius: 13px;
 	padding: 12px 14px;
-	transition: border-color 0.2s, background 0.2s, transform 0.2s;
+	transition:
+		border-color 0.2s,
+		background 0.2s,
+		transform 0.2s;
 	position: relative;
 	overflow: hidden;
 }
-.np-detail-tile.interactive { cursor: pointer; }
+.np-detail-tile.interactive {
+	cursor: pointer;
+}
 .np-detail-tile.interactive:hover {
-	border-color: rgba(255,255,255,0.13);
-	background: rgba(255,255,255,0.04);
+	border-color: rgba(255, 255, 255, 0.13);
+	background: rgba(255, 255, 255, 0.04);
 	transform: translateY(-1px);
 }
 .np-detail-tile.active {
-	background: linear-gradient(135deg, rgba(96,165,250,0.05), transparent 60%), rgba(255,255,255,0.035);
-	border-color: rgba(96,165,250,0.20);
+	background: linear-gradient(135deg, rgba(96, 165, 250, 0.05), transparent 60%), rgba(255, 255, 255, 0.035);
+	border-color: rgba(96, 165, 250, 0.2);
 }
 .np-detail-tile.warn {
-	background: linear-gradient(135deg, rgba(250,204,21,0.05), transparent 60%), rgba(255,255,255,0.025);
-	border-color: rgba(250,204,21,0.18);
+	background: linear-gradient(135deg, rgba(250, 204, 21, 0.05), transparent 60%), rgba(255, 255, 255, 0.025);
+	border-color: rgba(250, 204, 21, 0.18);
 }
 .np-detail-tile.danger {
-	background: linear-gradient(135deg, rgba(248,113,113,0.05), transparent 60%), rgba(255,255,255,0.025);
-	border-color: rgba(248,113,113,0.20);
+	background: linear-gradient(135deg, rgba(248, 113, 113, 0.05), transparent 60%), rgba(255, 255, 255, 0.025);
+	border-color: rgba(248, 113, 113, 0.2);
 }
 
 /* Sectie-titel (bv "Batterijen", "Vandaag", "Komende 24 uur") */
@@ -1354,7 +1397,7 @@
 	font-weight: 600;
 	letter-spacing: 0.07em;
 	text-transform: uppercase;
-	color: rgba(255,255,255,0.45);
+	color: rgba(255, 255, 255, 0.45);
 	padding: 4px 0 2px;
 	margin: 0;
 }
@@ -1364,8 +1407,8 @@
 	display: flex;
 	gap: 6px;
 	padding: 4px;
-	background: rgba(255,255,255,0.03);
-	border: 0.5px solid rgba(255,255,255,0.06);
+	background: rgba(255, 255, 255, 0.03);
+	border: 0.5px solid rgba(255, 255, 255, 0.06);
 	border-radius: 11px;
 	width: fit-content;
 }
@@ -1375,18 +1418,22 @@
 	border-radius: 8px;
 	border: 0;
 	background: transparent;
-	color: rgba(255,255,255,0.55);
+	color: rgba(255, 255, 255, 0.55);
 	cursor: pointer;
 	font-size: 12.5px;
 	font-weight: 500;
 	display: flex;
 	align-items: center;
-	transition: background 0.15s, color 0.15s;
+	transition:
+		background 0.15s,
+		color 0.15s;
 	font-family: inherit;
 }
-.np-detail-tabs button:hover { color: rgba(255,255,255,0.85); }
+.np-detail-tabs button:hover {
+	color: rgba(255, 255, 255, 0.85);
+}
 .np-detail-tabs button.active {
-	background: rgba(96,165,250,0.13);
+	background: rgba(96, 165, 250, 0.13);
 	color: #93c5fd;
 }
 
@@ -1394,7 +1441,7 @@
 .np-detail-empty {
 	padding: 32px 20px;
 	text-align: center;
-	color: rgba(255,255,255,0.45);
+	color: rgba(255, 255, 255, 0.45);
 	font-size: 13px;
 }
 
@@ -1404,14 +1451,14 @@
 	font-weight: 600;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: rgba(255,255,255,0.35);
+	color: rgba(255, 255, 255, 0.35);
 	padding: 8px 4px 2px;
 }
 
 /* Error row in een detail-modal */
 .np-detail-error {
-	background: rgba(248,113,113,0.08);
-	border: 0.5px solid rgba(248,113,113,0.20);
+	background: rgba(248, 113, 113, 0.08);
+	border: 0.5px solid rgba(248, 113, 113, 0.2);
 	border-radius: 10px;
 	padding: 10px 12px;
 	color: #fca5a5;
@@ -1468,8 +1515,16 @@
 .devices-modal,
 .camera-detail-modal {
 	box-sizing: border-box !important;
-	width: clamp(var(--np-popup-safe-min-width), var(--popup-width, 850px), var(--np-popup-max-width)) !important;
-	height: clamp(var(--np-popup-safe-min-height), var(--popup-height, 1140px), var(--np-popup-max-height)) !important;
+	width: clamp(
+		var(--np-popup-safe-min-width),
+		var(--popup-width, 850px),
+		var(--np-popup-max-width)
+	) !important;
+	height: clamp(
+		var(--np-popup-safe-min-height),
+		var(--popup-height, 1140px),
+		var(--np-popup-max-height)
+	) !important;
 	max-width: var(--np-popup-max-width) !important;
 	max-height: var(--np-popup-max-height) !important;
 	min-width: var(--np-popup-safe-min-width) !important;
@@ -1510,7 +1565,11 @@
 	.alarm-modal,
 	.energy-modal,
 	.devices-modal {
-		height: clamp(var(--np-popup-safe-min-height), var(--popup-height, 1140px), var(--np-popup-max-height)) !important;
+		height: clamp(
+			var(--np-popup-safe-min-height),
+			var(--popup-height, 1140px),
+			var(--np-popup-max-height)
+		) !important;
 		max-height: var(--np-popup-max-height) !important;
 	}
 }
@@ -1525,7 +1584,7 @@
 	gap: 12px !important;
 	position: relative !important;
 	overflow: hidden !important;
-	border-bottom: 0.5px solid rgba(255,255,255,0.06) !important;
+	border-bottom: 0.5px solid rgba(255, 255, 255, 0.06) !important;
 	padding: 18px 22px 14px !important;
 	min-height: 0 !important;
 	flex-shrink: 0 !important;
@@ -1537,7 +1596,7 @@
 	left: -40px !important;
 	width: 220px !important;
 	height: 220px !important;
-	background: radial-gradient(circle, var(--np-tint, rgba(96,165,250,0.18)), transparent 70%) !important;
+	background: radial-gradient(circle, var(--np-tint, rgba(96, 165, 250, 0.18)), transparent 70%) !important;
 	pointer-events: none !important;
 	filter: blur(20px) !important;
 }
@@ -1548,8 +1607,8 @@
 	width: 38px !important;
 	height: 38px !important;
 	border-radius: 10px !important;
-	background: var(--np-tint, rgba(96,165,250,0.18)) !important;
-	border: 0.5px solid rgba(255,255,255,0.10) !important;
+	background: var(--np-tint, rgba(96, 165, 250, 0.18)) !important;
+	border: 0.5px solid rgba(255, 255, 255, 0.1) !important;
 	color: var(--np-color, #60a5fa) !important;
 	flex-shrink: 0 !important;
 	position: relative !important;
@@ -1580,7 +1639,7 @@
 .np-detail-head-sub {
 	font-size: 11px !important;
 	margin-top: 2px !important;
-	color: rgba(255,255,255,0.5) !important;
+	color: rgba(255, 255, 255, 0.5) !important;
 	min-width: 0 !important;
 	overflow: hidden !important;
 	text-overflow: ellipsis !important;
@@ -1647,7 +1706,8 @@
 .np-detail-body,
 .modal-body,
 .devices-body {
-	padding: var(--np-popup-body-pad-y) var(--np-popup-body-pad-x) calc(var(--np-popup-body-pad-y) + env(safe-area-inset-bottom, 0px)) !important;
+	padding: var(--np-popup-body-pad-y) var(--np-popup-body-pad-x)
+		calc(var(--np-popup-body-pad-y) + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* Compact side-panel detail content: keep the proven popup frame, reduce oversized internals. */

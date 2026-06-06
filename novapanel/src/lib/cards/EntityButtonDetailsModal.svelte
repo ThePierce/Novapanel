@@ -7,6 +7,7 @@
 	import { browserSafeHomeAssistantUrl, getNovaApiUrl } from '$lib/ha/entities-service-helpers';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
 	import { selectedLanguageStore, translate, translateState } from '$lib/i18n';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
 
 	type Props = {
 		kind: EntityButtonKind;
@@ -33,19 +34,18 @@
 	const entity = $derived(
 		$entityStore.entities.find((entry: HomeAssistantEntity) => entry.entityId === (entityId ?? ''))
 	);
-	const state = $derived((entity?.state ?? '').toLowerCase());
-	const isUnavailable = $derived(!entity || state === 'unavailable' || state === 'unknown');
+	const entityState = $derived((entity?.state ?? '').toLowerCase());
+	const isUnavailable = $derived(!entity || entityState === 'unavailable' || entityState === 'unknown');
 	const serviceDomain = $derived((entity?.domain || entityId?.split('.')[0] || '').toLowerCase());
 	const displayName = $derived(
-		title && title.trim().length > 0
-			? title.trim()
-			: entity?.friendlyName ?? entityId ?? fallbackName(kind)
+		title && title.trim().length > 0 ? title.trim() : (entity?.friendlyName ?? entityId ?? fallbackName(kind))
 	);
 	const accent = $derived(accentForKind(kind));
 	const accentSoft = $derived(softAccentForKind(kind));
 
 	const currentTemperature = $derived(numericAttribute(entity, 'current_temperature'));
-	const targetTemperature = $derived(numericAttribute(entity, 'temperature') ?? 20);
+	const targetTemperature = $derived(numericAttribute(entity, 'temperature'));
+	const hasTargetTemperature = $derived(targetTemperature !== null);
 	const minTemperature = $derived(numericAttribute(entity, 'min_temp') ?? 5);
 	const maxTemperature = $derived(numericAttribute(entity, 'max_temp') ?? 35);
 	const temperatureStep = $derived(numericAttribute(entity, 'target_temp_step') ?? 0.5);
@@ -55,11 +55,11 @@
 	const currentPosition = $derived(
 		rawCoverPosition !== null
 			? clampPercent(rawCoverPosition)
-			: state === 'open' || state === 'opening'
+			: entityState === 'open' || entityState === 'opening'
 				? 100
 				: 0
 	);
-	const cardIcon = $derived(iconForEntity(kind, icon, rawCoverPosition, state));
+	const cardIcon = $derived(iconForEntity(kind, icon, rawCoverPosition, entityState));
 	const batteryLevel = $derived(numericAttribute(entity, 'battery_level'));
 	const fanSpeeds = $derived(stringListAttribute(entity, 'fan_speed_list'));
 	const currentFanSpeed = $derived(stringAttribute(entity, 'fan_speed'));
@@ -70,13 +70,19 @@
 	const mediaTitle = $derived(stringAttribute(entity, 'media_title'));
 	const mediaArtist = $derived(stringAttribute(entity, 'media_artist'));
 	const stateLabel = $derived(summaryLabel());
-	const vacuumArea = $derived(numericAttribute(entity, 'cleaned_area') ?? numericAttribute(entity, 'cleaning_area'));
-	const vacuumDuration = $derived(numericAttribute(entity, 'cleaning_time') ?? numericAttribute(entity, 'cleaning_duration'));
+	const vacuumArea = $derived(
+		numericAttribute(entity, 'cleaned_area') ?? numericAttribute(entity, 'cleaning_area')
+	);
+	const vacuumDuration = $derived(
+		numericAttribute(entity, 'cleaning_time') ?? numericAttribute(entity, 'cleaning_duration')
+	);
 	const vacuumMapCamera = $derived.by(() => {
 		if (kind !== 'vacuum') return null as HomeAssistantEntity | null;
 		const all = $entityStore.entities;
 		const vacuumTokens = tokensForMapMatch(entityId, displayName);
-		const cameras = all.filter((entry) => entry.domain === 'camera' || entry.entityId.toLowerCase().includes('map'));
+		const cameras = all.filter(
+			(entry) => entry.domain === 'camera' || entry.entityId.toLowerCase().includes('map')
+		);
 		return cameras.find((entry) => isVacuumMapCandidate(entry, vacuumTokens)) ?? null;
 	});
 	const vacuumMapImageUrl = $derived.by(() => {
@@ -94,9 +100,13 @@
 		if (direct) return browserSafeHomeAssistantUrl(direct);
 		const cameraPicture = firstStringAttribute(vacuumMapCamera ?? undefined, ['entity_picture']);
 		if (cameraPicture) return browserSafeHomeAssistantUrl(cameraPicture);
-		return vacuumMapCamera ? getNovaApiUrl(`/api/camera_proxy/${encodeURIComponent(vacuumMapCamera.entityId)}`) : '';
+		return vacuumMapCamera
+			? getNovaApiUrl(`/api/camera_proxy/${encodeURIComponent(vacuumMapCamera.entityId)}`)
+			: '';
 	});
-	const vacuumMapTitle = $derived(vacuumMapCamera?.friendlyName ?? translate('Kaart', $selectedLanguageStore));
+	const vacuumMapTitle = $derived(
+		vacuumMapCamera?.friendlyName ?? translate('Kaart', $selectedLanguageStore)
+	);
 
 	$effect(() => {
 		vacuumMapImageUrl;
@@ -104,7 +114,7 @@
 	});
 
 	$effect(() => {
-		if (!draggingTemperature) temperatureDraft = targetTemperature;
+		if (!draggingTemperature && targetTemperature !== null) temperatureDraft = targetTemperature;
 	});
 
 	$effect(() => {
@@ -146,19 +156,30 @@
 		return coverState === 'closed' || coverState === 'closing';
 	}
 
-	function coverIconForState(position: number | null, coverState: string, configuredIcon: string | undefined) {
+	function coverIconForState(
+		position: number | null,
+		coverState: string,
+		configuredIcon: string | undefined
+	) {
 		const configured = (configuredIcon ?? '').trim();
 		const normalized = configured.toLowerCase().replace(/^mdi:/, '');
 		const closed = isCoverClosed(position, coverState);
-		if (normalized.includes('blinds-horizontal')) return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
+		if (normalized.includes('blinds-horizontal'))
+			return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
 		if (normalized.includes('blinds')) return closed ? 'mdi:blinds' : 'mdi:blinds-open';
-		if (normalized.includes('window-shutter')) return closed ? 'mdi:window-shutter' : 'mdi:window-shutter-open';
+		if (normalized.includes('window-shutter'))
+			return closed ? 'mdi:window-shutter' : 'mdi:window-shutter-open';
 		if (normalized && !normalized.includes('curtains')) return configured;
 		if (normalized.includes('curtains')) return closed ? 'mdi:curtains-closed' : 'mdi:curtains';
 		return closed ? 'mdi:blinds-horizontal-closed' : 'mdi:blinds-horizontal';
 	}
 
-	function iconForEntity(value: EntityButtonKind, configuredIcon: string | undefined, position: number | null, currentState: string) {
+	function iconForEntity(
+		value: EntityButtonKind,
+		configuredIcon: string | undefined,
+		position: number | null,
+		currentState: string
+	) {
 		if (value === 'cover') return coverIconForState(position, currentState, configuredIcon);
 		if (value === 'device' && serviceDomain === 'lock') {
 			const configured = (configuredIcon ?? '').trim();
@@ -167,7 +188,7 @@
 				? 'mdi:lock-open-outline'
 				: 'mdi:lock-outline';
 		}
-		return (configuredIcon && configuredIcon.trim().length > 0) ? configuredIcon.trim() : fallbackIcon(value);
+		return configuredIcon && configuredIcon.trim().length > 0 ? configuredIcon.trim() : fallbackIcon(value);
 	}
 
 	function accentForKind(value: EntityButtonKind) {
@@ -224,11 +245,18 @@
 
 	function isVacuumMapCandidate(entry: HomeAssistantEntity, vacuumTokens: string[]): boolean {
 		const attrs = entry.attributes ?? {};
-		const haystack = `${entry.entityId} ${entry.friendlyName} ${String(attrs.device_class ?? '')} ${String(attrs.icon ?? '')}`.toLowerCase();
+		const haystack =
+			`${entry.entityId} ${entry.friendlyName} ${String(attrs.device_class ?? '')} ${String(attrs.icon ?? '')}`.toLowerCase();
 		const mentionsMap = /\b(map|kaart|plattegrond)\b/.test(haystack);
 		const mentionsVacuum = /\b(vacuum|robo|roborock|robovac|stofzuiger)\b/.test(haystack);
-		if (mentionsMap && (mentionsVacuum || vacuumTokens.some((token) => haystack.includes(token)))) return true;
-		const picture = firstStringAttribute(entry, ['entity_picture', 'map_image', 'map_url', 'image_url']).toLowerCase();
+		if (mentionsMap && (mentionsVacuum || vacuumTokens.some((token) => haystack.includes(token))))
+			return true;
+		const picture = firstStringAttribute(entry, [
+			'entity_picture',
+			'map_image',
+			'map_url',
+			'image_url'
+		]).toLowerCase();
 		return mentionsMap && picture.length > 0;
 	}
 
@@ -238,16 +266,18 @@
 
 	function summaryLabel() {
 		if (isUnavailable) return translate('Niet beschikbaar', $selectedLanguageStore);
-		if (kind === 'device') return readableState(state);
+		if (kind === 'device') return readableState(entityState);
 		if (kind === 'climate') {
-			if (currentTemperature !== null) return `${readableState(state)} · ${currentTemperature}°`;
-			return readableState(state);
+			if (currentTemperature !== null) return `${readableState(entityState)} · ${currentTemperature}°`;
+			return readableState(entityState);
 		}
 		if (kind === 'cover') return coverStatusLabel();
 		if (kind === 'vacuum') {
-			return batteryLevel !== null ? `${readableState(state)} · ${Math.round(batteryLevel)}%` : readableState(state);
+			return batteryLevel !== null
+				? `${readableState(entityState)} · ${Math.round(batteryLevel)}%`
+				: readableState(entityState);
 		}
-		return mediaTitle || readableState(state);
+		return mediaTitle || readableState(entityState);
 	}
 
 	function parseRange(event: Event): number {
@@ -261,7 +291,10 @@
 		try {
 			await callHaService(domain, service, { entity_id: entityId, ...data });
 		} catch (err) {
-			error = err instanceof Error && err.message ? err.message : translate('Actie mislukt', $selectedLanguageStore);
+			error =
+				err instanceof Error && err.message
+					? err.message
+					: translate('Actie mislukt', $selectedLanguageStore);
 		} finally {
 			busy = false;
 		}
@@ -302,12 +335,6 @@
 		scheduleTemperature(value);
 	}
 
-	function onPositionInput(event: Event) {
-		const value = parseRange(event);
-		positionDraft = value;
-		schedulePosition(value);
-	}
-
 	function onVolumeInput(event: Event) {
 		const value = parseRange(event);
 		volumeDraft = value;
@@ -345,18 +372,24 @@
 
 	function coverStatusLabel() {
 		const pct = Math.round(currentPosition);
-		const label = readableState(state);
+		const label = readableState(entityState);
 		return rawCoverPosition !== null ? `${label} · ${pct}% open` : label;
 	}
 </script>
 
-<button type="button" class="modal-overlay entity-modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
-<section
+<button
+	type="button"
+	class="modal-overlay entity-modal-overlay"
+	onclick={onClose}
+	aria-label={translate('close', $selectedLanguageStore)}
+></button>
+<div
 	class="settings-modal app-popup entity-detail-modal np-detail"
 	class:vacuum-detail={kind === 'vacuum'}
 	role="dialog"
 	aria-modal="true"
 	aria-label={displayName}
+	use:modalBehavior={{ onClose }}
 	style={`--entity-accent: ${accent}; --entity-soft: ${accentSoft};`}
 >
 	<div class="np-detail-head" style={`--np-tint: ${accentSoft}; --np-color: ${accent};`}>
@@ -378,7 +411,7 @@
 			<div class="vacuum-status">
 				<div>
 					<span>{translate('Status', $selectedLanguageStore)}</span>
-					<strong>{readableState(state)}</strong>
+					<strong>{readableState(entityState)}</strong>
 				</div>
 				<div>
 					<span>{translate('Domein', $selectedLanguageStore)}</span>
@@ -387,11 +420,31 @@
 			</div>
 			<div class="action-row">
 				{#if serviceDomain === 'lock'}
-					<button type="button" class="np-btn ghost" onclick={() => void callService('lock', lockServiceForState(false))} disabled={busy || isUnavailable}>{translate('Vergrendelen', $selectedLanguageStore)}</button>
-					<button type="button" class="np-btn primary" onclick={() => void callService('lock', lockServiceForState(true))} disabled={busy || isUnavailable}>{translate('Ontgrendelen', $selectedLanguageStore)}</button>
+					<button
+						type="button"
+						class="np-btn ghost"
+						onclick={() => void callService('lock', lockServiceForState(false))}
+						disabled={busy || isUnavailable}>{translate('Vergrendelen', $selectedLanguageStore)}</button
+					>
+					<button
+						type="button"
+						class="np-btn primary"
+						onclick={() => void callService('lock', lockServiceForState(true))}
+						disabled={busy || isUnavailable}>{translate('Ontgrendelen', $selectedLanguageStore)}</button
+					>
 				{:else}
-					<button type="button" class="np-btn ghost" onclick={() => void callService(serviceDomain || 'switch', 'turn_off')} disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button>
-					<button type="button" class="np-btn primary" onclick={() => void callService(serviceDomain || 'switch', 'turn_on')} disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button>
+					<button
+						type="button"
+						class="np-btn ghost"
+						onclick={() => void callService(serviceDomain || 'switch', 'turn_off')}
+						disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button
+					>
+					<button
+						type="button"
+						class="np-btn primary"
+						onclick={() => void callService(serviceDomain || 'switch', 'turn_on')}
+						disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button
+					>
 				{/if}
 			</div>
 		{:else if kind === 'climate'}
@@ -399,33 +452,46 @@
 				<span>{currentTemperature !== null ? `${currentTemperature}°` : '--°'}</span>
 				<small>{translate('Nu', $selectedLanguageStore)}</small>
 			</div>
-			<label class="entity-control">
-				<span class="control-head">
-					<span>{translate('Doeltemperatuur', $selectedLanguageStore)}</span>
-					<strong>{temperatureDraft}°</strong>
-				</span>
-				<input
-					type="range"
-					min={minTemperature}
-					max={maxTemperature}
-					step={temperatureStep}
-					value={temperatureDraft}
-					onpointerdown={() => (draggingTemperature = true)}
-					onpointerup={() => (draggingTemperature = false)}
-					oninput={onTemperatureInput}
-					onchange={(event) => scheduleTemperature(parseRange(event), 0)}
-					disabled={busy || isUnavailable}
-				/>
-			</label>
+			{#if hasTargetTemperature}
+				<label class="entity-control">
+					<span class="control-head">
+						<span>{translate('Doeltemperatuur', $selectedLanguageStore)}</span>
+						<strong>{temperatureDraft}°</strong>
+					</span>
+					<input
+						type="range"
+						min={minTemperature}
+						max={maxTemperature}
+						step={temperatureStep}
+						value={temperatureDraft}
+						onpointerdown={() => (draggingTemperature = true)}
+						onpointerup={() => (draggingTemperature = false)}
+						oninput={onTemperatureInput}
+						onchange={(event) => scheduleTemperature(parseRange(event), 0)}
+						disabled={busy || isUnavailable}
+					/>
+				</label>
+			{:else}
+				<div class="entity-control">
+					<span class="control-head">
+						<span>{translate('Doeltemperatuur', $selectedLanguageStore)}</span>
+						<strong>--°</strong>
+					</span>
+					<small>{translate('Geen doeltemperatuur beschikbaar', $selectedLanguageStore)}</small>
+				</div>
+			{/if}
 			{#if hvacModes.length > 0}
 				<label class="entity-control">
 					<span class="control-head"><span>{translate('Modus', $selectedLanguageStore)}</span></span>
 					<select
-						value={state}
-						onchange={(event) => void callService('climate', 'set_hvac_mode', { hvac_mode: (event.currentTarget as HTMLSelectElement).value })}
+						value={entityState}
+						onchange={(event) =>
+							void callService('climate', 'set_hvac_mode', {
+								hvac_mode: (event.currentTarget as HTMLSelectElement).value
+							})}
 						disabled={busy || isUnavailable}
 					>
-						{#each hvacModes as mode}
+						{#each hvacModes as mode (mode)}
 							<option value={mode}>{readableState(mode)}</option>
 						{/each}
 					</select>
@@ -436,19 +502,32 @@
 					<span class="control-head"><span>{translate('Preset', $selectedLanguageStore)}</span></span>
 					<select
 						value={stringAttribute(entity, 'preset_mode')}
-						onchange={(event) => void callService('climate', 'set_preset_mode', { preset_mode: (event.currentTarget as HTMLSelectElement).value })}
+						onchange={(event) =>
+							void callService('climate', 'set_preset_mode', {
+								preset_mode: (event.currentTarget as HTMLSelectElement).value
+							})}
 						disabled={busy || isUnavailable}
 					>
 						<option value="">{translate('Geen preset', $selectedLanguageStore)}</option>
-						{#each presetModes as preset}
+						{#each presetModes as preset (preset)}
 							<option value={preset}>{preset}</option>
 						{/each}
 					</select>
 				</label>
 			{/if}
 			<div class="action-row">
-				<button type="button" class="np-btn ghost" onclick={() => void callService('climate', 'turn_off')} disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button>
-				<button type="button" class="np-btn primary" onclick={() => void callService('climate', 'turn_on')} disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button>
+				<button
+					type="button"
+					class="np-btn ghost"
+					onclick={() => void callService('climate', 'turn_off')}
+					disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button
+				>
+				<button
+					type="button"
+					class="np-btn primary"
+					onclick={() => void callService('climate', 'turn_on')}
+					disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button
+				>
 			</div>
 		{:else if kind === 'cover'}
 			<div class="cover-position-wrap">
@@ -470,19 +549,34 @@
 					</span>
 				</button>
 				<div class="cover-position-label">
-					<strong>{readableState(state)}</strong>
+					<strong>{readableState(entityState)}</strong>
 				</div>
 			</div>
 			<div class="action-grid">
-				<button type="button" class="control-action" onclick={() => void callService('cover', 'open_cover')} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="control-action"
+					onclick={() => void callService('cover', 'open_cover')}
+					disabled={busy || isUnavailable}
+				>
 					<TablerIcon name="arrow-up" size={16} />
 					{translate('Open', $selectedLanguageStore)}
 				</button>
-				<button type="button" class="control-action" onclick={() => void callService('cover', 'stop_cover')} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="control-action"
+					onclick={() => void callService('cover', 'stop_cover')}
+					disabled={busy || isUnavailable}
+				>
 					<TablerIcon name="player-stop" size={16} />
 					Stop
 				</button>
-				<button type="button" class="control-action" onclick={() => void callService('cover', 'close_cover')} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="control-action"
+					onclick={() => void callService('cover', 'close_cover')}
+					disabled={busy || isUnavailable}
+				>
 					<TablerIcon name="arrow-down" size={16} />
 					{translate('Dicht', $selectedLanguageStore)}
 				</button>
@@ -517,7 +611,7 @@
 			<div class="vacuum-status">
 				<div>
 					<span>{translate('Status', $selectedLanguageStore)}</span>
-					<strong>{readableState(state)}</strong>
+					<strong>{readableState(entityState)}</strong>
 				</div>
 				<div>
 					<span>{translate('Batterij', $selectedLanguageStore)}</span>
@@ -533,19 +627,39 @@
 				</div>
 			</div>
 			<div class="action-grid vacuum-action-grid">
-				<button type="button" class="control-action" onclick={() => void callService('vacuum', 'start')} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="control-action"
+					onclick={() => void callService('vacuum', 'start')}
+					disabled={busy || isUnavailable}
+				>
 					<TablerIcon name="player-play" size={16} />
 					Start
 				</button>
-				<button type="button" class="control-action" onclick={() => void callService('vacuum', 'pause')} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="control-action"
+					onclick={() => void callService('vacuum', 'pause')}
+					disabled={busy || isUnavailable}
+				>
 					<TablerIcon name="player-pause" size={16} />
 					{translate('Pauze', $selectedLanguageStore)}
 				</button>
-				<button type="button" class="control-action" onclick={() => void callService('vacuum', 'return_to_base')} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="control-action"
+					onclick={() => void callService('vacuum', 'return_to_base')}
+					disabled={busy || isUnavailable}
+				>
 					<TablerIcon name="home" size={16} />
 					Dock
 				</button>
-				<button type="button" class="control-action" onclick={() => void callService('vacuum', 'locate')} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="control-action"
+					onclick={() => void callService('vacuum', 'locate')}
+					disabled={busy || isUnavailable}
+				>
 					<TablerIcon name="radar" size={16} />
 					{translate('Zoek', $selectedLanguageStore)}
 				</button>
@@ -555,10 +669,13 @@
 					<span class="control-head"><span>{translate('Zuigkracht', $selectedLanguageStore)}</span></span>
 					<select
 						value={currentFanSpeed}
-						onchange={(event) => void callService('vacuum', 'set_fan_speed', { fan_speed: (event.currentTarget as HTMLSelectElement).value })}
+						onchange={(event) =>
+							void callService('vacuum', 'set_fan_speed', {
+								fan_speed: (event.currentTarget as HTMLSelectElement).value
+							})}
 						disabled={busy || isUnavailable}
 					>
-						{#each fanSpeeds as speed}
+						{#each fanSpeeds as speed (speed)}
 							<option value={speed}>{speed}</option>
 						{/each}
 					</select>
@@ -570,18 +687,37 @@
 					<StatusIcon icon={cardIcon} size={42} />
 				</div>
 				<div>
-					<strong>{mediaTitle || readableState(state)}</strong>
+					<strong>{mediaTitle || readableState(entityState)}</strong>
 					<span>{mediaArtist || currentSource || translate('Media player', $selectedLanguageStore)}</span>
 				</div>
 			</div>
 			<div class="media-controls">
-				<button type="button" class="round-action" onclick={() => void callService('media_player', 'media_previous_track')} disabled={busy || isUnavailable} aria-label={translate('Vorige', $selectedLanguageStore)}>
+				<button
+					type="button"
+					class="round-action"
+					onclick={() => void callService('media_player', 'media_previous_track')}
+					disabled={busy || isUnavailable}
+					aria-label={translate('Vorige', $selectedLanguageStore)}
+				>
 					<TablerIcon name="player-skip-back" size={17} />
 				</button>
-				<button type="button" class="round-action primary" onclick={() => void callService('media_player', state === 'playing' ? 'media_pause' : 'media_play')} disabled={busy || isUnavailable} aria-label={translate('Afspelen of pauzeren', $selectedLanguageStore)}>
-					<TablerIcon name={state === 'playing' ? 'player-pause' : 'player-play'} size={20} />
+				<button
+					type="button"
+					class="round-action primary"
+					onclick={() =>
+						void callService('media_player', entityState === 'playing' ? 'media_pause' : 'media_play')}
+					disabled={busy || isUnavailable}
+					aria-label={translate('Afspelen of pauzeren', $selectedLanguageStore)}
+				>
+					<TablerIcon name={entityState === 'playing' ? 'player-pause' : 'player-play'} size={20} />
 				</button>
-				<button type="button" class="round-action" onclick={() => void callService('media_player', 'media_next_track')} disabled={busy || isUnavailable} aria-label={translate('Volgende', $selectedLanguageStore)}>
+				<button
+					type="button"
+					class="round-action"
+					onclick={() => void callService('media_player', 'media_next_track')}
+					disabled={busy || isUnavailable}
+					aria-label={translate('Volgende', $selectedLanguageStore)}
+				>
 					<TablerIcon name="player-skip-forward" size={17} />
 				</button>
 			</div>
@@ -604,11 +740,23 @@
 				/>
 			</label>
 			<div class="action-row">
-				<button type="button" class="np-btn ghost" onclick={() => void callService('media_player', 'volume_mute', { is_volume_muted: !isMuted })} disabled={busy || isUnavailable}>
+				<button
+					type="button"
+					class="np-btn ghost"
+					onclick={() => void callService('media_player', 'volume_mute', { is_volume_muted: !isMuted })}
+					disabled={busy || isUnavailable}
+				>
 					{isMuted ? 'Unmute' : 'Mute'}
 				</button>
-				<button type="button" class="np-btn ghost" onclick={() => void callService('media_player', state === 'off' ? 'turn_on' : 'turn_off')} disabled={busy || isUnavailable}>
-					{state === 'off' ? translate('Aan', $selectedLanguageStore) : translate('Uit', $selectedLanguageStore)}
+				<button
+					type="button"
+					class="np-btn ghost"
+					onclick={() => void callService('media_player', entityState === 'off' ? 'turn_on' : 'turn_off')}
+					disabled={busy || isUnavailable}
+				>
+					{entityState === 'off'
+						? translate('Aan', $selectedLanguageStore)
+						: translate('Uit', $selectedLanguageStore)}
 				</button>
 			</div>
 			{#if sources.length > 0}
@@ -616,10 +764,13 @@
 					<span class="control-head"><span>{translate('Bron', $selectedLanguageStore)}</span></span>
 					<select
 						value={currentSource}
-						onchange={(event) => void callService('media_player', 'select_source', { source: (event.currentTarget as HTMLSelectElement).value })}
+						onchange={(event) =>
+							void callService('media_player', 'select_source', {
+								source: (event.currentTarget as HTMLSelectElement).value
+							})}
 						disabled={busy || isUnavailable}
 					>
-						{#each sources as source}
+						{#each sources as source (source)}
 							<option value={source}>{source}</option>
 						{/each}
 					</select>
@@ -631,7 +782,7 @@
 			<div class="entity-error">{error}</div>
 		{/if}
 	</div>
-</section>
+</div>
 
 <style>
 	.modal-overlay {
@@ -641,7 +792,7 @@
 		margin: 0;
 		padding: 0;
 		border: 0;
-		background: rgba(0,0,0,0.36);
+		background: rgba(0, 0, 0, 0.36);
 	}
 	.entity-detail-modal {
 		--popup-width: var(--np-detail-popup-width, min(850px, calc(100vw - 1.5rem)));
@@ -653,7 +804,7 @@
 		max-height: calc(100vh - 1.5rem);
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 18px;
 		background:
 			radial-gradient(circle at 50% 8%, var(--entity-soft), transparent 42%),
@@ -668,7 +819,7 @@
 		left: 50%;
 		width: 60%;
 		height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
 		transform: translateX(-50%);
 		pointer-events: none;
 		z-index: 5;
@@ -690,15 +841,16 @@
 		display: grid;
 		place-items: center;
 		gap: 0.55rem;
-		color: rgba(255,255,255,0.48);
+		color: rgba(255, 255, 255, 0.48);
 	}
 	.climate-temp-readout {
 		display: grid;
 		place-items: center;
 		padding: 1rem;
 		border-radius: 0.9rem;
-		background: radial-gradient(circle at 50% 20%, var(--entity-soft), transparent 60%), rgba(255,255,255,0.045);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+		background:
+			radial-gradient(circle at 50% 20%, var(--entity-soft), transparent 60%), rgba(255, 255, 255, 0.045);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 	}
 	.climate-temp-readout span {
 		font-size: 3.1rem;
@@ -708,7 +860,7 @@
 	}
 	.climate-temp-readout small {
 		margin-top: 0.35rem;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 700;
 	}
 	.entity-control {
@@ -716,8 +868,8 @@
 		gap: 0.5rem;
 		padding: 0.85rem;
 		border-radius: 0.85rem;
-		background: rgba(255,255,255,0.045);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.045);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 	}
 	.control-head {
 		display: flex;
@@ -726,7 +878,7 @@
 		gap: 0.75rem;
 		font-size: 0.82rem;
 		font-weight: 750;
-		color: rgba(255,255,255,0.68);
+		color: rgba(255, 255, 255, 0.68);
 	}
 	.control-head strong {
 		color: #fff;
@@ -746,11 +898,11 @@
 		height: clamp(18rem, 42vh, 24rem);
 		border: 0;
 		border-radius: clamp(2.6rem, 7vw, 3.8rem);
-		background: rgba(255,255,255,0.10);
+		background: rgba(255, 255, 255, 0.1);
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.06),
-			inset 0 -24px 60px rgba(0,0,0,0.16),
-			0 18px 48px rgba(0,0,0,0.24);
+			inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+			inset 0 -24px 60px rgba(0, 0, 0, 0.16),
+			0 18px 48px rgba(0, 0, 0, 0.24);
 		overflow: hidden;
 		cursor: ns-resize;
 		touch-action: none;
@@ -763,7 +915,9 @@
 		bottom: 0;
 		height: var(--cover-position-pct);
 		background: var(--entity-accent);
-		transition: height 120ms ease, background 160ms ease;
+		transition:
+			height 120ms ease,
+			background 160ms ease;
 	}
 	.cover-position-icon {
 		position: absolute;
@@ -774,7 +928,7 @@
 		place-items: center;
 		color: #ffffff;
 		transform: translateX(-50%);
-		filter: drop-shadow(0 2px 8px rgba(0,0,0,0.18));
+		filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.18));
 		pointer-events: none;
 	}
 	.cover-position-pill.is-empty .cover-position-icon {
@@ -784,7 +938,7 @@
 		display: inline-flex;
 		align-items: baseline;
 		gap: 0.35rem;
-		color: rgba(255,255,255,0.72);
+		color: rgba(255, 255, 255, 0.72);
 		font-size: 0.86rem;
 		font-weight: 750;
 	}
@@ -795,9 +949,9 @@
 	select {
 		width: 100%;
 		height: 2.45rem;
-		border: 1px solid rgba(255,255,255,0.09);
+		border: 1px solid rgba(255, 255, 255, 0.09);
 		border-radius: 0.55rem;
-		background: rgba(255,255,255,0.075);
+		background: rgba(255, 255, 255, 0.075);
 		color: #f5f5f5;
 		padding: 0 0.75rem;
 		font: inherit;
@@ -822,8 +976,8 @@
 		gap: 0.55rem;
 		padding: 0.75rem;
 		border-radius: 0.95rem;
-		background: rgba(255,255,255,0.045);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.045);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 	}
 	.vacuum-map-head {
 		display: flex;
@@ -832,7 +986,7 @@
 		gap: 0.75rem;
 		font-size: 0.78rem;
 		font-weight: 800;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 	}
 	.vacuum-map-head strong {
 		color: var(--entity-accent);
@@ -846,7 +1000,7 @@
 		aspect-ratio: 4 / 3;
 		border-radius: 0.75rem;
 		background: #111827;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 		overflow: hidden;
 	}
 	.vacuum-map-image {
@@ -867,28 +1021,28 @@
 		position: absolute;
 		inset: 0;
 		background:
-			linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
-			linear-gradient(0deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+			linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+			linear-gradient(0deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
 		background-size: 32px 32px;
 		pointer-events: none;
 	}
 	.vacuum-map-fallback .room {
 		position: relative;
 		border-radius: 0.55rem;
-		background: rgba(52,211,153,0.10);
-		box-shadow: inset 0 0 0 1px rgba(52,211,153,0.22);
+		background: rgba(52, 211, 153, 0.1);
+		box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.22);
 	}
 	.room-living {
 		grid-row: 1 / 3;
 	}
 	.room-kitchen {
-		background: rgba(96,165,250,0.11) !important;
-		box-shadow: inset 0 0 0 1px rgba(96,165,250,0.24) !important;
+		background: rgba(96, 165, 250, 0.11) !important;
+		box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.24) !important;
 	}
 	.room-hall,
 	.room-office {
-		background: rgba(255,255,255,0.065) !important;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.11) !important;
+		background: rgba(255, 255, 255, 0.065) !important;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11) !important;
 	}
 	.vacuum-path {
 		position: absolute;
@@ -896,7 +1050,7 @@
 		top: 18%;
 		width: 62%;
 		height: 58%;
-		border: 2px dashed rgba(52,211,153,0.65);
+		border: 2px dashed rgba(52, 211, 153, 0.65);
 		border-left-color: transparent;
 		border-bottom-color: transparent;
 		border-radius: 999px;
@@ -914,15 +1068,15 @@
 		width: 1.1rem;
 		height: 1.1rem;
 		background: var(--entity-accent);
-		box-shadow: 0 0 18px rgba(52,211,153,0.55);
+		box-shadow: 0 0 18px rgba(52, 211, 153, 0.55);
 	}
 	.dock-dot {
 		left: 12%;
 		bottom: 13%;
 		width: 0.75rem;
 		height: 0.75rem;
-		background: rgba(255,255,255,0.82);
-		box-shadow: 0 0 12px rgba(255,255,255,0.28);
+		background: rgba(255, 255, 255, 0.82);
+		box-shadow: 0 0 12px rgba(255, 255, 255, 0.28);
 	}
 	.control-action {
 		min-height: 3.35rem;
@@ -932,16 +1086,16 @@
 		gap: 0.45rem;
 		border: 0;
 		border-radius: 0.75rem;
-		color: rgba(255,255,255,0.86);
-		background: rgba(255,255,255,0.06);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+		color: rgba(255, 255, 255, 0.86);
+		background: rgba(255, 255, 255, 0.06);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 		font-weight: 800;
 		cursor: pointer;
 	}
 	.control-action:hover,
 	.round-action:hover,
 	.np-btn:hover {
-		background: rgba(255,255,255,0.09);
+		background: rgba(255, 255, 255, 0.09);
 	}
 	.vacuum-status {
 		display: grid;
@@ -951,21 +1105,21 @@
 	.vacuum-status > div {
 		padding: 0.85rem;
 		border-radius: 0.85rem;
-		background: rgba(255,255,255,0.045);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.045);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 	}
 	.vacuum-status span,
 	.media-now span {
 		display: block;
 		font-size: 0.76rem;
 		font-weight: 700;
-		color: rgba(255,255,255,0.52);
+		color: rgba(255, 255, 255, 0.52);
 	}
 	.vacuum-status strong,
 	.media-now strong {
 		display: block;
 		margin-top: 0.18rem;
-		color: rgba(255,255,255,0.92);
+		color: rgba(255, 255, 255, 0.92);
 		font-size: 1rem;
 	}
 	.media-now {
@@ -975,8 +1129,8 @@
 		gap: 0.75rem;
 		padding: 0.85rem;
 		border-radius: 0.85rem;
-		background: rgba(255,255,255,0.045);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.045);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
 	}
 	.media-cover {
 		width: 4rem;
@@ -1000,9 +1154,9 @@
 		border-radius: 999px;
 		display: grid;
 		place-items: center;
-		color: rgba(255,255,255,0.86);
-		background: rgba(255,255,255,0.06);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+		color: rgba(255, 255, 255, 0.86);
+		background: rgba(255, 255, 255, 0.06);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 		cursor: pointer;
 	}
 	.round-action.primary {
@@ -1015,9 +1169,9 @@
 		min-height: 2.6rem;
 		border: 0;
 		border-radius: 0.7rem;
-		color: rgba(255,255,255,0.86);
-		background: rgba(255,255,255,0.06);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+		color: rgba(255, 255, 255, 0.86);
+		background: rgba(255, 255, 255, 0.06);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 		font-weight: 800;
 		cursor: pointer;
 	}
@@ -1034,7 +1188,7 @@
 	.entity-error {
 		padding: 0.75rem;
 		border-radius: 0.75rem;
-		background: rgba(248,113,113,0.12);
+		background: rgba(248, 113, 113, 0.12);
 		color: #fecaca;
 		font-size: 0.82rem;
 		font-weight: 700;
@@ -1051,7 +1205,7 @@
 		padding: 1rem;
 		border-radius: 1rem;
 		background: #0a0e1a;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 	}
 	.vacuum-detail .vacuum-map-image,
 	.vacuum-detail .vacuum-map-fallback {

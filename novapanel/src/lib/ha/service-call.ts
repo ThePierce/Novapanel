@@ -5,6 +5,7 @@ import {
 	type HassLike
 } from '$lib/ha/entities-service-helpers';
 import { entityStore } from '$lib/ha/entities-store';
+import { fetchWithTimeout } from '$lib/fetch-with-timeout';
 
 let cachedHass: HassLike | null = null;
 let hassLookupDone = false;
@@ -23,19 +24,27 @@ function validateServicePathPart(value: string): string {
 	return normalized;
 }
 
-async function callViaSameOriginService(domain: string, service: string, serviceData: Record<string, unknown>) {
+async function callViaSameOriginService(
+	domain: string,
+	service: string,
+	serviceData: Record<string, unknown>
+) {
 	const safeDomain = validateServicePathPart(domain);
 	const safeService = validateServicePathPart(service);
 	let lastError: unknown = null;
 	for (const endpoint of getNovaApiCandidates(`/api/services/${safeDomain}/${safeService}`)) {
 		try {
-			const response = await fetch(endpoint, {
-				method: 'POST',
-				credentials: 'same-origin',
-				cache: 'no-store',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify(serviceData)
-			});
+			const response = await fetchWithTimeout(
+				endpoint,
+				{
+					method: 'POST',
+					credentials: 'same-origin',
+					cache: 'no-store',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify(serviceData)
+				},
+				16000
+			);
 			if (!response.ok) {
 				const text = await response.text().catch(() => '');
 				throw new Error(text || `ha_same_origin_service_http_${response.status}`);
@@ -52,13 +61,17 @@ async function callViaNovaWsProxy(payload: Record<string, unknown>) {
 	let lastError: unknown = null;
 	for (const endpoint of getNovaApiCandidates('/api/ha/ws')) {
 		try {
-			const response = await fetch(endpoint, {
-				method: 'POST',
-				credentials: 'same-origin',
-				cache: 'no-store',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ payload, timeoutMs: 15000 })
-			});
+			const response = await fetchWithTimeout(
+				endpoint,
+				{
+					method: 'POST',
+					credentials: 'same-origin',
+					cache: 'no-store',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({ payload, timeoutMs: 15000 })
+				},
+				17000
+			);
 			if (!response.ok) throw new Error(`ha_ws_proxy_http_${response.status}`);
 			const data = (await response.json()) as { ok?: boolean; error?: string };
 			if (data.ok !== true) throw new Error(data.error || 'ha_ws_proxy_failed');
@@ -92,9 +105,11 @@ async function callHaServiceTransport(
 	const hass = await getEmbeddedHassQuick();
 	cachedHass = hass;
 	if (hass) {
-		const callService = (hass as unknown as {
-			callService?: (domain: string, service: string, data?: Record<string, unknown>) => Promise<unknown>;
-		}).callService;
+		const callService = (
+			hass as unknown as {
+				callService?: (domain: string, service: string, data?: Record<string, unknown>) => Promise<unknown>;
+			}
+		).callService;
 		if (typeof callService === 'function') {
 			await callService(domain, service, serviceData);
 			return;
@@ -129,7 +144,7 @@ async function callHaServiceTransport(
 		if (error === proxyError) throw error;
 		throw proxyError ?? error;
 	}
-	const response = await fetch(
+	const response = await fetchWithTimeout(
 		`${config.hassUrl.replace(/\/+$/, '')}/api/services/${domain}/${service}`,
 		{
 			method: 'POST',
@@ -138,7 +153,8 @@ async function callHaServiceTransport(
 				'content-type': 'application/json'
 			},
 			body: JSON.stringify(serviceData)
-		}
+		},
+		16000
 	);
 	if (!response.ok) {
 		const text = await response.text();

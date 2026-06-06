@@ -6,6 +6,7 @@
 	import { listCalendarEvents, type CalendarEvent } from '$lib/ha/calendar-service';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { localeFor, selectedLanguageStore, translate, translateState } from '$lib/i18n';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
 
 	type CalendarSource = CameraConfig;
 	type PositionedEvent = CalendarEvent & {
@@ -90,31 +91,34 @@
 	let calendarScrollEl = $state<HTMLDivElement | null>(null);
 	let invalidAvatarUrls = $state<Record<string, true>>({});
 	let loadToken = 0;
-	let sourceKey = $state('');
 	let lastScrollAnchor = '';
 
 	const timelineHours = 24;
-	const visibleHours = $derived(expanded ? 18 : 8);
 	const palette = ['#a7f3d0', '#fde68a', '#93c5fd', '#f9a8d4', '#c4b5fd'];
 	const todayKey = $derived(localDateKey(now));
 	const visibleSources = $derived(
-		(sources ?? [])
-			.filter((source) => typeof source.entityId === 'string' && source.entityId.trim().length > 0)
+		(sources ?? []).filter(
+			(source) => typeof source.entityId === 'string' && source.entityId.trim().length > 0
+		)
+	);
+	const sourceKey = $derived(
+		JSON.stringify(
+			visibleSources.map((source) => [source.entityId, source.alias, source.color, source.personEntityId])
+		)
 	);
 	const personEntities = $derived($entityStore.entities.filter((entity) => entity.domain === 'person'));
 	const zoneEntities = $derived($entityStore.entities.filter((entity) => entity.domain === 'zone'));
 	const homeZone = $derived(zoneEntities.find((entity) => entity.entityId === 'zone.home'));
 	const days = $derived(buildDays(todayKey, 0, timelineHours));
-	const hourLabels = $derived(
-		Array.from({ length: timelineHours + 1 }, (_, index) => index % 24)
-	);
+	const hourLabels = $derived(Array.from({ length: timelineHours + 1 }, (_, index) => index % 24));
 	const hasAllDayEvents = $derived(days.some((day) => allDayEventsForDay(day).length > 0));
-	const scrollAnchorKey = $derived(`${todayKey}-${expanded ? 'expanded' : 'compact'}-${hasAllDayEvents ? 'all-day' : 'timed'}-${sourceKey}`);
-	const displayTitle = $derived(title && title.trim().length > 0 ? title.trim() : translate('Weekkalender', $selectedLanguageStore));
-
-	$effect(() => {
-		sourceKey = JSON.stringify(visibleSources.map((source) => [source.entityId, source.alias, source.color, source.personEntityId]));
-	});
+	const scrollAnchorKey = $derived(
+		`${todayKey}-${expanded ? 'expanded' : 'compact'}-${hasAllDayEvents ? 'all-day' : 'timed'}-${sourceKey}`
+	);
+	const displayTitle = $derived(
+		title && title.trim().length > 0 ? title.trim() : translate('Weekkalender', $selectedLanguageStore)
+	);
+	const activeLocale = $derived(localeFor($selectedLanguageStore));
 
 	$effect(() => {
 		void sourceKey;
@@ -180,11 +184,16 @@
 
 	function sourceDisplayName(source: CalendarSource) {
 		if (source.alias && source.alias.trim().length > 0) return source.alias.trim();
-		return $entityStore.entities.find((entity) => entity.entityId === source.entityId)?.friendlyName ?? source.entityId;
+		return (
+			$entityStore.entities.find((entity) => entity.entityId === source.entityId)?.friendlyName ??
+			source.entityId
+		);
 	}
 
 	function sourceColor(source: CalendarSource, index: number) {
-		return source.color && /^#[0-9a-f]{6}$/i.test(source.color) ? source.color : palette[index % palette.length];
+		return source.color && /^#[0-9a-f]{6}$/i.test(source.color)
+			? source.color
+			: palette[index % palette.length];
 	}
 
 	function normalizeName(value: string) {
@@ -203,12 +212,17 @@
 			const explicit = personEntities.find((entity) => entity.entityId === source.personEntityId);
 			if (explicit) return explicit;
 		}
-		const candidates = [source.alias ?? '', sourceDisplayName(source), source.entityId].map(normalizeName).filter(Boolean);
+		const candidates = [source.alias ?? '', sourceDisplayName(source), source.entityId]
+			.map(normalizeName)
+			.filter(Boolean);
 		return (
 			personEntities.find((person) => {
 				const personKeys = [person.friendlyName, person.entityId].map(normalizeName).filter(Boolean);
 				return personKeys.some((personKey) =>
-					candidates.some((candidate) => candidate === personKey || candidate.includes(personKey) || personKey.includes(candidate))
+					candidates.some(
+						(candidate) =>
+							candidate === personKey || candidate.includes(personKey) || personKey.includes(candidate)
+					)
 				);
 			}) ?? null
 		);
@@ -232,7 +246,8 @@
 	}
 
 	function avatarUrlFor(entity: HomeAssistantEntity | null) {
-		const raw = typeof entity?.attributes?.entity_picture === 'string' ? entity.attributes.entity_picture : '';
+		const raw =
+			typeof entity?.attributes?.entity_picture === 'string' ? entity.attributes.entity_picture : '';
 		return raw ? safeAvatarUrl(raw) : '';
 	}
 
@@ -272,10 +287,10 @@
 	}
 
 	function personLocation(entity: HomeAssistantEntity): PersonLocation | null {
-		const attrs = entity.attributes ?? {};
 		let lat = numberAttribute(entity, 'latitude');
 		let lon = numberAttribute(entity, 'longitude');
-		const isHome = entity.state === 'home' || normalizeName(entity.state) === normalizeName(homeZone?.friendlyName ?? '');
+		const isHome =
+			entity.state === 'home' || normalizeName(entity.state) === normalizeName(homeZone?.friendlyName ?? '');
 		if ((lat === null || lon === null) && isHome) {
 			const home = homeCoordinates();
 			lat = home?.lat ?? null;
@@ -310,15 +325,23 @@
 				.filter((entity) => entity.entityId !== linkedPerson?.entityId)
 				.map(personLocation)
 				.filter((location): location is PersonLocation => location !== null);
-			return people.length > 0 && linkedPerson ? people : linkedPerson ? [personLocation(linkedPerson)].filter((location): location is PersonLocation => location !== null) : [];
+			return people.length > 0 && linkedPerson
+				? people
+				: linkedPerson
+					? [personLocation(linkedPerson)].filter((location): location is PersonLocation => location !== null)
+					: [];
 		}
-		return linkedPerson ? [personLocation(linkedPerson)].filter((location): location is PersonLocation => location !== null) : [];
+		return linkedPerson
+			? [personLocation(linkedPerson)].filter((location): location is PersonLocation => location !== null)
+			: [];
 	}
 
 	function locationLabel(entity: HomeAssistantEntity) {
 		if (entity.state === 'home') return translate('Thuis', $selectedLanguageStore);
 		if (entity.state === 'not_home') return translate('Niet thuis', $selectedLanguageStore);
-		return entity.state ? translateState(entity.state, $selectedLanguageStore) : translate('Locatie onbekend', $selectedLanguageStore);
+		return entity.state
+			? translateState(entity.state, $selectedLanguageStore)
+			: translate('Locatie onbekend', $selectedLanguageStore);
 	}
 
 	function openPersonModal(source: CalendarSource, index: number, event: MouseEvent) {
@@ -449,7 +472,12 @@
 		return { zoom, scale, leftPx, topPx, widthPx, heightPx, tiles };
 	}
 
-	function mapPointStyle(lat: number, lon: number, people: PersonLocation[], view: MapView = mapViewFor(people)) {
+	function mapPointStyle(
+		lat: number,
+		lon: number,
+		people: PersonLocation[],
+		view: MapView = mapViewFor(people)
+	) {
 		const x = ((mercatorX(lon) * view.scale - view.leftPx) / view.widthPx) * 100;
 		const y = ((mercatorY(lat) * view.scale - view.topPx) / view.heightPx) * 100;
 		return `left: ${clampNumber(x, 5, 95)}%; top: ${clampNumber(y, 7, 93)}%;`;
@@ -485,7 +513,9 @@
 		return formatTravelMinutes(Math.max(1, Math.ceil((km / speed) * 60 + buffer)));
 	}
 
-	function parseEventDate(value: CalendarEvent['start'] | CalendarEvent['end']): { date: Date; allDay: boolean } | null {
+	function parseEventDate(
+		value: CalendarEvent['start'] | CalendarEvent['end']
+	): { date: Date; allDay: boolean } | null {
 		if (typeof value === 'string') {
 			const date = new Date(value);
 			return Number.isNaN(date.getTime()) ? null : { date, allDay: false };
@@ -544,7 +574,10 @@
 								color: sourceColor(source, index),
 								startDate: startParsed.date,
 								endDate: endParsed.date,
-								allDay: startParsed.allDay || endParsed.allDay || looksLikeAllDayEvent(startParsed.date, endParsed.date)
+								allDay:
+									startParsed.allDay ||
+									endParsed.allDay ||
+									looksLikeAllDayEvent(startParsed.date, endParsed.date)
 							};
 						})
 						.filter((event): event is PositionedEvent => event !== null);
@@ -554,7 +587,10 @@
 			events = batches.flat().sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
 		} catch (err) {
 			if (token !== loadToken) return;
-			error = err instanceof Error && err.message ? err.message : translate('Kalender laden mislukt', $selectedLanguageStore);
+			error =
+				err instanceof Error && err.message
+					? err.message
+					: translate('Kalender laden mislukt', $selectedLanguageStore);
 			events = [];
 		} finally {
 			if (token === loadToken) loading = false;
@@ -562,7 +598,9 @@
 	}
 
 	function isSameCalendarDay(a: Date, b: Date) {
-		return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+		return (
+			a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+		);
 	}
 
 	function eventsForDay(day: DayWindow) {
@@ -590,7 +628,10 @@
 	}
 
 	function eventKey(event: PositionedEvent) {
-		return event.uid ?? `${event.source.entityId}-${event.summary}-${event.startDate.toISOString()}-${event.endDate.toISOString()}`;
+		return (
+			event.uid ??
+			`${event.source.entityId}-${event.summary}-${event.startDate.toISOString()}-${event.endDate.toISOString()}`
+		);
 	}
 
 	function clampedEventStart(event: PositionedEvent, day: DayWindow) {
@@ -676,7 +717,12 @@
 	}
 
 	function formatHour(hour: number) {
-		return `${String(hour).padStart(2, '0')}:00`;
+		const value = new Date(now);
+		value.setHours(hour, 0, 0, 0);
+		return value.toLocaleTimeString(activeLocale, {
+			hour: 'numeric',
+			minute: '2-digit'
+		});
 	}
 
 	function shortLabel(value: string) {
@@ -684,37 +730,62 @@
 	}
 
 	function formatDayName(date: Date) {
-		const value = date.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: expanded ? 'long' : 'short' });
+		const value = date.toLocaleDateString(activeLocale, {
+			weekday: expanded ? 'long' : 'short'
+		});
 		return expanded ? value : shortLabel(value);
 	}
 
 	function formatMonthName(date: Date) {
-		const value = date.toLocaleDateString(localeFor($selectedLanguageStore), { month: expanded ? 'long' : 'short' });
+		const value = date.toLocaleDateString(activeLocale, {
+			month: expanded ? 'long' : 'short'
+		});
 		return expanded ? value : shortLabel(value);
 	}
 
 	function formatEventTime(event: PositionedEvent) {
 		if (event.allDay) return translate('Hele dag', $selectedLanguageStore);
-		const start = event.startDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
-		const end = event.endDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
+		const start = event.startDate.toLocaleTimeString(activeLocale, {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+		const end = event.endDate.toLocaleTimeString(activeLocale, {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 		return `${start}-${end}`;
 	}
 
 	function formatEventTimeRange(event: PositionedEvent) {
 		if (event.allDay) return translate('Hele dag', $selectedLanguageStore);
-		const start = event.startDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
-		const end = event.endDate.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false });
+		const start = event.startDate.toLocaleTimeString(activeLocale, {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+		const end = event.endDate.toLocaleTimeString(activeLocale, {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 		return `${start} ${translate('tot', $selectedLanguageStore)} ${end}`;
 	}
 
 	function formatEventDate(value: Date) {
-		return value.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: 'long', day: '2-digit', month: 'long' });
+		return value.toLocaleDateString(activeLocale, {
+			weekday: 'long',
+			day: '2-digit',
+			month: 'long'
+		});
 	}
 
 	function visibleAllDayEndDate(event: PositionedEvent) {
 		if (!event.allDay) return event.endDate;
 		const end = new Date(event.endDate);
-		if (end.getHours() === 0 && end.getMinutes() === 0 && end.getSeconds() === 0 && end.getMilliseconds() === 0) {
+		if (
+			end.getHours() === 0 &&
+			end.getMinutes() === 0 &&
+			end.getSeconds() === 0 &&
+			end.getMilliseconds() === 0
+		) {
 			end.setDate(end.getDate() - 1);
 		}
 		return end;
@@ -723,7 +794,8 @@
 	function formatEventDateRange(event: PositionedEvent) {
 		if (event.allDay) {
 			const end = visibleAllDayEndDate(event);
-			if (isSameCalendarDay(event.startDate, end)) return `${formatEventDate(event.startDate)} · ${translate('Hele dag', $selectedLanguageStore)}`;
+			if (isSameCalendarDay(event.startDate, end))
+				return `${formatEventDate(event.startDate)} · ${translate('Hele dag', $selectedLanguageStore)}`;
 			return `${formatEventDate(event.startDate)} ${translate('tot', $selectedLanguageStore)} ${formatEventDate(end)}`;
 		}
 		if (isSameCalendarDay(event.startDate, event.endDate)) {
@@ -849,7 +921,7 @@
 	}
 </script>
 
-<div class="week-calendar-card" class:expanded style={`--visible-hours: ${visibleHours}; --timeline-hours: ${timelineHours};`}>
+<div class="week-calendar-card" class:expanded style={`--timeline-hours: ${timelineHours};`}>
 	<div class="wc-top">
 		<div class="wc-title-row">
 			<button
@@ -861,11 +933,23 @@
 				onclick={handleTitleToggle}
 			>
 				<span class="wc-title-icon">
-					<TablerIcon name={canToggleExpansion ? (expanded ? 'arrows-minimize' : 'arrows-maximize') : 'calendar-week'} size={18} />
+					<TablerIcon
+						name={canToggleExpansion ? (expanded ? 'arrows-minimize' : 'arrows-maximize') : 'calendar-week'}
+						size={18}
+					/>
 				</span>
 				<strong>{displayTitle}</strong>
 			</button>
-			<span class="wc-title-sub">{now.toLocaleDateString(localeFor($selectedLanguageStore), { weekday: 'long', day: '2-digit', month: 'long' })} · {now.toLocaleTimeString(localeFor($selectedLanguageStore), { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+			<span class="wc-title-sub"
+				>{now.toLocaleDateString(activeLocale, {
+					weekday: 'long',
+					day: '2-digit',
+					month: 'long'
+				})} · {now.toLocaleTimeString(activeLocale, {
+					hour: '2-digit',
+					minute: '2-digit'
+				})}</span
+			>
 		</div>
 		{#if visibleSources.length > 0}
 			<div class="wc-people">
@@ -880,9 +964,17 @@
 						onclick={(event) => openPersonModal(source, index, event)}
 					>
 						{#if avatar}
-							<img class="wc-person-avatar" src={avatar} alt="" loading="lazy" onerror={() => markAvatarFailed(avatar)} />
+							<img
+								class="wc-person-avatar"
+								src={avatar}
+								alt=""
+								loading="lazy"
+								onerror={() => markAvatarFailed(avatar)}
+							/>
 						{:else}
-							<span class="wc-person-avatar fallback">{linkedPerson ? initialFor(linkedPerson) : initialFor(source)}</span>
+							<span class="wc-person-avatar fallback"
+								>{linkedPerson ? initialFor(linkedPerson) : initialFor(source)}</span
+							>
 						{/if}
 						<span>{sourceDisplayName(source)}</span>
 					</button>
@@ -897,6 +989,7 @@
 		<div
 			class="wc-scroll"
 			bind:this={calendarScrollEl}
+			role="presentation"
 			onpointerdown={(event) => event.stopPropagation()}
 		>
 			<div class={`wc-grid ${hasAllDayEvents ? 'has-all-day' : ''}`}>
@@ -929,13 +1022,13 @@
 				{/if}
 
 				<div class="wc-hours">
-					{#each hourLabels as hour}
+					{#each hourLabels as hour (hour)}
 						<div>{formatHour(hour)}</div>
 					{/each}
 				</div>
 				{#each days as day (day.key)}
 					<div class="wc-day-body">
-						{#each Array.from({ length: timelineHours }) as _}
+						{#each Array.from({ length: timelineHours }) as _, hourIndex (hourIndex)}
 							<div class="wc-hour-line"></div>
 						{/each}
 						{#if isNowInDayWindow(day)}
@@ -956,7 +1049,13 @@
 								<strong>{event.summary || translate('Afspraak', $selectedLanguageStore)}</strong>
 								<span>{formatEventTime(event)}</span>
 								{#if eventAvatar && eventHasAvatarRoom(event, day)}
-									<img class="wc-event-avatar" src={eventAvatar} alt="" loading="lazy" onerror={() => markAvatarFailed(eventAvatar)} />
+									<img
+										class="wc-event-avatar"
+										src={eventAvatar}
+										alt=""
+										loading="lazy"
+										onerror={() => markAvatarFailed(eventAvatar)}
+									/>
 								{/if}
 							</button>
 						{/each}
@@ -985,11 +1084,12 @@
 			closeEventModal();
 		}}
 	></button>
-	<section
+	<div
 		class="wc-event-modal"
 		role="dialog"
 		aria-modal="true"
 		aria-label={eventModal.summary || translate('Afspraak', $selectedLanguageStore)}
+		use:modalBehavior={{ onClose: closeEventModal }}
 		style={`--event-color: ${eventModal.color};`}
 	>
 		<div class="wc-event-modal-head">
@@ -1020,7 +1120,12 @@
 				<div class="wc-event-detail-row">
 					<span>{detail.label}</span>
 					{#if detail.href}
-						<a href={detail.href} target="_blank" rel="noreferrer" onclick={(event) => event.stopPropagation()}>{detail.value}</a>
+						<a
+							href={detail.href}
+							target="_blank"
+							rel="noreferrer"
+							onclick={(event) => event.stopPropagation()}>{detail.value}</a
+						>
 					{:else}
 						<strong>{detail.value}</strong>
 					{/if}
@@ -1041,7 +1146,12 @@
 						<div>
 							<em>{detail.label}</em>
 							{#if detail.href}
-								<a href={detail.href} target="_blank" rel="noreferrer" onclick={(event) => event.stopPropagation()}>{detail.value}</a>
+								<a
+									href={detail.href}
+									target="_blank"
+									rel="noreferrer"
+									onclick={(event) => event.stopPropagation()}>{detail.value}</a
+								>
 							{:else}
 								<strong>{detail.value}</strong>
 							{/if}
@@ -1050,11 +1160,12 @@
 				</div>
 			{/if}
 		</div>
-	</section>
+	</div>
 {/if}
 
 {#if personModal}
-	{@const mapView = mapViewFor(personModal.people)}
+	{@const activePersonModal = personModal}
+	{@const mapView = mapViewFor(activePersonModal.people)}
 	<button
 		type="button"
 		class="wc-person-overlay"
@@ -1064,103 +1175,139 @@
 			closePersonModal();
 		}}
 	></button>
-	<section
+	<div
 		class="wc-person-modal"
 		role="dialog"
 		aria-modal="true"
-		aria-label={`${translate('Locatie van', $selectedLanguageStore)} ${personModal.title}`}
-		style={`--person-color: ${personModal.color};`}
+		aria-label={`${translate('Locatie van', $selectedLanguageStore)} ${activePersonModal.title}`}
+		use:modalBehavior={{ onClose: closePersonModal }}
+		style={`--person-color: ${activePersonModal.color};`}
 	>
-			<div class="wc-person-modal-head">
-				<div class="wc-person-modal-title">
-					<div class="wc-person-modal-icon">
-						{#if personModal.people[0]?.picture}
-							<img src={personModal.people[0].picture} alt="" loading="lazy" onerror={() => markAvatarFailed(personModal.people[0]?.picture ?? '')} />
-						{:else}
-							<span>{personModal.people[0] ? initialFor(personModal.people[0].entity) : initialFor(personModal.source)}</span>
-						{/if}
-					</div>
-					<div>
-						<strong>{personModal.title}</strong>
-						<span>{personModal.isGroup ? translate('Locatie van iedereen', $selectedLanguageStore) : (personModal.people[0]?.label ?? translate('Locatie onbekend', $selectedLanguageStore))}</span>
-					</div>
-				</div>
-				<button type="button" class="wc-person-close" aria-label={translate('close', $selectedLanguageStore)} onclick={closePersonModal}>
-					<TablerIcon name="x" size={18} />
-				</button>
-			</div>
-
-			<div class="wc-location-map" onwheel={onMapWheel}>
-				<div class="wc-map-surface" aria-hidden="true"></div>
-				<div class="wc-map-tiles" aria-hidden="true">
-					{#each mapView.tiles as tile (tile.key)}
+		<div class="wc-person-modal-head">
+			<div class="wc-person-modal-title">
+				<div class="wc-person-modal-icon">
+					{#if activePersonModal.people[0]?.picture}
 						<img
-							class="wc-map-tile"
-							src={tile.url}
+							src={activePersonModal.people[0].picture}
 							alt=""
 							loading="lazy"
-							referrerpolicy="no-referrer"
-							style={`left: ${tile.left}%; top: ${tile.top}%; width: ${tile.width}%; height: ${tile.height}%;`}
+							onerror={() => markAvatarFailed(activePersonModal.people[0]?.picture ?? '')}
 						/>
-					{/each}
+					{:else}
+						<span
+							>{activePersonModal.people[0]
+								? initialFor(activePersonModal.people[0].entity)
+								: initialFor(activePersonModal.source)}</span
+						>
+					{/if}
 				</div>
-				<div class="wc-map-shade" aria-hidden="true"></div>
-				<div class="wc-map-zoom">
-					<button type="button" class="wc-map-zoom-btn" aria-label="Inzoomen" onclick={zoomMapIn}>
-						<TablerIcon name="plus" size={14} />
-					</button>
-					<button type="button" class="wc-map-zoom-btn" aria-label="Uitzoomen" onclick={zoomMapOut}>
-						<TablerIcon name="minus" size={14} />
-					</button>
+				<div>
+					<strong>{activePersonModal.title}</strong>
+					<span
+						>{activePersonModal.isGroup
+							? translate('Locatie van iedereen', $selectedLanguageStore)
+							: (activePersonModal.people[0]?.label ??
+								translate('Locatie onbekend', $selectedLanguageStore))}</span
+					>
 				</div>
-				{#if homeCoordinates()}
-					{@const home = homeCoordinates()}
-					<div class="wc-map-marker home" style={home ? mapPointStyle(home.lat, home.lon, personModal.people, mapView) : ''}>
-						<TablerIcon name="home" size={15} />
-						<span>{translate('Thuis', $selectedLanguageStore)}</span>
-					</div>
-				{/if}
-				{#each personModal.people as person (person.entity.entityId)}
-					<div class="wc-map-marker person" style={mapPointStyle(person.lat, person.lon, personModal.people, mapView)}>
-						{#if person.picture}
-							<img src={person.picture} alt="" loading="lazy" onerror={() => markAvatarFailed(person.picture)} />
-						{:else}
-							<span>{initialFor(person.entity)}</span>
-						{/if}
-						<em>{person.entity.friendlyName}</em>
-					</div>
-				{/each}
-				{#if personModal.people.length === 0}
-					<div class="wc-map-empty">{translate('Geen locatie beschikbaar. Koppel een person-entiteit of controleer de locatie-attributen.', $selectedLanguageStore)}</div>
-				{/if}
-				<a
-					class="wc-map-attribution"
-					href="https://www.openstreetmap.org/copyright"
-					target="_blank"
-					rel="noreferrer"
-					onclick={(event) => event.stopPropagation()}
-				>© OpenStreetMap</a>
 			</div>
+			<button
+				type="button"
+				class="wc-person-close"
+				aria-label={translate('close', $selectedLanguageStore)}
+				onclick={closePersonModal}
+			>
+				<TablerIcon name="x" size={18} />
+			</button>
+		</div>
 
-			{#if !personModal.isGroup && personModal.people[0]}
-				<div class="wc-travel-grid">
-					<div class="wc-travel-item">
-						<TablerIcon name="car" size={22} />
-						<div>
-							<strong>{travelTimeFor(personModal.people[0], 'car')}</strong>
-							<span>{translate('met de auto naar huis', $selectedLanguageStore)}</span>
-						</div>
-					</div>
-					<div class="wc-travel-item">
-						<TablerIcon name="bike" size={22} />
-						<div>
-							<strong>{travelTimeFor(personModal.people[0], 'bike')}</strong>
-							<span>{translate('met de fiets naar huis', $selectedLanguageStore)}</span>
-						</div>
-					</div>
+		<div class="wc-location-map" onwheel={onMapWheel}>
+			<div class="wc-map-surface" aria-hidden="true"></div>
+			<div class="wc-map-tiles" aria-hidden="true">
+				{#each mapView.tiles as tile (tile.key)}
+					<img
+						class="wc-map-tile"
+						src={tile.url}
+						alt=""
+						loading="lazy"
+						referrerpolicy="no-referrer"
+						style={`left: ${tile.left}%; top: ${tile.top}%; width: ${tile.width}%; height: ${tile.height}%;`}
+					/>
+				{/each}
+			</div>
+			<div class="wc-map-shade" aria-hidden="true"></div>
+			<div class="wc-map-zoom">
+				<button type="button" class="wc-map-zoom-btn" aria-label="Inzoomen" onclick={zoomMapIn}>
+					<TablerIcon name="plus" size={14} />
+				</button>
+				<button type="button" class="wc-map-zoom-btn" aria-label="Uitzoomen" onclick={zoomMapOut}>
+					<TablerIcon name="minus" size={14} />
+				</button>
+			</div>
+			{#if homeCoordinates()}
+				{@const home = homeCoordinates()}
+				<div
+					class="wc-map-marker home"
+					style={home ? mapPointStyle(home.lat, home.lon, activePersonModal.people, mapView) : ''}
+				>
+					<TablerIcon name="home" size={15} />
+					<span>{translate('Thuis', $selectedLanguageStore)}</span>
 				</div>
 			{/if}
-	</section>
+			{#each activePersonModal.people as person (person.entity.entityId)}
+				<div
+					class="wc-map-marker person"
+					style={mapPointStyle(person.lat, person.lon, activePersonModal.people, mapView)}
+				>
+					{#if person.picture}
+						<img
+							src={person.picture}
+							alt=""
+							loading="lazy"
+							onerror={() => markAvatarFailed(person.picture)}
+						/>
+					{:else}
+						<span>{initialFor(person.entity)}</span>
+					{/if}
+					<em>{person.entity.friendlyName}</em>
+				</div>
+			{/each}
+			{#if activePersonModal.people.length === 0}
+				<div class="wc-map-empty">
+					{translate(
+						'Geen locatie beschikbaar. Koppel een person-entiteit of controleer de locatie-attributen.',
+						$selectedLanguageStore
+					)}
+				</div>
+			{/if}
+			<a
+				class="wc-map-attribution"
+				href="https://www.openstreetmap.org/copyright"
+				target="_blank"
+				rel="noreferrer"
+				onclick={(event) => event.stopPropagation()}>© OpenStreetMap</a
+			>
+		</div>
+
+		{#if !activePersonModal.isGroup && activePersonModal.people[0]}
+			<div class="wc-travel-grid">
+				<div class="wc-travel-item">
+					<TablerIcon name="car" size={22} />
+					<div>
+						<strong>{travelTimeFor(activePersonModal.people[0], 'car')}</strong>
+						<span>{translate('met de auto naar huis', $selectedLanguageStore)}</span>
+					</div>
+				</div>
+				<div class="wc-travel-item">
+					<TablerIcon name="bike" size={22} />
+					<div>
+						<strong>{travelTimeFor(activePersonModal.people[0], 'bike')}</strong>
+						<span>{translate('met de fiets naar huis', $selectedLanguageStore)}</span>
+					</div>
+				</div>
+			</div>
+		{/if}
+	</div>
 {/if}
 
 <style>
@@ -1217,7 +1364,7 @@
 		opacity: 1;
 	}
 	.wc-title-button:focus-visible {
-		outline: 2px solid rgba(56,189,248,0.74);
+		outline: 2px solid rgba(56, 189, 248, 0.74);
 		outline-offset: 4px;
 		border-radius: 0.55rem;
 	}
@@ -1227,8 +1374,8 @@
 		display: grid;
 		place-items: center;
 		border-radius: 0.7rem;
-		background: rgba(56,189,248,0.1);
-		box-shadow: inset 0 0 0 1px rgba(125,211,252,0.13);
+		background: rgba(56, 189, 248, 0.1);
+		box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.13);
 		flex: 0 0 auto;
 	}
 	.wc-title-row :global(.tabler-icon) {
@@ -1249,7 +1396,7 @@
 	.wc-title-sub {
 		max-width: calc(100% - 2.5rem);
 		margin-left: 2.5rem;
-		color: rgba(255,255,255,0.56);
+		color: rgba(255, 255, 255, 0.56);
 		font-size: 0.72rem;
 	}
 	.wc-people {
@@ -1267,20 +1414,22 @@
 		padding: 0 0.58rem 0 0.22rem;
 		border: 0;
 		border-radius: 999px;
-		background: color-mix(in srgb, var(--person-color) 22%, rgba(255,255,255,0.05));
-		color: rgba(255,255,255,0.86);
+		background: color-mix(in srgb, var(--person-color) 22%, rgba(255, 255, 255, 0.05));
+		color: rgba(255, 255, 255, 0.86);
 		font-size: 0.68rem;
 		font-weight: 750;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		cursor: pointer;
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--person-color) 28%, rgba(255,255,255,0.08));
-		transition: transform 150ms ease, background 150ms ease;
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--person-color) 28%, rgba(255, 255, 255, 0.08));
+		transition:
+			transform 150ms ease,
+			background 150ms ease;
 	}
 	.wc-person:hover {
 		transform: translateY(-1px);
-		background: color-mix(in srgb, var(--person-color) 30%, rgba(255,255,255,0.06));
+		background: color-mix(in srgb, var(--person-color) 30%, rgba(255, 255, 255, 0.06));
 	}
 	.wc-person span:last-child {
 		min-width: 0;
@@ -1293,13 +1442,13 @@
 		border-radius: 999px;
 		object-fit: cover;
 		flex: 0 0 auto;
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--person-color) 46%, rgba(255,255,255,0.18));
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--person-color) 46%, rgba(255, 255, 255, 0.18));
 	}
 	.wc-person-avatar.fallback {
 		display: grid;
 		place-items: center;
 		background: var(--person-color);
-		color: rgba(15,23,42,0.85);
+		color: rgba(15, 23, 42, 0.85);
 		font-size: 0.62rem;
 		font-weight: 900;
 	}
@@ -1308,7 +1457,7 @@
 		display: grid;
 		place-items: center;
 		min-height: 10rem;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		font-size: 0.82rem;
 		text-align: center;
 	}
@@ -1324,7 +1473,7 @@
 		min-height: 0;
 		border-radius: 12px;
 		overflow: auto;
-		background: rgba(255,255,255,0.035);
+		background: rgba(255, 255, 255, 0.035);
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 		-webkit-overflow-scrolling: touch;
@@ -1356,15 +1505,15 @@
 		top: 0;
 		z-index: 8;
 		min-height: 4.6rem;
-		border-bottom: 1px solid rgba(255,255,255,0.07);
-		background: rgba(255,255,255,0.035);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+		background: rgba(255, 255, 255, 0.035);
 		backdrop-filter: blur(10px);
 	}
 	.wc-day-head {
 		min-width: 0;
 		padding: 0.45rem 0.25rem;
 		text-align: center;
-		border-left: 1px solid rgba(255,255,255,0.055);
+		border-left: 1px solid rgba(255, 255, 255, 0.055);
 	}
 	.wc-day-head span,
 	.wc-day-head strong {
@@ -1376,7 +1525,7 @@
 	}
 	.wc-day-name,
 	.wc-month-name {
-		color: rgba(255,255,255,0.64);
+		color: rgba(255, 255, 255, 0.64);
 		font-size: 0.66rem;
 		text-transform: capitalize;
 	}
@@ -1386,7 +1535,7 @@
 	}
 	.wc-month-name {
 		margin-top: 0.05rem;
-		color: rgba(255,255,255,0.48);
+		color: rgba(255, 255, 255, 0.48);
 		font-size: 0.58rem;
 	}
 	.week-calendar-card.expanded .wc-day-name {
@@ -1410,8 +1559,8 @@
 		top: 4.6rem;
 		z-index: 7;
 		min-height: 3rem;
-		border-bottom: 1px solid rgba(255,255,255,0.07);
-		background: rgba(255,255,255,0.026);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+		background: rgba(255, 255, 255, 0.026);
 		backdrop-filter: blur(10px);
 	}
 	.wc-all-day-label {
@@ -1419,7 +1568,7 @@
 		align-items: center;
 		justify-content: flex-end;
 		padding: 0.38rem 0.36rem;
-		color: rgba(255,255,255,0.46);
+		color: rgba(255, 255, 255, 0.46);
 		font-size: 0.58rem;
 		font-weight: 850;
 		text-transform: uppercase;
@@ -1431,7 +1580,7 @@
 		gap: 0.18rem;
 		min-width: 0;
 		padding: 0.32rem 0.24rem;
-		border-left: 1px solid rgba(255,255,255,0.055);
+		border-left: 1px solid rgba(255, 255, 255, 0.055);
 	}
 	.wc-all-day-event {
 		min-width: 0;
@@ -1439,11 +1588,11 @@
 		border: 0;
 		border-radius: 0.42rem;
 		padding: 0.18rem 0.34rem;
-		background: color-mix(in srgb, var(--event-color) 28%, rgba(255,255,255,0.11));
-		color: rgba(255,255,255,0.86);
+		background: color-mix(in srgb, var(--event-color) 28%, rgba(255, 255, 255, 0.11));
+		color: rgba(255, 255, 255, 0.86);
 		font: inherit;
 		text-align: left;
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--event-color) 28%, rgba(255,255,255,0.08));
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--event-color) 28%, rgba(255, 255, 255, 0.08));
 		font-size: 0.58rem;
 		font-weight: 800;
 		line-height: 1.08;
@@ -1465,7 +1614,7 @@
 	}
 	.wc-all-day-event span {
 		margin-top: 0.08rem;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		font-size: 0.5rem;
 		font-weight: 750;
 	}
@@ -1473,9 +1622,9 @@
 		position: relative;
 		display: grid;
 		grid-template-rows: repeat(var(--timeline-hours), 1fr) 0;
-		color: rgba(255,255,255,0.48);
+		color: rgba(255, 255, 255, 0.48);
 		font-size: 0.58rem;
-		background: rgba(0,0,0,0.08);
+		background: rgba(0, 0, 0, 0.08);
 	}
 	.wc-hours div {
 		transform: translateY(-0.45rem);
@@ -1486,12 +1635,12 @@
 		position: relative;
 		min-width: 0;
 		height: calc(var(--timeline-hours) * 3.25rem);
-		border-left: 1px solid rgba(255,255,255,0.055);
+		border-left: 1px solid rgba(255, 255, 255, 0.055);
 		overflow: hidden;
 	}
 	.wc-hour-line {
 		height: 3.25rem;
-		border-top: 1px solid rgba(255,255,255,0.06);
+		border-top: 1px solid rgba(255, 255, 255, 0.06);
 	}
 	.wc-event {
 		position: absolute;
@@ -1499,22 +1648,25 @@
 		padding: 0.32rem 0.35rem;
 		border: 0;
 		border-radius: 0.48rem;
-		background: color-mix(in srgb, var(--event-color) 34%, rgba(255,255,255,0.14));
-		color: rgba(255,255,255,0.88);
+		background: color-mix(in srgb, var(--event-color) 34%, rgba(255, 255, 255, 0.14));
+		color: rgba(255, 255, 255, 0.88);
 		font: inherit;
 		text-align: left;
 		box-shadow:
-			inset 0 0 0 1px color-mix(in srgb, var(--event-color) 32%, rgba(255,255,255,0.10)),
-			0 8px 20px rgba(0,0,0,0.12);
+			inset 0 0 0 1px color-mix(in srgb, var(--event-color) 32%, rgba(255, 255, 255, 0.1)),
+			0 8px 20px rgba(0, 0, 0, 0.12);
 		overflow: hidden;
 		backdrop-filter: blur(4px);
 		cursor: pointer;
 		appearance: none;
-		transition: transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
+		transition:
+			transform 140ms ease,
+			background 140ms ease,
+			box-shadow 140ms ease;
 	}
 	.wc-event:hover {
 		transform: translateY(-1px);
-		background: color-mix(in srgb, var(--event-color) 42%, rgba(255,255,255,0.15));
+		background: color-mix(in srgb, var(--event-color) 42%, rgba(255, 255, 255, 0.15));
 	}
 	.wc-event:focus-visible {
 		outline: 2px solid color-mix(in srgb, var(--event-color) 72%, white);
@@ -1539,6 +1691,7 @@
 		white-space: normal;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		line-height: 1.08;
 	}
@@ -1561,8 +1714,8 @@
 		border-radius: 999px;
 		object-fit: cover;
 		box-shadow:
-			0 0 0 2px rgba(255,255,255,0.28),
-			0 4px 10px rgba(0,0,0,0.18);
+			0 0 0 2px rgba(255, 255, 255, 0.28),
+			0 4px 10px rgba(0, 0, 0, 0.18);
 		pointer-events: none;
 	}
 	.week-calendar-card.expanded .wc-event-avatar {
@@ -1576,7 +1729,9 @@
 		z-index: 3;
 		height: 2px;
 		background: #3b82f6;
-		box-shadow: 0 0 0 1px rgba(59,130,246,0.18), 0 0 14px rgba(59,130,246,0.45);
+		box-shadow:
+			0 0 0 1px rgba(59, 130, 246, 0.18),
+			0 0 14px rgba(59, 130, 246, 0.45);
 	}
 	.wc-event-overlay {
 		position: fixed;
@@ -1586,7 +1741,7 @@
 		padding: 1.25rem;
 		border: 0;
 		margin: 0;
-		background: rgba(0,0,0,0.38);
+		background: rgba(0, 0, 0, 0.38);
 		backdrop-filter: blur(14px);
 	}
 	.wc-event-modal {
@@ -1603,12 +1758,16 @@
 		padding: 1rem;
 		border-radius: 22px;
 		background:
-			radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--event-color) 22%, transparent), transparent 42%),
-			rgba(20,28,44,0.96);
+			radial-gradient(
+				circle at 18% 10%,
+				color-mix(in srgb, var(--event-color) 22%, transparent),
+				transparent 42%
+			),
+			rgba(20, 28, 44, 0.96);
 		color: #f8fafc;
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.09),
-			0 26px 80px rgba(0,0,0,0.42);
+			inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+			0 26px 80px rgba(0, 0, 0, 0.42);
 		overflow: hidden;
 	}
 	.wc-event-modal-head,
@@ -1630,9 +1789,9 @@
 		display: grid;
 		place-items: center;
 		border-radius: 1rem;
-		background: color-mix(in srgb, var(--event-color) 24%, rgba(255,255,255,0.08));
+		background: color-mix(in srgb, var(--event-color) 24%, rgba(255, 255, 255, 0.08));
 		color: color-mix(in srgb, var(--event-color) 82%, white);
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--event-color) 32%, rgba(255,255,255,0.08));
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--event-color) 32%, rgba(255, 255, 255, 0.08));
 		flex: 0 0 auto;
 	}
 	.wc-event-modal-title strong,
@@ -1648,7 +1807,7 @@
 	}
 	.wc-event-modal-title span {
 		margin-top: 0.18rem;
-		color: rgba(255,255,255,0.62);
+		color: rgba(255, 255, 255, 0.62);
 		font-size: 0.78rem;
 		font-weight: 750;
 	}
@@ -1659,8 +1818,8 @@
 		border-radius: 999px;
 		display: grid;
 		place-items: center;
-		background: rgba(255,255,255,0.08);
-		color: rgba(255,255,255,0.86);
+		background: rgba(255, 255, 255, 0.08);
+		color: rgba(255, 255, 255, 0.86);
 		cursor: pointer;
 	}
 	.wc-event-detail-body {
@@ -1675,15 +1834,15 @@
 		min-width: 0;
 		padding: 0.72rem;
 		border-radius: 0.95rem;
-		background: rgba(255,255,255,0.06);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+		background: rgba(255, 255, 255, 0.06);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 	}
 	.wc-event-detail-row span,
 	.wc-event-notes > span,
 	.wc-event-extra > span {
 		display: block;
 		margin-bottom: 0.22rem;
-		color: rgba(255,255,255,0.5);
+		color: rgba(255, 255, 255, 0.5);
 		font-size: 0.64rem;
 		font-weight: 850;
 		text-transform: uppercase;
@@ -1692,7 +1851,7 @@
 	.wc-event-detail-row strong,
 	.wc-event-detail-row a {
 		display: block;
-		color: rgba(255,255,255,0.9);
+		color: rgba(255, 255, 255, 0.9);
 		font-size: 0.86rem;
 		font-weight: 800;
 		line-height: 1.28;
@@ -1705,7 +1864,7 @@
 	}
 	.wc-event-notes p {
 		margin: 0;
-		color: rgba(255,255,255,0.86);
+		color: rgba(255, 255, 255, 0.86);
 		font-size: 0.82rem;
 		font-weight: 650;
 		line-height: 1.42;
@@ -1722,7 +1881,7 @@
 		min-width: 0;
 	}
 	.wc-event-extra em {
-		color: rgba(255,255,255,0.48);
+		color: rgba(255, 255, 255, 0.48);
 		font-size: 0.66rem;
 		font-style: normal;
 		font-weight: 800;
@@ -1730,7 +1889,7 @@
 	.wc-event-extra strong,
 	.wc-event-extra a {
 		min-width: 0;
-		color: rgba(255,255,255,0.86);
+		color: rgba(255, 255, 255, 0.86);
 		font-size: 0.76rem;
 		font-weight: 750;
 		line-height: 1.3;
@@ -1744,7 +1903,7 @@
 		padding: 1.25rem;
 		border: 0;
 		margin: 0;
-		background: rgba(0,0,0,0.38);
+		background: rgba(0, 0, 0, 0.38);
 		backdrop-filter: blur(14px);
 	}
 	.wc-person-modal {
@@ -1761,12 +1920,16 @@
 		padding: 1rem;
 		border-radius: 22px;
 		background:
-			radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--person-color) 20%, transparent), transparent 42%),
-			rgba(20,28,44,0.96);
+			radial-gradient(
+				circle at 18% 10%,
+				color-mix(in srgb, var(--person-color) 20%, transparent),
+				transparent 42%
+			),
+			rgba(20, 28, 44, 0.96);
 		color: #f8fafc;
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.09),
-			0 26px 80px rgba(0,0,0,0.42);
+			inset 0 0 0 1px rgba(255, 255, 255, 0.09),
+			0 26px 80px rgba(0, 0, 0, 0.42);
 		overflow: hidden;
 	}
 	.wc-person-modal-head {
@@ -1788,8 +1951,8 @@
 		display: grid;
 		place-items: center;
 		border-radius: 1rem;
-		background: color-mix(in srgb, var(--person-color) 24%, rgba(255,255,255,0.08));
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--person-color) 32%, rgba(255,255,255,0.08));
+		background: color-mix(in srgb, var(--person-color) 24%, rgba(255, 255, 255, 0.08));
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--person-color) 32%, rgba(255, 255, 255, 0.08));
 		overflow: hidden;
 		flex: 0 0 auto;
 	}
@@ -1817,7 +1980,7 @@
 	}
 	.wc-person-modal-title span {
 		margin-top: 0.16rem;
-		color: rgba(255,255,255,0.62);
+		color: rgba(255, 255, 255, 0.62);
 		font-size: 0.78rem;
 		font-weight: 750;
 	}
@@ -1828,8 +1991,8 @@
 		border-radius: 999px;
 		display: grid;
 		place-items: center;
-		background: rgba(255,255,255,0.08);
-		color: rgba(255,255,255,0.86);
+		background: rgba(255, 255, 255, 0.08);
+		color: rgba(255, 255, 255, 0.86);
 		cursor: pointer;
 	}
 	.wc-location-map {
@@ -1838,18 +2001,17 @@
 		border-radius: 1.1rem;
 		overflow: hidden;
 		background:
-			linear-gradient(135deg, rgba(56,189,248,0.16), transparent 38%),
-			linear-gradient(315deg, rgba(34,197,94,0.15), transparent 40%),
-			rgba(255,255,255,0.045);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+			linear-gradient(135deg, rgba(56, 189, 248, 0.16), transparent 38%),
+			linear-gradient(315deg, rgba(34, 197, 94, 0.15), transparent 40%), rgba(255, 255, 255, 0.045);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 	}
 	.wc-map-surface {
 		position: absolute;
 		inset: 0;
 		z-index: 0;
 		background-image:
-			linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-			linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+			linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
 		background-size: 3.3rem 3.3rem;
 		mask-image: radial-gradient(circle at center, black, transparent 84%);
 		opacity: 0.42;
@@ -1858,7 +2020,7 @@
 		position: absolute;
 		inset: 0;
 		z-index: 1;
-		background: rgba(17,24,39,0.2);
+		background: rgba(17, 24, 39, 0.2);
 	}
 	.wc-map-tile {
 		position: absolute;
@@ -1872,8 +2034,8 @@
 		z-index: 2;
 		pointer-events: none;
 		background:
-			radial-gradient(circle at 50% 44%, transparent 0 36%, rgba(15,23,42,0.1) 70%),
-			linear-gradient(180deg, rgba(15,23,42,0.12), rgba(15,23,42,0.24));
+			radial-gradient(circle at 50% 44%, transparent 0 36%, rgba(15, 23, 42, 0.1) 70%),
+			linear-gradient(180deg, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0.24));
 	}
 	.wc-map-marker {
 		position: absolute;
@@ -1887,12 +2049,12 @@
 		z-index: 5;
 		padding: 0.16rem 0.36rem;
 		border-radius: 999px;
-		background: rgba(15,23,42,0.68);
-		color: rgba(255,255,255,0.72);
+		background: rgba(15, 23, 42, 0.68);
+		color: rgba(255, 255, 255, 0.72);
 		font-size: 0.52rem;
 		font-weight: 750;
 		text-decoration: none;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 	}
 	.wc-map-zoom {
 		position: absolute;
@@ -1908,16 +2070,18 @@
 		height: 28px;
 		display: grid;
 		place-items: center;
-		background: rgba(15,23,42,0.78);
-		border: 0.5px solid rgba(255,255,255,0.14);
+		background: rgba(15, 23, 42, 0.78);
+		border: 0.5px solid rgba(255, 255, 255, 0.14);
 		border-radius: 7px;
 		color: #f5f5f5;
 		cursor: pointer;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-		transition: background 0.15s, transform 0.12s;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+		transition:
+			background 0.15s,
+			transform 0.12s;
 	}
 	.wc-map-zoom-btn:hover {
-		background: rgba(15,23,42,0.92);
+		background: rgba(15, 23, 42, 0.92);
 	}
 	.wc-map-zoom-btn:active {
 		transform: scale(0.92);
@@ -1932,26 +2096,26 @@
 		height: 2.55rem;
 		border-radius: 999px;
 		background: var(--person-color);
-		color: rgba(15,23,42,0.88);
+		color: rgba(15, 23, 42, 0.88);
 		display: grid;
 		place-items: center;
 		object-fit: cover;
 		font-weight: 900;
 		box-shadow:
-			0 0 0 4px rgba(255,255,255,0.16),
-			0 12px 28px rgba(0,0,0,0.28);
+			0 0 0 4px rgba(255, 255, 255, 0.16),
+			0 12px 28px rgba(0, 0, 0, 0.28);
 	}
 	.wc-map-marker.person em {
 		margin-top: 0.35rem;
 		padding: 0.18rem 0.45rem;
 		border-radius: 999px;
-		background: rgba(15,23,42,0.72);
-		color: rgba(255,255,255,0.88);
+		background: rgba(15, 23, 42, 0.72);
+		color: rgba(255, 255, 255, 0.88);
 		font-size: 0.62rem;
 		font-style: normal;
 		font-weight: 800;
 		white-space: nowrap;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 	}
 	.wc-map-marker.home {
 		display: inline-flex;
@@ -1959,13 +2123,13 @@
 		gap: 0.28rem;
 		padding: 0.28rem 0.5rem;
 		border-radius: 999px;
-		background: rgba(15,23,42,0.76);
+		background: rgba(15, 23, 42, 0.76);
 		color: #e0f2fe;
 		font-size: 0.66rem;
 		font-weight: 850;
 		box-shadow:
-			inset 0 0 0 1px rgba(125,211,252,0.26),
-			0 12px 28px rgba(0,0,0,0.22);
+			inset 0 0 0 1px rgba(125, 211, 252, 0.26),
+			0 12px 28px rgba(0, 0, 0, 0.22);
 	}
 	.wc-map-empty {
 		position: absolute;
@@ -1974,7 +2138,7 @@
 		place-items: center;
 		padding: 1.25rem;
 		text-align: center;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		font-size: 0.82rem;
 	}
 	.wc-travel-grid {
@@ -1989,8 +2153,8 @@
 		min-width: 0;
 		padding: 0.72rem;
 		border-radius: 0.95rem;
-		background: rgba(255,255,255,0.06);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.075);
+		background: rgba(255, 255, 255, 0.06);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 	}
 	.wc-travel-item :global(.tabler-icon) {
 		color: color-mix(in srgb, var(--person-color) 76%, white);
@@ -2007,7 +2171,7 @@
 	}
 	.wc-travel-item span {
 		margin-top: 0.12rem;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		font-size: 0.68rem;
 		font-weight: 750;
 	}

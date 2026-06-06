@@ -5,6 +5,7 @@
 	import type { HomeAssistantEntity } from '$lib/ha/entities-service';
 	import { resolveLightGroupEntityId } from '$lib/cards/light-groups';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
 
 	type Props = {
 		title?: string;
@@ -15,7 +16,6 @@
 
 	let { title = '', entityId, icon = 'mdi:lightbulb-outline', onClose }: Props = $props();
 	let brightnessDraft = $state(0);
-	let temperatureDraft = $state(3500);
 	let draggingBrightness = $state(false);
 	let busy = $state(false);
 	let error = $state('');
@@ -29,7 +29,9 @@
 	const groupEntities = $derived.by(() => {
 		if (!lightGroup) return [] as HomeAssistantEntity[];
 		const wanted = new Set(lightGroup.entityIds.map((id) => id.trim().toLowerCase()).filter(Boolean));
-		return $entityStore.entities.filter((entry: HomeAssistantEntity) => wanted.has(entry.entityId.toLowerCase()));
+		return $entityStore.entities.filter((entry: HomeAssistantEntity) =>
+			wanted.has(entry.entityId.toLowerCase())
+		);
 	});
 	const groupLightEntities = $derived(groupEntities.filter((entry) => entry.domain === 'light'));
 	const hasTarget = $derived(lightGroup ? groupEntities.length > 0 : Boolean(entity));
@@ -40,18 +42,23 @@
 	);
 	const isUnavailable = $derived(
 		lightGroup
-			? groupEntities.length === 0 || groupEntities.every((entry) => entry.state === 'unavailable' || entry.state === 'unknown')
+			? groupEntities.length === 0 ||
+					groupEntities.every((entry) => entry.state === 'unavailable' || entry.state === 'unknown')
 			: !entity || entity.state === 'unavailable' || entity.state === 'unknown'
 	);
-	const serviceDomain = $derived(
-		(entity?.domain || entityId?.split('.')[0] || 'light').toLowerCase()
-	);
+	const serviceDomain = $derived((entity?.domain || entityId?.split('.')[0] || 'light').toLowerCase());
 	const displayName = $derived(
-		(title && title.trim().length > 0)
+		title && title.trim().length > 0
 			? title.trim()
-			: lightGroup?.name ?? entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore)
+			: (lightGroup?.name ?? entity?.friendlyName ?? entityId ?? translate('Lamp', $selectedLanguageStore))
 	);
-	const cardIcon = $derived((icon && icon.trim().length > 0) ? icon.trim() : lightGroup ? 'mdi:lightbulb-group-outline' : 'mdi:lightbulb-outline');
+	const cardIcon = $derived(
+		icon && icon.trim().length > 0
+			? icon.trim()
+			: lightGroup
+				? 'mdi:lightbulb-group-outline'
+				: 'mdi:lightbulb-outline'
+	);
 	const brightnessPct = $derived(
 		(() => {
 			if (lightGroup) {
@@ -59,7 +66,9 @@
 				if (lit.length === 0) return 0;
 				const total = lit.reduce((sum, entry) => {
 					const raw = entry.attributes?.brightness;
-					return sum + (typeof raw === 'number' && Number.isFinite(raw) ? Math.round((raw / 255) * 100) : 100);
+					return (
+						sum + (typeof raw === 'number' && Number.isFinite(raw) ? Math.round((raw / 255) * 100) : 100)
+					);
 				}, 0);
 				return Math.max(0, Math.min(100, Math.round(total / lit.length)));
 			}
@@ -71,10 +80,14 @@
 	const supportedModes = $derived(
 		(() => {
 			if (lightGroup) {
-				return Array.from(new Set(groupLightEntities.flatMap((entry) => {
-					const raw = entry.attributes?.supported_color_modes;
-					return Array.isArray(raw) ? raw.map(String) : [];
-				})));
+				return Array.from(
+					new Set(
+						groupLightEntities.flatMap((entry) => {
+							const raw = entry.attributes?.supported_color_modes;
+							return Array.isArray(raw) ? raw.map(String) : [];
+						})
+					)
+				);
 			}
 			const raw = entity?.attributes?.supported_color_modes;
 			return Array.isArray(raw) ? raw.map(String) : [];
@@ -82,39 +95,40 @@
 	);
 	const supportsBrightness = $derived(
 		(lightGroup ? groupLightEntities.length > 0 : serviceDomain === 'light') &&
-			(
-				supportedModes.some((mode) =>
-					['brightness', 'color_temp', 'hs', 'rgb', 'rgbw', 'rgbww', 'xy', 'white'].includes(mode)
-				) ||
-				(lightGroup ? groupLightEntities.some((entry) => typeof entry.attributes?.brightness === 'number') : typeof entity?.attributes?.brightness === 'number') ||
+			(supportedModes.some((mode) =>
+				['brightness', 'color_temp', 'hs', 'rgb', 'rgbw', 'rgbww', 'xy', 'white'].includes(mode)
+			) ||
+				(lightGroup
+					? groupLightEntities.some((entry) => typeof entry.attributes?.brightness === 'number')
+					: typeof entity?.attributes?.brightness === 'number') ||
 				(typeof entity?.attributes?.supported_features === 'number' &&
-					(entity.attributes.supported_features & 1) === 1)
-			)
+					(entity.attributes.supported_features & 1) === 1))
 	);
 	const supportsColor = $derived(
 		supportedModes.some((mode) => ['hs', 'rgb', 'rgbw', 'rgbww', 'xy'].includes(mode))
 	);
 	const supportsTemperature = $derived(supportedModes.includes('color_temp'));
 	const minKelvin = $derived(
-		typeof (lightGroup ? groupLightEntities[0]?.attributes?.min_color_temp_kelvin : entity?.attributes?.min_color_temp_kelvin) === 'number'
-			? Math.round((lightGroup ? groupLightEntities[0]?.attributes?.min_color_temp_kelvin : entity?.attributes?.min_color_temp_kelvin) as number)
+		typeof (lightGroup
+			? groupLightEntities[0]?.attributes?.min_color_temp_kelvin
+			: entity?.attributes?.min_color_temp_kelvin) === 'number'
+			? Math.round(
+					(lightGroup
+						? groupLightEntities[0]?.attributes?.min_color_temp_kelvin
+						: entity?.attributes?.min_color_temp_kelvin) as number
+				)
 			: 2000
 	);
 	const maxKelvin = $derived(
-		typeof (lightGroup ? groupLightEntities[0]?.attributes?.max_color_temp_kelvin : entity?.attributes?.max_color_temp_kelvin) === 'number'
-			? Math.round((lightGroup ? groupLightEntities[0]?.attributes?.max_color_temp_kelvin : entity?.attributes?.max_color_temp_kelvin) as number)
+		typeof (lightGroup
+			? groupLightEntities[0]?.attributes?.max_color_temp_kelvin
+			: entity?.attributes?.max_color_temp_kelvin) === 'number'
+			? Math.round(
+					(lightGroup
+						? groupLightEntities[0]?.attributes?.max_color_temp_kelvin
+						: entity?.attributes?.max_color_temp_kelvin) as number
+				)
 			: 6500
-	);
-	const currentKelvin = $derived(
-		(() => {
-			const source = lightGroup
-				? groupLightEntities.find((entry) => typeof entry.attributes?.color_temp_kelvin === 'number')
-				: entity;
-			const raw = source?.attributes?.color_temp_kelvin;
-			return typeof raw === 'number' && Number.isFinite(raw)
-				? Math.round(raw)
-				: Math.round((minKelvin + maxKelvin) / 2);
-		})()
 	);
 	const stateLabel = $derived(
 		isUnavailable
@@ -126,7 +140,7 @@
 					: translate('Uit', $selectedLanguageStore)
 	);
 	const glowColor = $derived(isOn ? 'rgba(255,211,56,0.22)' : 'rgba(141,152,170,0.16)');
-	const sliderFill = $derived((isOn || draggingBrightness) ? brightnessDraft : 0);
+	const sliderFill = $derived(isOn || draggingBrightness ? brightnessDraft : 0);
 	const swatches = [
 		{ color: '#fde1c2', label: 'Warm wit' },
 		{ color: '#ffc27d', label: 'Zacht warm' },
@@ -136,10 +150,6 @@
 
 	$effect(() => {
 		if (!draggingBrightness) brightnessDraft = brightnessPct;
-	});
-
-	$effect(() => {
-		temperatureDraft = currentKelvin;
 	});
 
 	$effect(() => {
@@ -182,7 +192,10 @@
 				await callHaService(serviceDomain, service, serviceData(data));
 			}
 		} catch (err) {
-			error = err instanceof Error && err.message ? err.message : translate('Actie mislukt', $selectedLanguageStore);
+			error =
+				err instanceof Error && err.message
+					? err.message
+					: translate('Actie mislukt', $selectedLanguageStore);
 		} finally {
 			busy = false;
 		}
@@ -208,18 +221,25 @@
 
 	function hexToRgb(hex: string): [number, number, number] {
 		const clean = hex.replace('#', '').trim();
-		const full = clean.length === 3 ? clean.split('').map((part) => `${part}${part}`).join('') : clean;
+		const full =
+			clean.length === 3
+				? clean
+						.split('')
+						.map((part) => `${part}${part}`)
+						.join('')
+				: clean;
 		const value = Number.parseInt(full, 16);
 		return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 	}
 
 	function setColor(hex: string) {
 		const rgb = hexToRgb(hex);
-		void callLight('turn_on', { rgb_color: rgb, brightness_pct: Math.max(1, brightnessDraft || 100) });
+		const data: Record<string, unknown> = { rgb_color: rgb };
+		if (brightnessDraft > 0) data.brightness_pct = Math.max(1, brightnessDraft);
+		void callLight('turn_on', data);
 	}
 
 	function setTemperature(value: number) {
-		temperatureDraft = value;
 		scheduleTemperature(value, 0);
 	}
 
@@ -257,12 +277,18 @@
 	}
 </script>
 
-<button type="button" class="modal-overlay light-modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
-<section
+<button
+	type="button"
+	class="modal-overlay light-modal-overlay"
+	onclick={onClose}
+	aria-label={translate('close', $selectedLanguageStore)}
+></button>
+<div
 	class="settings-modal app-popup light-detail-modal np-detail"
 	role="dialog"
 	aria-modal="true"
 	aria-label={displayName}
+	use:modalBehavior={{ onClose }}
 	style={`--light-glow: ${glowColor}; --brightness-pct: ${sliderFill}%;`}
 >
 	<div class="np-detail-head" style="--np-tint: rgba(255,211,56,0.18); --np-color: #ffd338;">
@@ -318,7 +344,7 @@
 			{#if supportsColor}
 				<div class="color-dock" aria-label={translate('Kleuren', $selectedLanguageStore)}>
 					<div class="color-grid">
-						{#each swatches as swatch}
+						{#each swatches as swatch (swatch.color)}
 							<button
 								type="button"
 								class="color-dot"
@@ -344,7 +370,11 @@
 					<button type="button" onclick={() => setTemperature(minKelvin)} disabled={busy || isUnavailable}>
 						{translate('Warm', $selectedLanguageStore)}
 					</button>
-					<button type="button" onclick={() => setTemperature(Math.round((minKelvin + maxKelvin) / 2))} disabled={busy || isUnavailable}>
+					<button
+						type="button"
+						onclick={() => setTemperature(Math.round((minKelvin + maxKelvin) / 2))}
+						disabled={busy || isUnavailable}
+					>
 						{translate('Neutraal', $selectedLanguageStore)}
 					</button>
 					<button type="button" onclick={() => setTemperature(maxKelvin)} disabled={busy || isUnavailable}>
@@ -358,7 +388,7 @@
 			{/if}
 		{/if}
 	</div>
-</section>
+</div>
 
 <style>
 	.modal-overlay {
@@ -368,19 +398,17 @@
 		margin: 0;
 		padding: 0;
 		border: 0;
-		background: rgba(0,0,0,0.36);
+		background: rgba(0, 0, 0, 0.36);
 	}
 	.light-detail-modal {
 		--popup-width: min(850px, calc(100vw - 1.5rem));
 		--popup-height: min(1140px, calc(100vh - 1.5rem));
 		padding: 0 !important;
 		border-radius: 18px;
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		grid-template-rows: auto minmax(0, 1fr);
 		box-sizing: border-box;
-		background:
-			radial-gradient(circle at 50% 8%, var(--light-glow), transparent 42%),
-			#121722;
+		background: radial-gradient(circle at 50% 8%, var(--light-glow), transparent 42%), #121722;
 	}
 	.light-detail-body {
 		display: grid;
@@ -403,7 +431,7 @@
 		place-items: center;
 		align-content: center;
 		gap: 0.85rem;
-		color: rgba(255,255,255,0.72);
+		color: rgba(255, 255, 255, 0.72);
 	}
 	.homekit-brightness {
 		position: relative;
@@ -411,11 +439,11 @@
 		height: clamp(18rem, 42vh, 24rem);
 		border: 0;
 		border-radius: clamp(2.6rem, 7vw, 3.8rem);
-		background: rgba(255,255,255,0.10);
+		background: rgba(255, 255, 255, 0.1);
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.06),
-			inset 0 -24px 60px rgba(0,0,0,0.16),
-			0 18px 48px rgba(0,0,0,0.24);
+			inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+			inset 0 -24px 60px rgba(0, 0, 0, 0.16),
+			0 18px 48px rgba(0, 0, 0, 0.24);
 		overflow: hidden;
 		cursor: ns-resize;
 		touch-action: none;
@@ -432,7 +460,9 @@
 		bottom: 0;
 		height: var(--brightness-pct);
 		background: #ffd400;
-		transition: height 120ms ease, background 160ms ease;
+		transition:
+			height 120ms ease,
+			background 160ms ease;
 	}
 	.homekit-brightness-icon {
 		position: absolute;
@@ -443,7 +473,7 @@
 		place-items: center;
 		color: #ffffff;
 		transform: translateX(-50%);
-		filter: drop-shadow(0 2px 8px rgba(0,0,0,0.18));
+		filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.18));
 		pointer-events: none;
 	}
 	.homekit-brightness.is-off .homekit-brightness-icon {
@@ -459,11 +489,11 @@
 		bottom: 0.55rem;
 		height: calc(50% - 0.75rem);
 		border-radius: clamp(2rem, 6vw, 3.25rem);
-		background: rgba(0,0,0,0.34);
+		background: rgba(0, 0, 0, 0.34);
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.04),
-			inset 0 -18px 36px rgba(0,0,0,0.18),
-			0 8px 22px rgba(0,0,0,0.16);
+			inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+			inset 0 -18px 36px rgba(0, 0, 0, 0.18),
+			0 8px 22px rgba(0, 0, 0, 0.16);
 		transition:
 			top 180ms ease,
 			bottom 180ms ease,
@@ -475,8 +505,8 @@
 		bottom: auto;
 		background: #ffd400;
 		box-shadow:
-			inset 0 0 0 1px rgba(255,255,255,0.20),
-			0 10px 28px rgba(255,211,56,0.24);
+			inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+			0 10px 28px rgba(255, 211, 56, 0.24);
 	}
 	.homekit-toggle .homekit-brightness-icon {
 		bottom: 25%;
@@ -509,13 +539,13 @@
 	.color-dot {
 		width: clamp(2.9rem, 9vw, 4rem);
 		height: clamp(2.9rem, 9vw, 4rem);
-		border: 2px solid rgba(255,255,255,0.44);
+		border: 2px solid rgba(255, 255, 255, 0.44);
 		border-radius: 999px;
 		background: var(--swatch);
 		cursor: pointer;
 		box-shadow:
-			inset 0 0 0 1px rgba(0,0,0,0.08),
-			0 8px 20px rgba(0,0,0,0.20);
+			inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+			0 8px 20px rgba(0, 0, 0, 0.2);
 	}
 	.color-dot:hover {
 		transform: translateY(-1px);
@@ -523,7 +553,7 @@
 	.color-wheel {
 		position: relative;
 		background: conic-gradient(#ff3b30, #ffd60a, #34c759, #32ade6, #7b4dff, #ff3b30);
-		border-color: rgba(255,255,255,0.55);
+		border-color: rgba(255, 255, 255, 0.55);
 	}
 	.color-wheel::after {
 		content: '';
@@ -531,7 +561,7 @@
 		inset: 0.48rem;
 		border-radius: inherit;
 		background: #ffffff;
-		box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+		box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 	}
 	.temperature-dock {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -542,9 +572,9 @@
 		height: 2.35rem;
 		border: 0;
 		border-radius: 999px;
-		color: rgba(255,255,255,0.9);
-		background: rgba(255,255,255,0.13);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.13);
+		color: rgba(255, 255, 255, 0.9);
+		background: rgba(255, 255, 255, 0.13);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.13);
 		font-weight: 760;
 		cursor: pointer;
 	}
@@ -552,7 +582,7 @@
 		padding: 0.7rem 0.85rem;
 		border-radius: 14px;
 		color: #fecaca;
-		background: rgba(248,113,113,0.13);
+		background: rgba(248, 113, 113, 0.13);
 		font-size: 0.82rem;
 		font-weight: 650;
 	}

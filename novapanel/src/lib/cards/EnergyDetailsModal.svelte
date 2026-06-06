@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+	import { calculateEnergyCosts } from '$lib/energy-costs';
 	import { entityStore } from '$lib/ha/entities-store';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
-	import type { EnergyAnchors } from '$lib/persistence/panel-state-types';
-	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import type { EnergyAnchors, EnergyCostMode } from '$lib/persistence/panel-state-types';
+	import { localeFor, selectedLanguageStore, translate } from '$lib/i18n';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
+	import { DEFAULT_CURRENCY_CODE, formatCurrency } from '$lib/currency';
 
 	type Props = {
 		// Identifier (voor custom-asset URLs)
@@ -18,15 +22,20 @@
 		exportTodayEntityId?: string;
 		solarTodayEntityId?: string;
 		homeTodayEntityId?: string;
-		// Kosten vandaag (EUR)
+		// Kosten vandaag
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		energyCostMode?: EnergyCostMode;
 		importPeakTodayEntityId?: string;
 		importOffPeakTodayEntityId?: string;
+		exportPeakTodayEntityId?: string;
+		exportOffPeakTodayEntityId?: string;
 		importTariffEntityId?: string;
 		exportTariffEntityId?: string;
 		importPeakTariff?: number;
 		importOffPeakTariff?: number;
+		exportPeakTariff?: number;
+		exportOffPeakTariff?: number;
 		exportTariff?: number;
 		// Optioneel: zelfvoorzienend %
 		selfSufficiencyEntityId?: string;
@@ -52,6 +61,7 @@
 		anchorsDayWithCar?: EnergyAnchors;
 		anchorsNightNoCar?: EnergyAnchors;
 		anchorsNightWithCar?: EnergyAnchors;
+		currencyCode?: string;
 		onClose: () => void;
 	};
 
@@ -68,12 +78,17 @@
 		homeTodayEntityId = '',
 		costTodayEntityId = '',
 		compensationTodayEntityId = '',
+		energyCostMode = 'peak_offpeak',
 		importPeakTodayEntityId = '',
 		importOffPeakTodayEntityId = '',
+		exportPeakTodayEntityId = '',
+		exportOffPeakTodayEntityId = '',
 		importTariffEntityId = '',
 		exportTariffEntityId = '',
 		importPeakTariff,
 		importOffPeakTariff,
+		exportPeakTariff,
+		exportOffPeakTariff,
 		exportTariff,
 		selfSufficiencyEntityId = '',
 		carChargingEntityId = '',
@@ -92,6 +107,7 @@
 		anchorsDayWithCar,
 		anchorsNightNoCar,
 		anchorsNightWithCar,
+		currencyCode = DEFAULT_CURRENCY_CODE,
 		onClose
 	}: Props = $props();
 
@@ -114,7 +130,9 @@
 	}
 	function getState(id: string): string {
 		const e = getEntity(id);
-		return String(e?.state ?? '').toLowerCase().trim();
+		return String(e?.state ?? '')
+			.toLowerCase()
+			.trim();
 	}
 
 	function powerW(id: string): number | null {
@@ -155,74 +173,79 @@
 	const compensationToday = $derived(getNumeric(compensationTodayEntityId));
 	const importPeakToday = $derived(kwhToday(importPeakTodayEntityId));
 	const importOffPeakToday = $derived(kwhToday(importOffPeakTodayEntityId));
+	const exportPeakToday = $derived(kwhToday(exportPeakTodayEntityId));
+	const exportOffPeakToday = $derived(kwhToday(exportOffPeakTodayEntityId));
 	const importTariffLive = $derived(tariffEntityValue(importTariffEntityId));
 	const exportTariffLive = $derived(tariffEntityValue(exportTariffEntityId));
 	const selfSufficiency = $derived(getNumeric(selfSufficiencyEntityId));
 
-	const selfSufficiencyComputed = $derived((() => {
-		if (selfSufficiency !== null) return selfSufficiency;
-		if (solarToday === null || exportToday === null) return null;
-		const consumed = solarToday - exportToday;
-		const home = homeTodayKwh ?? (importToday !== null ? importToday + consumed : null);
-		if (!home || home <= 0) return null;
-		return Math.max(0, Math.min(100, (consumed / home) * 100));
-	})());
+	const selfSufficiencyComputed = $derived(
+		(() => {
+			if (selfSufficiency !== null) return selfSufficiency;
+			if (solarToday === null || exportToday === null) return null;
+			const consumed = solarToday - exportToday;
+			const home = homeTodayKwh ?? (importToday !== null ? importToday + consumed : null);
+			if (!home || home <= 0) return null;
+			return Math.max(0, Math.min(100, (consumed / home) * 100));
+		})()
+	);
 
-	const netCostToday = $derived((() => {
-		const peakTariff = tariffNumber(importPeakTariff);
-		const offPeakTariff = tariffNumber(importOffPeakTariff);
-		const exportFallbackTariff = exportTariffLive ?? tariffNumber(exportTariff);
+	const costResult = $derived(
+		calculateEnergyCosts({
+			costMode: energyCostMode,
+			costToday,
+			compensationToday,
+			importToday,
+			exportToday,
+			importPeakToday,
+			importOffPeakToday,
+			exportPeakToday,
+			exportOffPeakToday,
+			importTariffLive,
+			exportTariffLive,
+			importPeakTariff: tariffNumber(importPeakTariff),
+			importOffPeakTariff: tariffNumber(importOffPeakTariff),
+			exportPeakTariff: tariffNumber(exportPeakTariff),
+			exportOffPeakTariff: tariffNumber(exportOffPeakTariff),
+			exportTariff: tariffNumber(exportTariff)
+		})
+	);
+	const netCostToday = $derived(costResult.netCost);
+	const activeLocale = $derived(localeFor($selectedLanguageStore));
 
-		let computedImportCost: number | null = null;
-		let peakOffPeakCost = 0;
-		let hasPeakOffPeakCost = false;
-		if (importPeakToday !== null && peakTariff !== null) {
-			peakOffPeakCost += importPeakToday * peakTariff;
-			hasPeakOffPeakCost = true;
-		}
-		if (importOffPeakToday !== null && offPeakTariff !== null) {
-			peakOffPeakCost += importOffPeakToday * offPeakTariff;
-			hasPeakOffPeakCost = true;
-		}
-		if (hasPeakOffPeakCost) {
-			computedImportCost = peakOffPeakCost;
-		} else if (importToday !== null && importTariffLive !== null) {
-			computedImportCost = importToday * importTariffLive;
-		}
-
-		const computedExportCompensation =
-			exportToday !== null && exportFallbackTariff !== null ? exportToday * exportFallbackTariff : null;
-		const importCost = costToday ?? computedImportCost;
-		const exportCompensation = compensationToday ?? computedExportCompensation;
-		if (importCost === null && exportCompensation === null) return null;
-		return (importCost ?? 0) - (exportCompensation ?? 0);
-	})());
+	function fmtDecimal(value: number, fractionDigits = 1): string {
+		return value.toLocaleString(activeLocale, {
+			minimumFractionDigits: fractionDigits,
+			maximumFractionDigits: fractionDigits
+		});
+	}
 
 	function fmtPowerW(w: number | null): string {
 		if (w === null) return '–';
 		const abs = Math.abs(w);
-		if (abs >= 1000) return `${(abs / 1000).toFixed(1)} kW`;
+		if (abs >= 1000) return `${fmtDecimal(abs / 1000)} kW`;
 		return `${Math.round(abs)} W`;
 	}
 	function fmtKwh(v: number | null): string {
 		if (v === null) return '–';
-		return `${v.toFixed(1)}`;
+		return fmtDecimal(v);
 	}
 	function fmtEuro(v: number | null): string {
 		if (v === null) return '–';
-		const sign = v < 0 ? '−' : '';
-		return `${sign}€${Math.abs(v).toFixed(2)}`;
+		return formatCurrency(v, activeLocale, currencyCode);
 	}
 
 	// Tijd-detectie (dag/nacht) via sun.sun
 	const sunState = $derived(getState('sun.sun'));
-	const isNight = $derived((() => {
-		if (sunState === 'below_horizon') return true;
-		if (sunState === 'above_horizon') return false;
-		// Fallback: lokale tijd 06:00 t/m 20:00 = dag
-		const h = new Date().getHours();
-		return h < 6 || h >= 20;
-	})());
+	const isNight = $derived(
+		(() => {
+			if (sunState === 'below_horizon') return true;
+			if (sunState === 'above_horizon') return false;
+			// Fallback: lokale tijd 06:00 t/m 20:00 = dag
+			const h = new Date().getHours();
+			return h < 6 || h >= 20;
+		})()
+	);
 
 	// Auto-aan-lader detectie
 	function evalChargerPlugged(entityId: string): boolean | null {
@@ -260,33 +283,39 @@
 		return true;
 	}
 
-	const carPluggedIn = $derived((() => {
-		const charger = evalChargerPlugged(carChargingEntityId);
-		const cable = evalCablePlugged(carCableEntityId);
-		// OR-logica: één bron die "aangesloten" zegt is genoeg
-		if (charger === true || cable === true) return true;
-		return false;
-	})());
+	const carPluggedIn = $derived(
+		(() => {
+			const charger = evalChargerPlugged(carChargingEntityId);
+			const cable = evalCablePlugged(carCableEntityId);
+			// OR-logica: één bron die "aangesloten" zegt is genoeg
+			if (charger === true || cable === true) return true;
+			return false;
+		})()
+	);
 
 	const variantKey = $derived(`${isNight ? 'night' : 'day'}-${carPluggedIn ? 'with-car' : 'no-car'}`);
-	const hasCustomCurrent = $derived((() => {
-		if (variantKey === 'day-no-car') return Boolean(hasCustomDayNoCar);
-		if (variantKey === 'day-with-car') return Boolean(hasCustomDayWithCar);
-		if (variantKey === 'night-no-car') return Boolean(hasCustomNightNoCar);
-		return Boolean(hasCustomNightWithCar);
-	})());
+	const hasCustomCurrent = $derived(
+		(() => {
+			if (variantKey === 'day-no-car') return Boolean(hasCustomDayNoCar);
+			if (variantKey === 'day-with-car') return Boolean(hasCustomDayWithCar);
+			if (variantKey === 'night-no-car') return Boolean(hasCustomNightNoCar);
+			return Boolean(hasCustomNightWithCar);
+		})()
+	);
 
 	// Achtergrondafbeelding kiezen
-	const bgImage = $derived((() => {
-		const ingressBase =
-			typeof window !== 'undefined'
-				? (((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '') as string)
-				: '';
-		if (hasCustomCurrent && cardId) {
-			return `${ingressBase}/energy-asset/${cardId}/${variantKey}`;
-		}
-		return `${ingressBase}/energy/${variantKey}.png`;
-	})());
+	const bgImage = $derived(
+		(() => {
+			const ingressBase =
+				typeof window !== 'undefined'
+					? (((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '') as string)
+					: '';
+			if (hasCustomCurrent && cardId) {
+				return `${ingressBase}/energy-asset/${cardId}/${variantKey}`;
+			}
+			return `${ingressBase}/energy/${variantKey}.png`;
+		})()
+	);
 
 	// Flow-detectie (in W) — drempel om ruis te negeren
 	const flowMinW = 50;
@@ -297,8 +326,6 @@
 	const batteryCharge = $derived(batteryW !== null && batteryW < -flowMinW);
 	const carCharging = $derived(carPluggedIn && carW !== null && carW > flowMinW);
 
-	const hasBattery = $derived(Boolean(batteryEntityId || batteryChargeEntityId));
-
 	// Kleuren — semantisch onderscheidbaar
 	const COLOR_SOLAR = '#22c55e'; // groen — zon naar accu/auto/huis
 	const COLOR_GRID_IMPORT = '#fb923c'; // oranje — net-afname (net→huis/auto/accu)
@@ -306,12 +333,29 @@
 	const COLOR_BATTERY_DISCHARGE = '#a855f7'; // paars — accu ontladen → huis/auto, onderscheidbaar van zon
 	const COLOR_RAIL = '#3a3f4a'; // donkergrijze rail onder elk pad
 
-	const netStatus = $derived((() => {
-		if (netW === null) return { label: translate('Geen data', $selectedLanguageStore), color: 'rgba(255,255,255,0.4)', value: '–' };
-		if (netW < -flowMinW) return { label: translate('Teruglevering', $selectedLanguageStore), color: COLOR_GRID_EXPORT, value: fmtPowerW(netW) };
-		if (netW > flowMinW) return { label: translate('Afname', $selectedLanguageStore), color: COLOR_GRID_IMPORT, value: fmtPowerW(netW) };
-		return { label: translate('In balans', $selectedLanguageStore), color: '#f5f5f5', value: '0 W' };
-	})());
+	const netStatus = $derived(
+		(() => {
+			if (netW === null)
+				return {
+					label: translate('Geen data', $selectedLanguageStore),
+					color: 'rgba(255,255,255,0.4)',
+					value: '–'
+				};
+			if (netW < -flowMinW)
+				return {
+					label: translate('Teruglevering', $selectedLanguageStore),
+					color: COLOR_GRID_EXPORT,
+					value: fmtPowerW(netW)
+				};
+			if (netW > flowMinW)
+				return {
+					label: translate('Afname', $selectedLanguageStore),
+					color: COLOR_GRID_IMPORT,
+					value: fmtPowerW(netW)
+				};
+			return { label: translate('In balans', $selectedLanguageStore), color: '#f5f5f5', value: '0 W' };
+		})()
+	);
 
 	// === Ankerpunten ===
 	// Default: genormaliseerd 0..1 op basis van de stock-foto (1536x1024).
@@ -324,12 +368,14 @@
 		railX: 0.404
 	};
 
-	const currentAnchors = $derived((() => {
-		if (variantKey === 'day-no-car') return anchorsDayNoCar ?? DEFAULT_ANCHORS;
-		if (variantKey === 'day-with-car') return anchorsDayWithCar ?? DEFAULT_ANCHORS;
-		if (variantKey === 'night-no-car') return anchorsNightNoCar ?? DEFAULT_ANCHORS;
-		return anchorsNightWithCar ?? DEFAULT_ANCHORS;
-	})());
+	const currentAnchors = $derived(
+		(() => {
+			if (variantKey === 'day-no-car') return anchorsDayNoCar ?? DEFAULT_ANCHORS;
+			if (variantKey === 'day-with-car') return anchorsDayWithCar ?? DEFAULT_ANCHORS;
+			if (variantKey === 'night-no-car') return anchorsNightNoCar ?? DEFAULT_ANCHORS;
+			return anchorsNightWithCar ?? DEFAULT_ANCHORS;
+		})()
+	);
 
 	// Zelfde 1x1 coördinatenstelsel als EnergyAnchorEditor, zodat ingestelde punten exact overeenkomen.
 	const VB = 1;
@@ -411,19 +457,93 @@
 	const showBatteryToCar = $derived(batteryDischarge && carCharging);
 
 	type FlowDef = { key: string; d: string; color: string; dur: string; endpoint: Pt; endKey: string };
-	const activeFlows = $derived((() => {
-		const list: FlowDef[] = [];
-		if (showSolarToBattery) list.push({ key: 'solarToBattery', d: pathSolarToBattery(), color: COLOR_SOLAR, dur: '2.4s', endpoint: P_BATTERY, endKey: 'battery' });
-		if (showSolarToCar) list.push({ key: 'solarToCar', d: pathSolarToCar(), color: COLOR_SOLAR, dur: '3s', endpoint: P_CAR, endKey: 'car' });
-		if (showSolarToHome) list.push({ key: 'solarToHome', d: pathSolarToHome(), color: COLOR_SOLAR, dur: '2.6s', endpoint: P_DOOR, endKey: 'door' });
-		if (showSolarToGrid) list.push({ key: 'solarToGrid', d: pathSolarToGrid(), color: COLOR_GRID_EXPORT, dur: '3s', endpoint: P_STREET, endKey: 'street' });
-		if (showGridToHome) list.push({ key: 'gridToHome', d: pathGridToHome(), color: COLOR_GRID_IMPORT, dur: '3s', endpoint: P_DOOR, endKey: 'door' });
-		if (showGridToCar) list.push({ key: 'gridToCar', d: pathGridToCar(), color: COLOR_GRID_IMPORT, dur: '3s', endpoint: P_CAR, endKey: 'car' });
-		if (showGridToBattery) list.push({ key: 'gridToBattery', d: pathGridToBattery(), color: COLOR_GRID_IMPORT, dur: '2.8s', endpoint: P_BATTERY, endKey: 'battery' });
-		if (showBatteryToHome) list.push({ key: 'batteryToHome', d: pathBatteryToHome(), color: COLOR_BATTERY_DISCHARGE, dur: '2.4s', endpoint: P_DOOR, endKey: 'door' });
-		if (showBatteryToCar) list.push({ key: 'batteryToCar', d: pathBatteryToCar(), color: COLOR_BATTERY_DISCHARGE, dur: '2.4s', endpoint: P_CAR, endKey: 'car' });
-		return list;
-	})());
+	const activeFlows = $derived(
+		(() => {
+			const list: FlowDef[] = [];
+			if (showSolarToBattery)
+				list.push({
+					key: 'solarToBattery',
+					d: pathSolarToBattery(),
+					color: COLOR_SOLAR,
+					dur: '2.4s',
+					endpoint: P_BATTERY,
+					endKey: 'battery'
+				});
+			if (showSolarToCar)
+				list.push({
+					key: 'solarToCar',
+					d: pathSolarToCar(),
+					color: COLOR_SOLAR,
+					dur: '3s',
+					endpoint: P_CAR,
+					endKey: 'car'
+				});
+			if (showSolarToHome)
+				list.push({
+					key: 'solarToHome',
+					d: pathSolarToHome(),
+					color: COLOR_SOLAR,
+					dur: '2.6s',
+					endpoint: P_DOOR,
+					endKey: 'door'
+				});
+			if (showSolarToGrid)
+				list.push({
+					key: 'solarToGrid',
+					d: pathSolarToGrid(),
+					color: COLOR_GRID_EXPORT,
+					dur: '3s',
+					endpoint: P_STREET,
+					endKey: 'street'
+				});
+			if (showGridToHome)
+				list.push({
+					key: 'gridToHome',
+					d: pathGridToHome(),
+					color: COLOR_GRID_IMPORT,
+					dur: '3s',
+					endpoint: P_DOOR,
+					endKey: 'door'
+				});
+			if (showGridToCar)
+				list.push({
+					key: 'gridToCar',
+					d: pathGridToCar(),
+					color: COLOR_GRID_IMPORT,
+					dur: '3s',
+					endpoint: P_CAR,
+					endKey: 'car'
+				});
+			if (showGridToBattery)
+				list.push({
+					key: 'gridToBattery',
+					d: pathGridToBattery(),
+					color: COLOR_GRID_IMPORT,
+					dur: '2.8s',
+					endpoint: P_BATTERY,
+					endKey: 'battery'
+				});
+			if (showBatteryToHome)
+				list.push({
+					key: 'batteryToHome',
+					d: pathBatteryToHome(),
+					color: COLOR_BATTERY_DISCHARGE,
+					dur: '2.4s',
+					endpoint: P_DOOR,
+					endKey: 'door'
+				});
+			if (showBatteryToCar)
+				list.push({
+					key: 'batteryToCar',
+					d: pathBatteryToCar(),
+					color: COLOR_BATTERY_DISCHARGE,
+					dur: '2.4s',
+					endpoint: P_CAR,
+					endKey: 'car'
+				});
+			return list;
+		})()
+	);
 
 	// === Verbruik per apparaat sub-modal ===
 	let devicesOpen = $state(false);
@@ -435,7 +555,9 @@
 		else next.add(entityId);
 		hiddenEntities = next;
 	}
-	const hasDevices = $derived((energyDeviceEntityIds ?? []).filter((id) => id && id.trim().length > 0).length > 0);
+	const hasDevices = $derived(
+		(energyDeviceEntityIds ?? []).filter((id) => id && id.trim().length > 0).length > 0
+	);
 	const canOpenDevices = $derived(hasDevices);
 
 	// === Snapshot-mechanisme voor kWh vandaag ===
@@ -472,17 +594,19 @@
 	// en stuur de update door naar panel-state. Hier doen we het via een ander $effect dat alleen
 	// vuurt als er daadwerkelijk nieuwe entities zijn die een initiële waarde nodig hebben.
 	$effect(() => {
-		if (!onSnapshotChange) return;
+		const snapshotSource = energyDeviceSnapshot;
+		void snapshotSource;
 		const today = todayDateString();
 		const ids = (energyDeviceTodayEntityIds ?? []).filter((id) => id && id.trim().length > 0);
 		if (ids.length === 0) return;
+		const snapshot = untrack(() => effectiveSnapshot);
 
 		// Als de datum oud is, beginnen we leeg
-		const currentDate = effectiveSnapshot.date === today ? effectiveSnapshot.date : today;
-		const currentValues = effectiveSnapshot.date === today ? effectiveSnapshot.values : {};
+		const currentDate = snapshot.date === today ? snapshot.date : today;
+		const currentValues = snapshot.date === today ? snapshot.values : {};
 
 		const nextValues: Record<string, number> = { ...currentValues };
-		let dirty = currentDate !== effectiveSnapshot.date;
+		let dirty = currentDate !== snapshot.date;
 		for (const id of ids) {
 			if (nextValues[id] === undefined) {
 				const current = getNumeric(id);
@@ -497,7 +621,7 @@
 		if (dirty) {
 			const next: DaySnapshot = { date: today, values: nextValues };
 			effectiveSnapshot = next;
-			onSnapshotChange(next);
+			onSnapshotChange?.(next);
 		}
 	});
 
@@ -506,10 +630,10 @@
 		if (typeof window === 'undefined') return;
 		const interval = window.setInterval(() => {
 			const today = todayDateString();
-			if (effectiveSnapshot.date !== today && onSnapshotChange) {
+			if (effectiveSnapshot.date !== today) {
 				const next: DaySnapshot = { date: today, values: {} };
 				effectiveSnapshot = next;
-				onSnapshotChange(next);
+				onSnapshotChange?.(next);
 			}
 		}, 60000);
 		return () => window.clearInterval(interval);
@@ -576,73 +700,78 @@
 			.trim();
 	}
 
-	const deviceRows = $derived((() => {
-		const power = (energyDeviceEntityIds ?? []).filter((id) => id && id.trim().length > 0);
-		const today = (energyDeviceTodayEntityIds ?? []).filter((id) => id && id.trim().length > 0);
+	const deviceRows = $derived(
+		(() => {
+			const power = (energyDeviceEntityIds ?? []).filter((id) => id && id.trim().length > 0);
+			const today = (energyDeviceTodayEntityIds ?? []).filter((id) => id && id.trim().length > 0);
 
-		const todayByBase = new Map<string, string>();
-		for (const t of today) {
-			const key = baseNameForMatch(t);
-			if (!todayByBase.has(key)) todayByBase.set(key, t);
-		}
-		const usedToday = new Set<string>();
-
-		const rows: DeviceRow[] = [];
-		for (let i = 0; i < power.length; i++) {
-			const pid = power[i].trim();
-			if (!pid) continue;
-
-			let tid: string | null = null;
-			if (i < today.length && today[i] && today[i].trim().length > 0) {
-				const candidate = today[i].trim();
-				if (baseNameForMatch(candidate) === baseNameForMatch(pid)) {
-					tid = candidate;
-					usedToday.add(candidate);
-				}
+			const todayByBase = new Map<string, string>();
+			for (const t of today) {
+				const key = baseNameForMatch(t);
+				if (!todayByBase.has(key)) todayByBase.set(key, t);
 			}
-			if (!tid) {
-				const base = baseNameForMatch(pid);
-				const match = todayByBase.get(base);
-				if (match && !usedToday.has(match)) {
-					tid = match;
-					usedToday.add(match);
-				}
-			}
+			const usedToday = new Set<string>();
 
-			const ent = getEntity(pid);
-			const friendly = (ent?.attributes as { friendly_name?: string } | undefined)?.friendly_name ?? pid;
-			rows.push({
-				entityId: pid,
-				name: resolveDisplayName(pid, friendly, tid),
-				friendlyName: friendly,
-				powerW: powerW(pid),
-				kwhToday: tid ? kwhTodayFromSnapshot(tid) : null,
-				kwhEntityId: tid
+			const rows: DeviceRow[] = [];
+			for (let i = 0; i < power.length; i++) {
+				const pid = power[i].trim();
+				if (!pid) continue;
+
+				let tid: string | null = null;
+				if (i < today.length && today[i] && today[i].trim().length > 0) {
+					const candidate = today[i].trim();
+					if (baseNameForMatch(candidate) === baseNameForMatch(pid)) {
+						tid = candidate;
+						usedToday.add(candidate);
+					}
+				}
+				if (!tid) {
+					const base = baseNameForMatch(pid);
+					const match = todayByBase.get(base);
+					if (match && !usedToday.has(match)) {
+						tid = match;
+						usedToday.add(match);
+					}
+				}
+
+				const ent = getEntity(pid);
+				const friendly = (ent?.attributes as { friendly_name?: string } | undefined)?.friendly_name ?? pid;
+				rows.push({
+					entityId: pid,
+					name: resolveDisplayName(pid, friendly, tid),
+					friendlyName: friendly,
+					powerW: powerW(pid),
+					kwhToday: tid ? kwhTodayFromSnapshot(tid) : null,
+					kwhEntityId: tid
+				});
+			}
+			rows.sort((a, b) => {
+				// Primair: aflopend op kWh-vandaag (zichtbaar in chart)
+				const aKwh = a.kwhToday ?? -1;
+				const bKwh = b.kwhToday ?? -1;
+				if (bKwh !== aKwh) return bKwh - aKwh;
+				// Secundair: aflopend op live W
+				return (b.powerW ?? -Infinity) - (a.powerW ?? -Infinity);
 			});
-		}
-		rows.sort((a, b) => {
-			// Primair: aflopend op kWh-vandaag (zichtbaar in chart)
-			const aKwh = a.kwhToday ?? -1;
-			const bKwh = b.kwhToday ?? -1;
-			if (bKwh !== aKwh) return bKwh - aKwh;
-			// Secundair: aflopend op live W
-			return (b.powerW ?? -Infinity) - (a.powerW ?? -Infinity);
-		});
-		return rows;
-	})());
+			return rows;
+		})()
+	);
 	const devicesTotalW = $derived(deviceRows.reduce((sum, r) => sum + (r.powerW ?? 0), 0));
-	const devicesTotalKwh = $derived((() => {
-		const vals = deviceRows.map((r) => r.kwhToday).filter((v): v is number => v !== null);
-		return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) : null;
-	})());
-	const maxRowKwh = $derived(deviceRows.reduce((max, r) => Math.max(max, r.kwhToday ?? 0), 0));
+	const devicesTotalKwh = $derived(
+		(() => {
+			const vals = deviceRows.map((r) => r.kwhToday).filter((v): v is number => v !== null);
+			return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) : null;
+		})()
+	);
 	const visibleRows = $derived(deviceRows.filter((r) => !hiddenEntities.has(r.entityId)));
-	const chartMax = $derived((() => {
-		if (chartMode === 'now') {
-			return visibleRows.reduce((max, r) => Math.max(max, r.powerW ?? 0), 0);
-		}
-		return visibleRows.reduce((max, r) => Math.max(max, r.kwhToday ?? 0), 0);
-	})());
+	const chartMax = $derived(
+		(() => {
+			if (chartMode === 'now') {
+				return visibleRows.reduce((max, r) => Math.max(max, r.powerW ?? 0), 0);
+			}
+			return visibleRows.reduce((max, r) => Math.max(max, r.kwhToday ?? 0), 0);
+		})()
+	);
 	function valueFor(row: DeviceRow): number {
 		if (chartMode === 'now') return row.powerW ?? 0;
 		return row.kwhToday ?? 0;
@@ -653,10 +782,22 @@
 	}
 
 	// 11 onderscheidende kleuren voor de bars (cyclisch)
-	const COLORS = ['#fb923c', '#60a5fa', '#a78bfa', '#4ade80', '#facc15', '#f472b6', '#22d3ee', '#fb7185', '#34d399', '#c084fc', '#f59e0b'];
+	const COLORS = [
+		'#fb923c',
+		'#60a5fa',
+		'#a78bfa',
+		'#4ade80',
+		'#facc15',
+		'#f472b6',
+		'#22d3ee',
+		'#fb7185',
+		'#34d399',
+		'#c084fc',
+		'#f59e0b'
+	];
 	function colorFor(entityId: string): string {
 		const idx = deviceRows.findIndex((r) => r.entityId === entityId);
-		return COLORS[((idx >= 0 ? idx : 0)) % COLORS.length];
+		return COLORS[(idx >= 0 ? idx : 0) % COLORS.length];
 	}
 
 	function openDevices() {
@@ -667,8 +808,19 @@
 	}
 </script>
 
-<button type="button" class="modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
-<section class="energy-modal np-detail" role="dialog" aria-modal="true" aria-label={translate('Energieoverzicht', $selectedLanguageStore)}>
+<button
+	type="button"
+	class="modal-overlay"
+	onclick={onClose}
+	aria-label={translate('close', $selectedLanguageStore)}
+></button>
+<div
+	class="energy-modal np-detail"
+	role="dialog"
+	aria-modal="true"
+	aria-label={translate('Energieoverzicht', $selectedLanguageStore)}
+	use:modalBehavior={{ onClose }}
+>
 	<div class="np-detail-head" style="--np-tint: rgba(74,222,128,0.18); --np-color: #4ade80;">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
 		<div class="np-detail-head-icon"><TablerIcon name="bolt" size={22} /></div>
@@ -688,9 +840,19 @@
 				</div>
 			</div>
 			<div class="stat right">
-				<div class="stat-label">{translate('Zelfvoorzienend', $selectedLanguageStore)}</div>
+				<div class="stat-label">
+					{batteryPct !== null
+						? translate('Accu', $selectedLanguageStore)
+						: translate('Zelfvoorzienend', $selectedLanguageStore)}
+				</div>
 				<div class="stat-value">
-					<span class="num">{selfSufficiencyComputed !== null ? Math.round(selfSufficiencyComputed) : '–'}</span>
+					<span class="num"
+						>{batteryPct !== null
+							? Math.round(batteryPct)
+							: selfSufficiencyComputed !== null
+								? Math.round(selfSufficiencyComputed)
+								: '–'}</span
+					>
 					<span class="unit">%</span>
 				</div>
 			</div>
@@ -698,13 +860,43 @@
 
 		<div class="hero-frame">
 			<img class="hero-bg" src={bgImage} alt="" aria-hidden="true" />
-			<svg class="flow-overlay" viewBox="0 0 1 1" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+			<svg
+				class="flow-overlay"
+				viewBox="0 0 1 1"
+				preserveAspectRatio="none"
+				xmlns="http://www.w3.org/2000/svg"
+			>
 				{#each activeFlows as f (f.key)}
 					<!-- Donkergrijze rail -->
-					<path d={f.d} fill="none" stroke={COLOR_RAIL} stroke-width="0.004" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+					<path
+						d={f.d}
+						fill="none"
+						stroke={COLOR_RAIL}
+						stroke-width="0.004"
+						stroke-linejoin="round"
+						stroke-linecap="round"
+						vector-effect="non-scaling-stroke"
+					/>
 					<!-- Bewegend gekleurd segment overheen -->
-					<path d={f.d} fill="none" stroke={f.color} stroke-width="0.004" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1000" stroke-dasharray="140 860" stroke-dashoffset="1000">
-						<animate attributeName="stroke-dashoffset" from="1000" to="0" dur={f.dur} repeatCount="indefinite" />
+					<path
+						d={f.d}
+						fill="none"
+						stroke={f.color}
+						stroke-width="0.004"
+						stroke-linejoin="round"
+						stroke-linecap="round"
+						vector-effect="non-scaling-stroke"
+						pathLength="1000"
+						stroke-dasharray="140 860"
+						stroke-dashoffset="1000"
+					>
+						<animate
+							attributeName="stroke-dashoffset"
+							from="1000"
+							to="0"
+							dur={f.dur}
+							repeatCount="indefinite"
+						/>
 					</path>
 				{/each}
 			</svg>
@@ -722,6 +914,9 @@
 				<div class="stat-label">{translate('Kosten', $selectedLanguageStore)}</div>
 				<div class="stat-value">
 					<span class="num">{netCostToday !== null ? fmtEuro(netCostToday) : '–'}</span>
+					{#if costResult.isEstimate && netCostToday !== null}
+						<span class="unit">{translate('schatting', $selectedLanguageStore)}</span>
+					{/if}
 				</div>
 			</div>
 			<div class="stat right">
@@ -756,19 +951,37 @@
 			</div>
 		{/if}
 	</div>
-</section>
+</div>
 
 {#if devicesOpen}
-	<button type="button" class="modal-overlay devices-overlay" onclick={closeDevices} aria-label={translate('close', $selectedLanguageStore)}></button>
-	<section class="devices-modal np-detail" role="dialog" aria-modal="true" aria-label={translate('Verbruik per apparaat', $selectedLanguageStore)}>
+	<button
+		type="button"
+		class="modal-overlay devices-overlay"
+		onclick={closeDevices}
+		aria-label={translate('close', $selectedLanguageStore)}
+	></button>
+	<div
+		class="devices-modal np-detail"
+		role="dialog"
+		aria-modal="true"
+		aria-label={translate('Verbruik per apparaat', $selectedLanguageStore)}
+		use:modalBehavior={{ onClose: closeDevices }}
+	>
 		<div class="np-detail-head" style="--np-tint: rgba(251,146,60,0.18); --np-color: #fb923c;">
 			<div class="np-detail-head-glow" aria-hidden="true"></div>
 			<div class="np-detail-head-icon"><TablerIcon name="device-desktop-analytics" size={22} /></div>
 			<div class="np-detail-head-text">
 				<div class="np-detail-head-title">{translate('Verbruik per apparaat', $selectedLanguageStore)}</div>
-				<div class="np-detail-head-sub">{translate('Live', $selectedLanguageStore)} · {translate('vandaag', $selectedLanguageStore)}</div>
+				<div class="np-detail-head-sub">
+					{translate('Live', $selectedLanguageStore)} · {translate('vandaag', $selectedLanguageStore)}
+				</div>
 			</div>
-			<button type="button" class="devices-close" onclick={closeDevices} aria-label={translate('close', $selectedLanguageStore)}>
+			<button
+				type="button"
+				class="devices-close"
+				onclick={closeDevices}
+				aria-label={translate('close', $selectedLanguageStore)}
+			>
 				<TablerIcon name="x" size={18} />
 			</button>
 		</div>
@@ -780,10 +993,16 @@
 					<div class="summary-value">
 						<span class="num">{fmtPowerW(devicesTotalW)}</span>
 					</div>
-					<div class="summary-foot">{deviceRows.filter((r) => (r.powerW ?? 0) > 50).length} {translate('apparaten actief', $selectedLanguageStore)}</div>
+					<div class="summary-foot">
+						{deviceRows.filter((r) => (r.powerW ?? 0) > 50).length}
+						{translate('apparaten actief', $selectedLanguageStore)}
+					</div>
 				</div>
 				<div class="summary-card summary-card-accent">
-					<div class="summary-label">{translate('Vandaag', $selectedLanguageStore)} {translate('Totaal', $selectedLanguageStore).toLowerCase()}</div>
+					<div class="summary-label">
+						{translate('Vandaag', $selectedLanguageStore)}
+						{translate('Totaal', $selectedLanguageStore).toLowerCase()}
+					</div>
 					<div class="summary-value">
 						<span class="num">{fmtKwh(devicesTotalKwh)}</span>
 						<span class="unit">kWh</span>
@@ -810,7 +1029,8 @@
 					onclick={() => (chartMode = 'today')}
 				>
 					<TablerIcon name="chart-bar" size={13} />
-					{translate('Vandaag', $selectedLanguageStore)} {translate('Totaal', $selectedLanguageStore).toLowerCase()}
+					{translate('Vandaag', $selectedLanguageStore)}
+					{translate('Totaal', $selectedLanguageStore).toLowerCase()}
 				</button>
 			</div>
 
@@ -855,7 +1075,9 @@
 							class="legend-btn"
 							onclick={() => toggleEntityVisibility(row.entityId)}
 							aria-pressed={!isHidden}
-							title={isHidden ? translate('Tonen', $selectedLanguageStore) : translate('Verbergen', $selectedLanguageStore)}
+							title={isHidden
+								? translate('Tonen', $selectedLanguageStore)
+								: translate('Verbergen', $selectedLanguageStore)}
 						>
 							<span class="legend-dot" style="background: {colorFor(row.entityId)}"></span>
 							<span class="legend-name">{row.name}</span>
@@ -868,62 +1090,111 @@
 				{/each}
 			</div>
 		</div>
-	</section>
+	</div>
 {/if}
 
 <style>
 	.modal-overlay {
-		position: fixed; inset: 0;
-		background: rgba(0,0,0,0.55);
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.55);
 		backdrop-filter: blur(2px);
-		border: 0; padding: 0; margin: 0;
-		z-index: 40; cursor: default;
+		border: 0;
+		padding: 0;
+		margin: 0;
+		z-index: 40;
+		cursor: default;
 	}
 	.energy-modal {
 		position: fixed;
-		top: 50%; left: 50%;
+		top: 50%;
+		left: 50%;
 		transform: translate(-50%, -50%);
 		z-index: 60;
 		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
 		height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
 		max-height: calc(100vh - 1.5rem);
-		display: flex; flex-direction: column;
+		display: flex;
+		flex-direction: column;
 		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 18px;
 		overflow: hidden;
 	}
-	.energy-modal::before { content: ''; position: absolute; top: 0; left: 50%; width: 60%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); transform: translateX(-50%); pointer-events: none; z-index: 5; }
+	.energy-modal::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		width: 60%;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+		transform: translateX(-50%);
+		pointer-events: none;
+		z-index: 5;
+	}
 
 	/* Premium header — match alle detail-modals */
 	.np-detail-head {
 		padding: 18px 22px 14px;
-		border-bottom: 0.5px solid rgba(255,255,255,0.06);
-		display: flex; align-items: center; gap: 12px;
-		position: relative; overflow: hidden; flex-shrink: 0;
+		border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		position: relative;
+		overflow: hidden;
+		flex-shrink: 0;
 	}
 	.np-detail-head-glow {
-		position: absolute; top: -100px; left: -40px;
-		width: 220px; height: 220px;
-		background: radial-gradient(circle, var(--np-tint, rgba(96,165,250,0.18)), transparent 70%);
-		pointer-events: none; filter: blur(20px);
+		position: absolute;
+		top: -100px;
+		left: -40px;
+		width: 220px;
+		height: 220px;
+		background: radial-gradient(circle, var(--np-tint, rgba(96, 165, 250, 0.18)), transparent 70%);
+		pointer-events: none;
+		filter: blur(20px);
 	}
 	.np-detail-head-icon {
-		width: 38px; height: 38px; border-radius: 10px;
-		display: grid; place-items: center;
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
+		display: grid;
+		place-items: center;
 		background: var(--np-tint);
-		border: 0.5px solid rgba(255,255,255,0.10);
+		border: 0.5px solid rgba(255, 255, 255, 0.1);
 		color: var(--np-color);
-		flex-shrink: 0; position: relative; z-index: 1;
+		flex-shrink: 0;
+		position: relative;
+		z-index: 1;
 	}
-	.np-detail-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
-	.np-detail-head-title { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.2; color: #f5f5f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.np-detail-head-sub { font-size: 11.5px; color: rgba(255,255,255,0.5); margin-top: 3px; }
+	.np-detail-head-text {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		z-index: 1;
+	}
+	.np-detail-head-title {
+		font-size: 15px;
+		font-weight: 500;
+		letter-spacing: -0.01em;
+		line-height: 1.2;
+		color: #f5f5f5;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.np-detail-head-sub {
+		font-size: 11.5px;
+		color: rgba(255, 255, 255, 0.5);
+		margin-top: 3px;
+	}
 
 	.modal-body {
 		flex: 1 1 auto;
 		min-height: 0;
-		display: flex; flex-direction: column;
+		display: flex;
+		flex-direction: column;
 		padding: 14px 22px 22px;
 		gap: 10px;
 		overflow-y: auto;
@@ -934,7 +1205,11 @@
 		scrollbar-width: none;
 		-ms-overflow-style: none;
 	}
-	.modal-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+	.modal-body::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
 
 	.stat-row {
 		display: grid;
@@ -946,40 +1221,58 @@
 		grid-template-columns: 1fr 1fr 1fr;
 		padding-top: 12px;
 		margin-top: 4px;
-		border-top: 0.5px solid rgba(255,255,255,0.07);
+		border-top: 0.5px solid rgba(255, 255, 255, 0.07);
 	}
 	.stat {
-		display: flex; flex-direction: column; gap: 4px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 		padding: 12px 14px;
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 		border-radius: 13px;
-		transition: border-color 0.2s, background 0.2s;
+		transition:
+			border-color 0.2s,
+			background 0.2s;
 	}
 	.stat:hover {
-		background: rgba(255,255,255,0.035);
-		border-color: rgba(255,255,255,0.10);
+		background: rgba(255, 255, 255, 0.035);
+		border-color: rgba(255, 255, 255, 0.1);
 	}
-	.stat.right { text-align: right; }
-	.stat.center { text-align: center; }
+	.stat.right {
+		text-align: right;
+	}
+	.stat.center {
+		text-align: center;
+	}
 	.stat-label {
-		font-size: 10.5px; color: rgba(255,255,255,0.5);
+		font-size: 10.5px;
+		color: rgba(255, 255, 255, 0.5);
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 	}
 	.stat-value {
-		display: flex; align-items: baseline; gap: 4px;
+		display: flex;
+		align-items: baseline;
+		gap: 4px;
 	}
-	.stat.right .stat-value { justify-content: flex-end; }
-	.stat.center .stat-value { justify-content: center; }
+	.stat.right .stat-value {
+		justify-content: flex-end;
+	}
+	.stat.center .stat-value {
+		justify-content: center;
+	}
 	.stat-value .num {
-		font-size: 1.5rem; font-weight: 600;
-		color: #fff; letter-spacing: -0.02em;
+		font-size: 1.5rem;
+		font-weight: 600;
+		color: #fff;
+		letter-spacing: -0.02em;
 		font-variant-numeric: tabular-nums;
 	}
 	.stat-value .unit {
-		font-size: 12.5px; color: rgba(255,255,255,0.5);
+		font-size: 12.5px;
+		color: rgba(255, 255, 255, 0.5);
 		font-weight: 500;
 	}
 
@@ -990,25 +1283,29 @@
 		border-radius: 13px;
 		overflow: hidden;
 		background: #0c1024;
-		border: 0.5px solid rgba(255,255,255,0.07);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 	}
 	.hero-bg {
-		position: absolute; inset: 0;
-		width: 100%; height: 100%;
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
 		object-fit: fill;
 		display: block;
 	}
 	.flow-overlay {
-		position: absolute; inset: 0;
-		width: 100%; height: 100%;
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
 		pointer-events: none;
 	}
 
 	.hero-status {
 		text-align: center;
 		padding: 14px 16px;
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 		border-radius: 13px;
 		display: flex;
 		flex-direction: column;
@@ -1017,28 +1314,35 @@
 		justify-content: center;
 	}
 	.hero-value {
-		font-size: 1.8rem; font-weight: 600;
-		letter-spacing: -0.02em; line-height: 1.1;
+		font-size: 1.8rem;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		line-height: 1.1;
 		font-variant-numeric: tabular-nums;
 	}
 	.hero-label {
-		font-size: 10.5px; font-weight: 600;
-		opacity: 0.85; margin-top: 2px;
+		font-size: 10.5px;
+		font-weight: 600;
+		opacity: 0.85;
+		margin-top: 2px;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 	}
 
 	/* Klikbare variant van hero-status (afname-knop) */
 	.hero-status-btn {
-		border: 0.5px solid rgba(255,255,255,0.07);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 		font: inherit;
 		cursor: pointer;
 		width: 100%;
-		transition: background 0.18s, border-color 0.18s, transform 0.18s;
+		transition:
+			background 0.18s,
+			border-color 0.18s,
+			transform 0.18s;
 	}
 	.hero-status-btn:hover {
-		background: rgba(255,255,255,0.04);
-		border-color: rgba(255,255,255,0.12);
+		background: rgba(255, 255, 255, 0.04);
+		border-color: rgba(255, 255, 255, 0.12);
 	}
 	.hero-status-btn:active {
 		transform: scale(0.995);
@@ -1056,24 +1360,28 @@
 	}
 	.devices-modal {
 		position: fixed;
-		top: 50%; left: 50%;
+		top: 50%;
+		left: 50%;
 		transform: translate(-50%, -50%);
 		z-index: 80;
 		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
 		height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
 		max-height: calc(100vh - 1.5rem);
-		display: flex; flex-direction: column;
+		display: flex;
+		flex-direction: column;
 		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 18px;
 		overflow: hidden;
 	}
 	.devices-modal::before {
 		content: '';
 		position: absolute;
-		top: 0; left: 50%;
-		width: 60%; height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+		top: 0;
+		left: 50%;
+		width: 60%;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
 		transform: translateX(-50%);
 		pointer-events: none;
 		z-index: 5;
@@ -1081,17 +1389,21 @@
 	.devices-close {
 		position: relative;
 		z-index: 1;
-		width: 32px; height: 32px;
-		border: 0.5px solid rgba(255,255,255,0.10);
-		background: rgba(255,255,255,0.04);
+		width: 32px;
+		height: 32px;
+		border: 0.5px solid rgba(255, 255, 255, 0.1);
+		background: rgba(255, 255, 255, 0.04);
 		border-radius: 9px;
-		color: rgba(255,255,255,0.75);
-		display: grid; place-items: center;
+		color: rgba(255, 255, 255, 0.75);
+		display: grid;
+		place-items: center;
 		cursor: pointer;
-		transition: background 0.18s, color 0.18s;
+		transition:
+			background 0.18s,
+			color 0.18s;
 	}
 	.devices-close:hover {
-		background: rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.08);
 		color: #fff;
 	}
 	/* === Sub-modal "Verbruik per apparaat" — clean layout, no scrollbars === */
@@ -1110,17 +1422,17 @@
 		flex-direction: column;
 		gap: 4px;
 		padding: 14px 16px;
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.07);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
 		border-radius: 13px;
 	}
 	.summary-card-accent {
-		background: rgba(251,146,60,0.08);
-		border-color: rgba(251,146,60,0.18);
+		background: rgba(251, 146, 60, 0.08);
+		border-color: rgba(251, 146, 60, 0.18);
 	}
 	.summary-label {
 		font-size: 10.5px;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
@@ -1139,12 +1451,12 @@
 	}
 	.summary-value .unit {
 		font-size: 12.5px;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-weight: 500;
 	}
 	.summary-foot {
 		font-size: 11px;
-		color: rgba(255,255,255,0.4);
+		color: rgba(255, 255, 255, 0.4);
 		margin-top: 2px;
 	}
 
@@ -1153,8 +1465,8 @@
 		display: inline-flex;
 		gap: 4px;
 		padding: 4px;
-		background: rgba(0,0,0,0.25);
-		border: 0.5px solid rgba(255,255,255,0.06);
+		background: rgba(0, 0, 0, 0.25);
+		border: 0.5px solid rgba(255, 255, 255, 0.06);
 		border-radius: 10px;
 		align-self: flex-start;
 	}
@@ -1165,25 +1477,27 @@
 		padding: 6px 12px;
 		background: transparent;
 		border: 0;
-		color: rgba(255,255,255,0.55);
+		color: rgba(255, 255, 255, 0.55);
 		font-size: 12px;
 		font-weight: 500;
 		border-radius: 7px;
 		cursor: pointer;
-		transition: background 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s;
 	}
 	.chart-mode-btn:hover {
-		color: rgba(255,255,255,0.85);
+		color: rgba(255, 255, 255, 0.85);
 	}
 	.chart-mode-btn.active {
-		background: rgba(251,146,60,0.18);
+		background: rgba(251, 146, 60, 0.18);
 		color: #fb923c;
 	}
 
 	/* Staafgrafiek */
 	.chart-wrap {
-		background: rgba(0,0,0,0.20);
-		border: 0.5px solid rgba(255,255,255,0.05);
+		background: rgba(0, 0, 0, 0.2);
+		border: 0.5px solid rgba(255, 255, 255, 0.05);
 		border-radius: 12px;
 		padding: 14px;
 		flex-shrink: 0;
@@ -1209,17 +1523,18 @@
 		overflow: hidden;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		white-space: normal;
 		line-height: 1.15;
 		font-size: 12.5px;
 		font-weight: 600;
-		color: rgba(255,255,255,0.82);
+		color: rgba(255, 255, 255, 0.82);
 	}
 	.device-bar-value {
 		font-size: 12px;
 		font-weight: 700;
-		color: rgba(255,255,255,0.92);
+		color: rgba(255, 255, 255, 0.92);
 		font-variant-numeric: tabular-nums;
 	}
 	.device-bar-track {
@@ -1227,22 +1542,25 @@
 		height: 12px;
 		overflow: hidden;
 		border-radius: 999px;
-		background: rgba(255,255,255,0.06);
-		box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.06);
+		background: rgba(255, 255, 255, 0.06);
+		box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
 	}
 	.device-bar-fill {
 		position: absolute;
 		inset: 0 auto 0 0;
 		min-width: 0;
 		border-radius: inherit;
-		background:
-			linear-gradient(90deg, var(--bar-color), color-mix(in srgb, var(--bar-color) 62%, #ffffff 38%));
+		background: linear-gradient(
+			90deg,
+			var(--bar-color),
+			color-mix(in srgb, var(--bar-color) 62%, #ffffff 38%)
+		);
 		box-shadow: 0 0 18px color-mix(in srgb, var(--bar-color) 45%, transparent);
 	}
 	.chart-empty {
 		text-align: center;
 		padding: 36px 12px;
-		color: rgba(255,255,255,0.45);
+		color: rgba(255, 255, 255, 0.45);
 		font-size: 13px;
 	}
 
@@ -1267,17 +1585,20 @@
 		min-width: 0;
 		min-height: 42px;
 		padding: 7px 10px;
-		background: rgba(255,255,255,0.025);
-		border: 0.5px solid rgba(255,255,255,0.06);
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.06);
 		border-radius: 8px;
 		color: #f5f5f5;
 		cursor: pointer;
 		text-align: left;
-		transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+		transition:
+			background 0.15s,
+			border-color 0.15s,
+			opacity 0.15s;
 	}
 	.legend-btn:hover {
-		background: rgba(255,255,255,0.045);
-		border-color: rgba(255,255,255,0.10);
+		background: rgba(255, 255, 255, 0.045);
+		border-color: rgba(255, 255, 255, 0.1);
 	}
 	.legend-item.hidden .legend-btn {
 		opacity: 0.4;
@@ -1286,7 +1607,8 @@
 		opacity: 0.35;
 	}
 	.legend-dot {
-		width: 10px; height: 10px;
+		width: 10px;
+		height: 10px;
 		border-radius: 3px;
 		flex-shrink: 0;
 		margin-top: 3px;
@@ -1300,27 +1622,34 @@
 		overflow: hidden;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		white-space: normal;
 		line-height: 1.15;
 		letter-spacing: -0.01em;
 	}
 	.legend-live-dot {
-		width: 5px; height: 5px;
+		width: 5px;
+		height: 5px;
 		border-radius: 50%;
 		background: #fb923c;
-		box-shadow: 0 0 6px rgba(251,146,60,0.6);
+		box-shadow: 0 0 6px rgba(251, 146, 60, 0.6);
 		flex-shrink: 0;
 		animation: chart-dot-pulse 1.6s ease-in-out infinite;
 	}
 	@keyframes chart-dot-pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.45; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.45;
+		}
 	}
 	.legend-value {
 		font-size: 11.5px;
 		font-weight: 600;
-		color: rgba(255,255,255,0.7);
+		color: rgba(255, 255, 255, 0.7);
 		font-variant-numeric: tabular-nums;
 		flex-shrink: 0;
 		letter-spacing: -0.01em;
@@ -1354,10 +1683,20 @@
 	}
 
 	@media (max-width: 480px) {
-		.np-detail-head { padding: 14px 16px 12px; }
-		.modal-body { padding: 12px 16px 16px; }
-		.np-detail-head-title { font-size: 14px; }
-		.devices-summary { grid-template-columns: 1fr; }
-		.chart-legend { grid-template-columns: 1fr; }
+		.np-detail-head {
+			padding: 14px 16px 12px;
+		}
+		.modal-body {
+			padding: 12px 16px 16px;
+		}
+		.np-detail-head-title {
+			font-size: 14px;
+		}
+		.devices-summary {
+			grid-template-columns: 1fr;
+		}
+		.chart-legend {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

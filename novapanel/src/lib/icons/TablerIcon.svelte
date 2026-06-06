@@ -3,7 +3,7 @@
 		name: string;
 		size?: number | string;
 		title?: string;
-		'class'?: string;
+		class?: string;
 	};
 
 	let { name, size = 16, title = '', class: className = '' }: Props = $props();

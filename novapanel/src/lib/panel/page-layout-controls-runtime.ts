@@ -1,5 +1,9 @@
-import type { CardDraft, ViewSectionDraft } from '$lib/persistence/panel-state';
-import { toggleCardLibraryState, toggleControlsState, toggleSettingsState } from '$lib/panel/page-modal-state';
+import type { ViewSectionDraft } from '$lib/persistence/panel-state';
+import {
+	toggleCardLibraryState,
+	toggleControlsState,
+	toggleSettingsState
+} from '$lib/panel/page-modal-state';
 
 type CardEditorState = { zone: 'sidebar' | 'view'; id: string } | null;
 
@@ -39,7 +43,7 @@ export function createPageLayoutControlsRuntime(params: CreatePageLayoutControls
 		setState({
 			selectedColumns: value,
 			savedViewSections: nextSavedSections,
-			savedLayout: { columns: value, popupWidth: 850, popupHeight: 1140 }
+			savedLayout: { ...state.savedLayout, columns: value }
 		});
 		void persistDashboardState();
 	}

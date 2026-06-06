@@ -16,7 +16,7 @@ export type DefaultViewSeedOutput = {
 
 export function seedDefaultViewIfEmpty(input: Input): DefaultViewSeedOutput {
 	if (countViewCards(input.savedViewSections) > 0 || input.savedSidebarCardsLength > 0) return null;
-	const sid = `section-${Date.now()}`;
+	const sid = `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 	const cid = `card-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 	const raw: ViewSectionDraft[] = [
 		{

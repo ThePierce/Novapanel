@@ -1,5 +1,6 @@
 import type { LanguageCode } from '$lib/i18n';
 import type { PanelTheme } from '$lib/panel/theme';
+import { coerceCurrencyCode, DEFAULT_CURRENCY_CODE } from '$lib/currency';
 import type { CardDraft, PanelDashboard, ViewSectionDraft } from '$lib/persistence/panel-state';
 import { countViewCards } from '$lib/panel/page-debug';
 
@@ -24,6 +25,7 @@ export type PersistDraftInput = {
 	savedSidebarCards: CardDraft[];
 	selectedLanguage: LanguageCode;
 	selectedTheme: PanelTheme;
+	selectedCurrencyCode?: string;
 	activeCardLibraryTab: 'sidebar' | 'view';
 	customTitles: { cardLibrary?: string; homeviewPreview?: string };
 	oauth?: OAuthState;
@@ -36,6 +38,7 @@ export type PersistDraftData = {
 	configuration: {
 		language: LanguageCode;
 		theme: PanelTheme;
+		currencyCode: string;
 		cardLibraryTab: 'sidebar' | 'view';
 		titles: { cardLibrary?: string; homeviewPreview?: string };
 		oauth?: OAuthState;
@@ -44,8 +47,8 @@ export type PersistDraftData = {
 };
 
 export function buildPersistDraftData(input: PersistDraftInput): PersistDraftData {
-	const popupWidth = input.popupWidth ?? 760;
-	const popupHeight = input.popupHeight ?? 560;
+	const popupWidth = input.popupWidth ?? 850;
+	const popupHeight = input.popupHeight ?? 1140;
 	const dashboard = input.cloneForPersistence<PanelDashboard>({
 		layout: {
 			columns: input.selectedColumns,
@@ -59,6 +62,7 @@ export function buildPersistDraftData(input: PersistDraftInput): PersistDraftDat
 	const configuration = input.cloneForPersistence({
 		language: input.selectedLanguage,
 		theme: input.selectedTheme,
+		currencyCode: coerceCurrencyCode(input.selectedCurrencyCode, DEFAULT_CURRENCY_CODE),
 		cardLibraryTab: input.activeCardLibraryTab,
 		titles: input.customTitles,
 		oauth: input.oauth,
@@ -75,7 +79,10 @@ export type PersistLocalMetrics = {
 	localOk: boolean;
 };
 
-export function evaluatePersistLocalMetrics(dashboard: PanelDashboard, verify: PanelDashboard): PersistLocalMetrics {
+export function evaluatePersistLocalMetrics(
+	dashboard: PanelDashboard,
+	verify: PanelDashboard
+): PersistLocalMetrics {
 	const expectedViewCards = countViewCards(dashboard.viewSections);
 	const actualViewCards = countViewCards(verify.viewSections);
 	const expectedSidebarCards = dashboard.sidebarCards.length;

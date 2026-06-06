@@ -18,6 +18,8 @@ type EditSessionState = {
 	sectionEditorOpen: boolean;
 	cardEditorOpen: boolean;
 	editMode: boolean;
+	savedUpdatedAt: number;
+	editSessionBaseUpdatedAt: number;
 };
 
 type CreatePageEditSessionRuntimeParams = {
@@ -27,6 +29,8 @@ type CreatePageEditSessionRuntimeParams = {
 	sanitizeSidebarCards: (cards: unknown) => CardDraft[];
 	cloneForPersistence: <T>(value: T) => T;
 	persistDashboardState: () => Promise<{ localOk: boolean; addonOk: boolean }>;
+	readServerDashboardUpdatedAt?: () => Promise<number | null>;
+	confirmServerOverwrite?: (serverUpdatedAt: number, editStartedAt: number) => boolean | Promise<boolean>;
 	countViewCards: (sections: ViewSectionDraft[]) => number;
 	debugLog: (event: string, payload: Record<string, unknown>) => void;
 };
@@ -39,6 +43,8 @@ export function createPageEditSessionRuntime(params: CreatePageEditSessionRuntim
 		sanitizeSidebarCards,
 		cloneForPersistence,
 		persistDashboardState,
+		readServerDashboardUpdatedAt,
+		confirmServerOverwrite,
 		countViewCards,
 		debugLog
 	} = params;
@@ -50,12 +56,41 @@ export function createPageEditSessionRuntime(params: CreatePageEditSessionRuntim
 				viewSections: sanitizeViewSections(state.savedViewSections),
 				sidebarCards: sanitizeSidebarCards(state.savedSidebarCards)
 			}),
+			editSessionBaseUpdatedAt: state.savedUpdatedAt,
 			editMode: true
 		});
 	}
 
 	async function saveDraftAndExit() {
 		const state = getState();
+		const editStartedAt = state.editSessionBaseUpdatedAt || state.savedUpdatedAt || 0;
+		if (readServerDashboardUpdatedAt && confirmServerOverwrite) {
+			try {
+				const serverUpdatedAt = await readServerDashboardUpdatedAt();
+				if (
+					typeof serverUpdatedAt === 'number' &&
+					Number.isFinite(serverUpdatedAt) &&
+					serverUpdatedAt > editStartedAt
+				) {
+					const shouldOverwrite = await confirmServerOverwrite(serverUpdatedAt, editStartedAt);
+					if (!shouldOverwrite) {
+						debugLog('save_draft_conflict_cancelled', {
+							serverUpdatedAt,
+							editStartedAt
+						});
+						return;
+					}
+					debugLog('save_draft_conflict_overwrite_confirmed', {
+						serverUpdatedAt,
+						editStartedAt
+					});
+				}
+			} catch (error) {
+				debugLog('save_draft_conflict_check_failed', {
+					error: error instanceof Error ? error.message : String(error)
+				});
+			}
+		}
 		const nextSavedViewSections = sanitizeViewSections(state.panelDraftHistory.present.viewSections);
 		const nextSavedSidebarCards = sanitizeSidebarCards(state.panelDraftHistory.present.sidebarCards);
 		setState({
@@ -63,8 +98,8 @@ export function createPageEditSessionRuntime(params: CreatePageEditSessionRuntim
 			savedSidebarCards: nextSavedSidebarCards,
 			savedLayout: {
 				columns: state.selectedColumns,
-				popupWidth: 850,
-				popupHeight: 1140
+				popupWidth: state.savedLayout.popupWidth,
+				popupHeight: state.savedLayout.popupHeight
 			},
 			savedCardLibraryTab: state.activeCardLibraryTab,
 			savedCustomTitles: cloneForPersistence(state.customTitles)
@@ -87,7 +122,13 @@ export function createPageEditSessionRuntime(params: CreatePageEditSessionRuntim
 				sidebarCards: nextSavedSidebarCards.length
 			});
 		}
-		setState({ cardLibraryOpen: false, sectionEditorOpen: false, cardEditorOpen: false, editMode: false });
+		setState({
+			cardLibraryOpen: false,
+			sectionEditorOpen: false,
+			cardEditorOpen: false,
+			editSessionBaseUpdatedAt: 0,
+			editMode: false
+		});
 	}
 
 	function cancelDraftAndExit() {
@@ -106,6 +147,7 @@ export function createPageEditSessionRuntime(params: CreatePageEditSessionRuntim
 			cardLibraryOpen: false,
 			sectionEditorOpen: false,
 			cardEditorOpen: false,
+			editSessionBaseUpdatedAt: 0,
 			editMode: false
 		});
 	}

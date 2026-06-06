@@ -18,7 +18,6 @@
 		statusEntityIds?: string[];
 		statusEntityAliases?: Record<string, string>;
 		icon: string;
-		cardId?: string;
 		lightGroups?: LightGroup[];
 	};
 
@@ -31,15 +30,12 @@
 		statusEntityIds = [],
 		statusEntityAliases = {},
 		icon,
-		cardId = '',
 		lightGroups = []
 	}: Props = $props();
 
 	const selectedEntityIdSet = $derived(
 		new Set(
-			(statusEntityIds ?? [])
-				.map((value) => value.trim().toLowerCase())
-				.filter((value) => value.length > 0)
+			(statusEntityIds ?? []).map((value) => value.trim().toLowerCase()).filter((value) => value.length > 0)
 		)
 	);
 	const scopedEntities = $derived(
@@ -54,7 +50,8 @@
 	);
 	const labeledEntities = $derived(
 		scopedEntities.map((entity) => {
-			const alias = statusEntityAliases?.[entity.entityId] ?? statusEntityAliases?.[entity.entityId.toLowerCase()];
+			const alias =
+				statusEntityAliases?.[entity.entityId] ?? statusEntityAliases?.[entity.entityId.toLowerCase()];
 			if (typeof alias !== 'string' || alias.trim().length === 0) return entity;
 			return { ...entity, friendlyName: alias.trim() };
 		})
@@ -70,23 +67,28 @@
 		})
 	);
 
-	// For lights: apply grouping logic
-	// - Count all individual lights (ungrouped) for the badge
-	// - But display groups as single items when calculating "active"
+	// For lights, count active configured groups as one item and exclude their members.
 	const groupedEntityIds = $derived(
 		kind === 'lights_status' && lightGroups.length > 0
 			? new Set(lightGroups.flatMap((g) => g.entityIds.map((id) => id.toLowerCase())))
 			: new Set<string>()
 	);
 
-	const activeCount = $derived(result.active.length);
-
-	const totalCount = $derived.by(() => {
-		if (kind !== 'lights_status' || lightGroups.length === 0) return result.relevant.length;
-		return result.relevant.length;
+	const activeCount = $derived.by(() => {
+		if (kind !== 'lights_status' || lightGroups.length === 0) return result.active.length;
+		const activeEntityIds = new Set(result.active.map((entity) => entity.entityId.toLowerCase()));
+		const activeGroupCount = lightGroups.filter((group) =>
+			group.entityIds.some((id) => activeEntityIds.has(id.toLowerCase()))
+		).length;
+		const activeUngroupedCount = result.active.filter(
+			(entity) => !groupedEntityIds.has(entity.entityId.toLowerCase())
+		).length;
+		return activeGroupCount + activeUngroupedCount;
 	});
 
-	const summary = $derived(buildStatusSummary({ kind, activeCount, activeEntities: result.active, language: $selectedLanguageStore }));
+	const summary = $derived(
+		buildStatusSummary({ kind, activeCount, activeEntities: result.active, language: $selectedLanguageStore })
+	);
 	const displayName = $derived(
 		name && name.trim().length > 0
 			? name
@@ -117,9 +119,9 @@
 						? activeCount > 0
 							? 'tone-white'
 							: 'tone-gray'
-					: activeCount > 0
-						? 'tone-red'
-						: 'tone-green'
+						: activeCount > 0
+							? 'tone-red'
+							: 'tone-green'
 	);
 	const badgeClass = $derived(
 		kind === 'lights_status' ||
@@ -172,26 +174,86 @@
 		gap: 0.75rem;
 		align-items: center;
 		padding: 0.2rem 0.1rem;
-		text-shadow: 0 0 5px rgba(0,0,0,0.15);
+		text-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
 		width: 100%;
 		min-width: 0;
 		max-width: 100%;
 		box-sizing: border-box;
 		container-type: inline-size;
 	}
-	.tile { border-radius: 10px; background: transparent; }
-	.status-icon-wrap { position: relative; width: 2.4rem; height: 2.4rem; display: grid; place-items: center; }
-	.status-icon { width: 2.4rem; height: 2.4rem; border-radius: 999px; background: transparent; display: grid; place-items: center; font-size: 1.2rem; line-height: 1; }
-	.status-icon.tone-yellow { color: #ffd338; }
-	.status-icon.tone-gray { color: rgba(255,255,255,0.35); }
-	.status-icon.tone-white { color: #ffffff; }
-	.status-icon.tone-red { color: #ff6b5b; }
-	.status-icon.tone-blue { color: #63bcff; }
-	.status-icon.tone-green { color: #69d38f; }
-	.count-badge { position: absolute; right: -0.22rem; top: -0.22rem; min-width: 1.04rem; height: 1.04rem; border-radius: 999px; background: #ffd338; color: #1b2433; font-size: 0.65rem; font-weight: 700; display: grid; place-items: center; padding: 0 0.2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.25); }
-	.count-badge.badge-white { background: #ffffff; color: #1b2433; }
-	.info { min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
-	.name { font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f5f5f5; }
+	.tile {
+		border-radius: 10px;
+		background: transparent;
+	}
+	.status-icon-wrap {
+		position: relative;
+		width: 2.4rem;
+		height: 2.4rem;
+		display: grid;
+		place-items: center;
+	}
+	.status-icon {
+		width: 2.4rem;
+		height: 2.4rem;
+		border-radius: 999px;
+		background: transparent;
+		display: grid;
+		place-items: center;
+		font-size: 1.2rem;
+		line-height: 1;
+	}
+	.status-icon.tone-yellow {
+		color: #ffd338;
+	}
+	.status-icon.tone-gray {
+		color: rgba(255, 255, 255, 0.35);
+	}
+	.status-icon.tone-white {
+		color: #ffffff;
+	}
+	.status-icon.tone-red {
+		color: #ff6b5b;
+	}
+	.status-icon.tone-blue {
+		color: #63bcff;
+	}
+	.status-icon.tone-green {
+		color: #69d38f;
+	}
+	.count-badge {
+		position: absolute;
+		right: -0.22rem;
+		top: -0.22rem;
+		min-width: 1.04rem;
+		height: 1.04rem;
+		border-radius: 999px;
+		background: #ffd338;
+		color: #1b2433;
+		font-size: 0.65rem;
+		font-weight: 700;
+		display: grid;
+		place-items: center;
+		padding: 0 0.2rem;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+	}
+	.count-badge.badge-white {
+		background: #ffffff;
+		color: #1b2433;
+	}
+	.info {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	.name {
+		font-weight: 500;
+		font-size: 0.95rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: #f5f5f5;
+	}
 	.summary {
 		font-size: 0.82rem;
 		line-height: 1.08rem;
@@ -202,6 +264,7 @@
 		opacity: 0.78;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow-wrap: anywhere;
 	}

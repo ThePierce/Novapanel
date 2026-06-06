@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: novapanel/package-lock.json
+      - name: Install
+        working-directory: novapanel
+        run: npm ci
+      - name: Format
+        working-directory: novapanel
+        run: npm run format:check
+      - name: Check
+        working-directory: novapanel
+        run: npm run check
+      - name: Lint
+        working-directory: novapanel
+        run: npm run lint
+      - name: Test
+        working-directory: novapanel
+        run: npm test
+      - name: Build
+        working-directory: novapanel
+        run: npm run build
+      - name: Docker image
+        working-directory: novapanel
+        run: docker build --build-arg BUILD_VERSION=ci --build-arg BUILD_ARCH=ci --build-arg BUILD_DATE=ci -t novapanel-ci .

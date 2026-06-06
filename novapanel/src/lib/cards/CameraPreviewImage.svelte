@@ -39,6 +39,7 @@
 			loadToken++;
 			image.onload = null;
 			image.onerror = null;
+			image.src = '';
 		};
 	});
 </script>
@@ -47,7 +48,7 @@
 	<img
 		class="camera-preview-img"
 		src={displaySrc}
-		alt={alt}
+		{alt}
 		loading="lazy"
 		onload={(event) => {
 			const image = event.currentTarget as HTMLImageElement;
@@ -71,8 +72,6 @@
 	}
 
 	.camera-preview-loading {
-		background:
-			linear-gradient(135deg, rgba(96,165,250,0.10), rgba(167,139,250,0.10)),
-			#050812;
+		background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(167, 139, 250, 0.1)), #050812;
 	}
 </style>

@@ -1,5 +1,6 @@
 import { parseJson, readStoredValue, removeStoredValue, writeStoredValue } from './storage';
 import { DEFAULT_PANEL_THEME, isPanelTheme } from '$lib/panel/theme';
+import { coerceCurrencyCode, DEFAULT_CURRENCY_CODE } from '$lib/currency';
 import {
 	coerceCardDraftFromUnknown,
 	dashboardScore,
@@ -15,7 +16,13 @@ import type {
 	PanelDashboardLayout
 } from './panel-state-types';
 
-export type { CardDraft, PanelConfiguration, PanelDashboard, PanelDashboardLayout, ViewSectionDraft } from './panel-state-types';
+export type {
+	CardDraft,
+	PanelConfiguration,
+	PanelDashboard,
+	PanelDashboardLayout,
+	ViewSectionDraft
+} from './panel-state-types';
 
 const LEGACY_STATE_KEY = 'np_panel_state_v1';
 const CONFIG_KEY = 'np_configuration_v1';
@@ -28,7 +35,8 @@ export function loadConfiguration(defaults: PanelConfiguration): PanelConfigurat
 	if (!parsed || typeof parsed !== 'object') return defaults;
 	const value = parsed as Record<string, unknown>;
 	const language = typeof value.language === 'string' ? value.language : defaults.language;
-	const theme = isPanelTheme(value.theme) ? value.theme : defaults.theme ?? DEFAULT_PANEL_THEME;
+	const theme = isPanelTheme(value.theme) ? value.theme : (defaults.theme ?? DEFAULT_PANEL_THEME);
+	const currencyCode = coerceCurrencyCode(value.currencyCode, defaults.currencyCode ?? DEFAULT_CURRENCY_CODE);
 	const cardLibraryTab =
 		value.cardLibraryTab === 'sidebar' || value.cardLibraryTab === 'view'
 			? value.cardLibraryTab
@@ -82,16 +90,18 @@ export function loadConfiguration(defaults: PanelConfiguration): PanelConfigurat
 						: undefined;
 					const playerAliases =
 						m.playerAliases && typeof m.playerAliases === 'object'
-							? Object.fromEntries(
+							? (Object.fromEntries(
 									Object.entries(m.playerAliases as Record<string, unknown>).filter(
 										([, v]) => typeof v === 'string'
 									)
-								) as Record<string, string>
+								) as Record<string, string>)
 							: undefined;
 					return { onkyoBridges, playerOrder, playerAliases };
 				})()
 			: undefined;
-	return { language, theme, cardLibraryTab, titles, oauth, mediaHub };
+	const updatedAt =
+		typeof value.updatedAt === 'number' && Number.isFinite(value.updatedAt) ? value.updatedAt : undefined;
+	return { language, theme, currencyCode, cardLibraryTab, titles, oauth, mediaHub, updatedAt };
 }
 
 export function saveConfiguration(configuration: PanelConfiguration) {
@@ -106,12 +116,12 @@ export function loadDashboard(defaults: PanelDashboard): PanelDashboard {
 	const parseCandidate = (parsed: unknown): PanelDashboard | null => {
 		if (!parsed || typeof parsed !== 'object') return null;
 		const value = parsed as {
-		layout?: Partial<PanelDashboardLayout>;
-		cards?: unknown[];
-		viewCards?: unknown[];
-		viewSections?: unknown[];
-		sidebarCards?: unknown[];
-	};
+			layout?: Partial<PanelDashboardLayout>;
+			cards?: unknown[];
+			viewCards?: unknown[];
+			viewSections?: unknown[];
+			sidebarCards?: unknown[];
+		};
 		return parseDashboardValue(value, defaults);
 	};
 	const primary = parseCandidate(parsedPrimary);

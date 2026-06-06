@@ -17,7 +17,6 @@
 		statusIcon?: string;
 		iconValidationState: 'idle' | 'checking' | 'ok' | 'error';
 		iconValidationMessage: string;
-		iconPreviewSrc: string;
 		linkedLightEntityIds?: string[];
 		onEntityIdChange: (value: string) => void;
 		onStatusIconChange: (value: string) => void;
@@ -28,7 +27,6 @@
 		statusIcon = 'mdi:lightbulb-outline',
 		iconValidationState,
 		iconValidationMessage,
-		iconPreviewSrc,
 		linkedLightEntityIds = [],
 		onEntityIdChange,
 		onStatusIconChange
@@ -63,19 +61,21 @@
 			}
 			const aName = a.friendlyName || a.entityId;
 			const bName = b.friendlyName || b.entityId;
-			return aName.localeCompare(bName, localeFor($selectedLanguageStore), { numeric: true, sensitivity: 'base' });
+			return aName.localeCompare(bName, localeFor($selectedLanguageStore), {
+				numeric: true,
+				sensitivity: 'base'
+			});
 		});
 	}
 
 	const lightEntities = $derived.by(() => {
-		let entities = linkedLightIdSet.size > 0
-			? allLightEntities.filter((entity) => linkedLightIdSet.has(entity.entityId.toLowerCase()))
-			: allLightEntities;
+		let entities =
+			linkedLightIdSet.size > 0
+				? allLightEntities.filter((entity) => linkedLightIdSet.has(entity.entityId.toLowerCase()))
+				: allLightEntities;
 		const selectedEntity = entityId
-			? (
-					$filteredEntities.find((entity) => entity.entityId === entityId && isLightControlEntity(entity)) ??
-					allLightEntities.find((entity) => entity.entityId === entityId)
-				)
+			? ($filteredEntities.find((entity) => entity.entityId === entityId && isLightControlEntity(entity)) ??
+				allLightEntities.find((entity) => entity.entityId === entityId))
 			: undefined;
 		if (selectedEntity && !entities.some((entity) => entity.entityId === selectedEntity.entityId)) {
 			entities = [selectedEntity, ...entities];
@@ -90,17 +90,23 @@
 				entityId: group.syntheticEntityId,
 				friendlyName: `${group.name} (${translate('Groep', $selectedLanguageStore)})`
 			}))
-			.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName, localeFor($selectedLanguageStore), {
-				numeric: true,
-				sensitivity: 'base'
-			}));
+			.sort((a, b) =>
+				a.friendlyName.localeCompare(b.friendlyName, localeFor($selectedLanguageStore), {
+					numeric: true,
+					sensitivity: 'base'
+				})
+			);
 	});
 	const lightPickerOptions = $derived.by(() => {
 		const options: Array<{ entityId: string; friendlyName: string }> = [
 			...lightGroupOptions,
 			...lightEntities
 		];
-		if (entityId && isLightGroupEntityId(entityId) && !options.some((option) => option.entityId === entityId)) {
+		if (
+			entityId &&
+			isLightGroupEntityId(entityId) &&
+			!options.some((option) => option.entityId === entityId)
+		) {
 			const group = resolveLightGroupEntityId(entityId);
 			if (group) {
 				options.unshift({
@@ -182,8 +188,8 @@
 		gap: 0.7rem;
 		padding: 0.7rem;
 		border-radius: 0.75rem;
-		background: rgba(255,211,56,0.08);
-		box-shadow: inset 0 0 0 1px rgba(255,211,56,0.14);
+		background: rgba(255, 211, 56, 0.08);
+		box-shadow: inset 0 0 0 1px rgba(255, 211, 56, 0.14);
 	}
 	.light-selected-icon {
 		width: 2.4rem;
@@ -192,7 +198,7 @@
 		place-items: center;
 		border-radius: 0.75rem;
 		color: #ffd338;
-		background: rgba(255,211,56,0.16);
+		background: rgba(255, 211, 56, 0.16);
 	}
 	.light-selected strong,
 	.light-selected span {
@@ -200,11 +206,11 @@
 	}
 	.light-selected strong {
 		font-size: 0.9rem;
-		color: rgba(255,255,255,0.9);
+		color: rgba(255, 255, 255, 0.9);
 	}
 	.light-selected span {
 		margin-top: 0.12rem;
 		font-size: 0.75rem;
-		color: rgba(255,255,255,0.52);
+		color: rgba(255, 255, 255, 0.52);
 	}
 </style>

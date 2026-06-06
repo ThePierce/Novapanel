@@ -33,19 +33,27 @@ RUN set -eux; \
 
 FROM node:22-alpine
 WORKDIR /app
-RUN apk add --no-cache netcat-openbsd
+RUN apk add --no-cache netcat-openbsd su-exec && \
+    addgroup -S nova && \
+    adduser -S nova -G nova && \
+    mkdir -p /data
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/server ./server
 COPY --from=builder /app/server.js .
 COPY --from=builder /app/package.json .
-COPY --from=builder /app/data /app/data_default
 COPY --from=builder /tmp/build-marker.txt /app/build-marker.txt
 COPY run.sh /run.sh
+RUN chown -R nova:nova /app /data /run.sh
 
 # VERIFIEER dat handler.js is gekopieerd
 RUN echo "=== VERIFYING FINAL IMAGE ===" && \
     ls -la /app/build/ && \
-    test -f /app/build/handler.js || (echo "FATAL: handler.js not found"; exit 1); \
+    test -f /app/build/handler.js && \
+    test -f /app/server/shared.js && \
+    test -f /app/server/energy-asset-routes.js && \
+    test -f /app/server/mdi-icon-routes.js && \
+    test -f /app/server/tunein-routes.js && \
     cat /app/build-marker.txt
 
 ENV PORT=8099 \

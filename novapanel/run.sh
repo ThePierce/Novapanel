@@ -29,4 +29,11 @@ export NODE_ENV=production
 mkdir -p /data
 
 echo "Starting Node.js server..."
+if [ "$(id -u)" = "0" ]; then
+  if chown -R nova:nova /data 2>/dev/null; then
+    exec su-exec nova node /app/server.js
+  fi
+  echo "Could not prepare /data for the nova user; starting as root for Home Assistant volume compatibility."
+fi
+
 exec node /app/server.js

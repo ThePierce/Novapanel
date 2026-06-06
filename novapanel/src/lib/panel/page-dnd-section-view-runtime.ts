@@ -1,4 +1,9 @@
-import { moveSectionAfterSection, moveSectionBeforeSection, moveSectionToColumn, moveViewCard } from '$lib/panel/dnd-helpers';
+import {
+	moveSectionAfterSection,
+	moveSectionBeforeSection,
+	moveSectionToColumn,
+	moveViewCard
+} from '$lib/panel/dnd-helpers';
 import type { CardDraft, ViewSectionDraft } from '$lib/persistence/panel-state';
 
 type PanelDraftSnapshot = { viewSections: ViewSectionDraft[]; sidebarCards: CardDraft[] };
@@ -154,7 +159,11 @@ export function createSectionViewDndHandlers(params: CreateSectionViewDndHandler
 		});
 	}
 
-	function dropViewCard(targetSectionId: string, targetCardId: string | null = null, placement: 'before' | 'after' = 'before') {
+	function dropViewCard(
+		targetSectionId: string,
+		targetCardId: string | null = null,
+		placement: 'before' | 'after' = 'before'
+	) {
 		const state = getState();
 		if (!state.editMode || !state.draggingViewCardId || !state.draggingViewCardFromSectionId) {
 			debugLog('drag_drop_view_card_blocked', {

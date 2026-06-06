@@ -12,3 +12,6 @@ pnpm-lock.yaml
 *.bak
 *_backup
 src/**/*.svelte_backup
+**/*.test.js
+**/*.test.ts
+.github

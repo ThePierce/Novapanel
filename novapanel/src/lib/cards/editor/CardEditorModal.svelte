@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { TranslationKey } from '$lib/i18n';
 	import type { CardDefinition } from '$lib/cards/store';
-	import EditorSection from '$lib/cards/editor/EditorSection.svelte';
-	import type { ClockStyle } from '$lib/persistence/panel-state-types';
+	import type { ClockStyle, EnergyCostMode } from '$lib/persistence/panel-state-types';
 	import { filteredEntities } from '$lib/ha/entities-store';
 	import { filterEntitiesForStatusCard, type StatusCardKind } from '$lib/cards/status/status-engine';
 	import StatusEntityPickerModal from '$lib/cards/status/StatusEntityPickerModal.svelte';
@@ -20,12 +19,19 @@
 	import LightButtonEditor from '$lib/cards/editor/LightButtonEditor.svelte';
 	import EntityButtonEditor from '$lib/cards/editor/EntityButtonEditor.svelte';
 	import { browser } from '$app/environment';
-	import { loadLightGroups, saveLightGroups, createLightGroup, type LightGroup } from '$lib/cards/light-groups';
+	import {
+		loadLightGroups,
+		saveLightGroups,
+		createLightGroup,
+		type LightGroup
+	} from '$lib/cards/light-groups';
 	import { entityStore } from '$lib/ha/entities-store';
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
+	import { getCardTypeStyling } from '$lib/cards/card-meta';
 
 	function getFriendlyName(entityId: string): string {
-		const entity = $entityStore.entities.find(e => e.entityId === entityId);
+		const entity = $entityStore.entities.find((e) => e.entityId === entityId);
 		return entity?.friendlyName?.trim() || entityId;
 	}
 
@@ -62,7 +68,7 @@
 	}
 	function lgSave() {
 		if (!cardEditorId || !lgEditingId) return;
-		const updated = lightGroupsState.map(g =>
+		const updated = lightGroupsState.map((g) =>
 			g.id === lgEditingId ? { ...g, name: lgDraftName, entityIds: lgDraftEntityIds } : g
 		);
 		saveLightGroups(cardEditorId, updated);
@@ -70,9 +76,15 @@
 		lgEditingId = null;
 		lgEntityPickerOpen = false;
 	}
+	function lgCancel() {
+		lgEditingId = null;
+		lgDraftName = '';
+		lgDraftEntityIds = [];
+		lgEntityPickerOpen = false;
+	}
 	function lgDelete(groupId: string) {
 		if (!cardEditorId) return;
-		const updated = lightGroupsState.filter(g => g.id !== groupId);
+		const updated = lightGroupsState.filter((g) => g.id !== groupId);
 		saveLightGroups(cardEditorId, updated);
 		lightGroupsState = updated;
 	}
@@ -94,16 +106,14 @@
 	}
 	function lgToggleEntity(entityId: string) {
 		if (lgDraftEntityIds.includes(entityId)) {
-			lgDraftEntityIds = lgDraftEntityIds.filter(id => id !== entityId);
+			lgDraftEntityIds = lgDraftEntityIds.filter((id) => id !== entityId);
 		} else {
 			lgDraftEntityIds = [...lgDraftEntityIds, entityId];
 		}
 	}
-let availabilityIgnoredOpen = $state(false);
-
 	type Props = {
 		t: (key: TranslationKey | string) => string;
-	cardEditorId?: string;
+		cardEditorId?: string;
 		cardCatalog: CardDefinition[];
 		getLocalizedCardLabel: (type: string) => string;
 		cardEditorType: string;
@@ -171,12 +181,18 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorHomeTodayEntityId?: string;
 		cardEditorCostTodayEntityId?: string;
 		cardEditorCompensationTodayEntityId?: string;
+		currencyCode?: string;
+		cardEditorEnergyCostMode?: EnergyCostMode;
 		cardEditorImportPeakTodayEntityId?: string;
 		cardEditorImportOffPeakTodayEntityId?: string;
+		cardEditorExportPeakTodayEntityId?: string;
+		cardEditorExportOffPeakTodayEntityId?: string;
 		cardEditorImportTariffEntityId?: string;
 		cardEditorExportTariffEntityId?: string;
 		cardEditorImportPeakTariff?: string;
 		cardEditorImportOffPeakTariff?: string;
+		cardEditorExportPeakTariff?: string;
+		cardEditorExportOffPeakTariff?: string;
 		cardEditorExportTariff?: string;
 		cardEditorSelfSufficiencyEntityId?: string;
 		cardEditorCarChargingEntityId?: string;
@@ -205,12 +221,17 @@ let availabilityIgnoredOpen = $state(false);
 		onHomeTodayEntityIdChange: (value: string) => void;
 		onCostTodayEntityIdChange: (value: string) => void;
 		onCompensationTodayEntityIdChange: (value: string) => void;
+		onEnergyCostModeChange: (value: EnergyCostMode) => void;
 		onImportPeakTodayEntityIdChange: (value: string) => void;
 		onImportOffPeakTodayEntityIdChange: (value: string) => void;
+		onExportPeakTodayEntityIdChange: (value: string) => void;
+		onExportOffPeakTodayEntityIdChange: (value: string) => void;
 		onImportTariffEntityIdChange: (value: string) => void;
 		onExportTariffEntityIdChange: (value: string) => void;
 		onImportPeakTariffChange: (value: string) => void;
 		onImportOffPeakTariffChange: (value: string) => void;
+		onExportPeakTariffChange: (value: string) => void;
+		onExportOffPeakTariffChange: (value: string) => void;
 		onExportTariffChange: (value: string) => void;
 		onSelfSufficiencyEntityIdChange: (value: string) => void;
 		onCarChargingEntityIdChange: (value: string) => void;
@@ -230,8 +251,6 @@ let availabilityIgnoredOpen = $state(false);
 	let {
 		t,
 		cardEditorId,
-		cardCatalog,
-		getLocalizedCardLabel,
 		cardEditorType,
 		cardEditorTitle,
 		cardEditorEntityId,
@@ -264,8 +283,6 @@ let availabilityIgnoredOpen = $state(false);
 		onSave,
 		onTitleChange,
 		onEntityIdChange,
-		onAnalogStyleChange,
-		onDigitalStyleChange,
 		onClockStyleChange,
 		onClockShowAnalogChange,
 		onClockShowDigitalChange,
@@ -297,12 +314,18 @@ let availabilityIgnoredOpen = $state(false);
 		cardEditorHomeTodayEntityId = '',
 		cardEditorCostTodayEntityId = '',
 		cardEditorCompensationTodayEntityId = '',
+		currencyCode = 'EUR',
+		cardEditorEnergyCostMode = 'peak_offpeak',
 		cardEditorImportPeakTodayEntityId = '',
 		cardEditorImportOffPeakTodayEntityId = '',
+		cardEditorExportPeakTodayEntityId = '',
+		cardEditorExportOffPeakTodayEntityId = '',
 		cardEditorImportTariffEntityId = '',
 		cardEditorExportTariffEntityId = '',
 		cardEditorImportPeakTariff = '',
 		cardEditorImportOffPeakTariff = '',
+		cardEditorExportPeakTariff = '',
+		cardEditorExportOffPeakTariff = '',
 		cardEditorExportTariff = '',
 		cardEditorSelfSufficiencyEntityId = '',
 		cardEditorCarChargingEntityId = '',
@@ -331,12 +354,17 @@ let availabilityIgnoredOpen = $state(false);
 		onHomeTodayEntityIdChange,
 		onCostTodayEntityIdChange,
 		onCompensationTodayEntityIdChange,
+		onEnergyCostModeChange,
 		onImportPeakTodayEntityIdChange,
 		onImportOffPeakTodayEntityIdChange,
+		onExportPeakTodayEntityIdChange,
+		onExportOffPeakTodayEntityIdChange,
 		onImportTariffEntityIdChange,
 		onExportTariffEntityIdChange,
 		onImportPeakTariffChange,
 		onImportOffPeakTariffChange,
+		onExportPeakTariffChange,
+		onExportOffPeakTariffChange,
 		onExportTariffChange,
 		onSelfSufficiencyEntityIdChange,
 		onCarChargingEntityIdChange,
@@ -363,9 +391,7 @@ let availabilityIgnoredOpen = $state(false);
 		})()
 	);
 
-	const weatherEntities = $derived(
-		$filteredEntities.filter((entity) => entity.domain === 'weather')
-	);
+	const weatherEntities = $derived($filteredEntities.filter((entity) => entity.domain === 'weather'));
 	const alarmEntities = $derived(
 		$filteredEntities.filter((entity) => entity.domain === 'alarm_control_panel')
 	);
@@ -390,7 +416,11 @@ let availabilityIgnoredOpen = $state(false);
 			: []
 	);
 	const availabilitySelectedSet = $derived(
-		new Set((cardEditorStatusEntityIds ?? []).map((value) => value.trim().toLowerCase()).filter((value) => value.length > 0))
+		new Set(
+			(cardEditorStatusEntityIds ?? [])
+				.map((value) => value.trim().toLowerCase())
+				.filter((value) => value.length > 0)
+		)
 	);
 	const usesScopedEntityPicker = $derived(
 		cardEditorType === 'availability_status' ||
@@ -413,34 +443,51 @@ let availabilityIgnoredOpen = $state(false);
 							: null
 	);
 
-	const cardTypeMeta = $derived((() => {
-		const type = cardEditorType ?? '';
-		if (type === 'energy') return { icon: 'bolt', tone: 'amber', tint: 'rgba(250,204,21,0.18)', color: '#facc15', subtitle: t('Bewerk hoe deze kaart leest en weergeeft') };
-		if (type === 'cameras_strip') return { icon: 'device-cctv', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t("Camera's selecteren en in Apple Home stijl tonen") };
-		if (type === 'week_calendar') return { icon: 'calendar-week', tone: 'cyan', tint: 'rgba(56,189,248,0.18)', color: '#38bdf8', subtitle: t('Weekkalender met CalDAV personen en kleuren') };
-		if (type === 'light_button') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: t('Lampknop met helderheid en kleur') };
-		if (type === 'device_button') return { icon: 'plug', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Apparaatknop met aan/uit bediening') };
-		if (type === 'climate_button') return { icon: 'temperature', tone: 'orange', tint: 'rgba(251,146,60,0.18)', color: '#fb923c', subtitle: t('Thermostaatknop met temperatuur en modus') };
-		if (type === 'cover_button') return { icon: 'blinds', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Gordijnknop met positiebediening') };
-		if (type === 'vacuum_button') return { icon: 'robot', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Robotstofzuiger met start, pauze en dock') };
-		if (type === 'media_player_button') return { icon: 'device-speaker', tone: 'purple', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: t('Media player met afspelen en volume') };
-		if (type === 'alarm_panel') return { icon: 'shield-lock', tone: 'rose', tint: 'rgba(248,113,113,0.18)', color: '#f87171', subtitle: t('Koppel aan een alarm-entiteit') };
-		if (type === 'lights_status') return { icon: 'bulb', tone: 'gold', tint: 'rgba(255,211,56,0.18)', color: '#ffd338', subtitle: t('Selecteer welke lampen meedoen') };
-		if (type === 'openings_status') return { icon: 'door', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Welke deuren en ramen zijn open') };
-		if (type === 'devices_status') return { icon: 'plug', tone: 'green', tint: 'rgba(52,211,153,0.18)', color: '#34d399', subtitle: t('Welke apparaten staan aan') };
-		if (type === 'availability_status') return { icon: 'wifi', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Welke apparaten zijn bereikbaar') };
-		if (type === 'media_players_status') return { icon: 'device-speaker', tone: 'purple', tint: 'rgba(192,132,252,0.18)', color: '#c084fc', subtitle: t('Welke spelers worden gevolgd') };
-		if (type === 'clock') return { icon: 'clock', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Stijl en weergave van de klok') };
-		if (type === 'date') return { icon: 'calendar', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Datumweergave instellen') };
-		if (type === 'weather') return { icon: 'cloud', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Koppel aan een weer-entiteit') };
-		if (type === 'weather_forecast') return { icon: 'cloud-storm', tone: 'cyan', tint: 'rgba(34,211,238,0.18)', color: '#22d3ee', subtitle: t('Voorspelling weergeven') };
-		return { icon: 'note', tone: 'blue', tint: 'rgba(96,165,250,0.18)', color: '#60a5fa', subtitle: t('Kaart bewerken') };
-	})());
+	const cardTypeMeta = $derived(
+		(() => {
+			const type = cardEditorType ?? '';
+			const withStyle = (tone: string, subtitle: string) => {
+				const style = getCardTypeStyling(type);
+				return { icon: style.icon, tone, tint: style.accentSoft, color: style.accent, subtitle };
+			};
+			if (type === 'energy') return withStyle('amber', t('Bewerk hoe deze kaart leest en weergeeft'));
+			if (type === 'cameras_strip')
+				return withStyle('blue', t("Camera's selecteren en in Apple Home stijl tonen"));
+			if (type === 'week_calendar')
+				return withStyle('cyan', t('Weekkalender met CalDAV personen en kleuren'));
+			if (type === 'light_button') return withStyle('gold', t('Lampknop met helderheid en kleur'));
+			if (type === 'device_button') return withStyle('green', t('Apparaatknop met aan/uit bediening'));
+			if (type === 'climate_button')
+				return withStyle('orange', t('Thermostaatknop met temperatuur en modus'));
+			if (type === 'cover_button') return withStyle('blue', t('Gordijnknop met positiebediening'));
+			if (type === 'vacuum_button') return withStyle('green', t('Robotstofzuiger met start, pauze en dock'));
+			if (type === 'media_player_button')
+				return withStyle('purple', t('Media player met afspelen en volume'));
+			if (type === 'alarm_panel') return withStyle('rose', t('Koppel aan een alarm-entiteit'));
+			if (type === 'lights_status') return withStyle('gold', t('Selecteer welke lampen meedoen'));
+			if (type === 'openings_status') return withStyle('blue', t('Welke deuren en ramen zijn open'));
+			if (type === 'devices_status') return withStyle('green', t('Welke apparaten staan aan'));
+			if (type === 'availability_status') return withStyle('cyan', t('Welke apparaten zijn bereikbaar'));
+			if (type === 'media_players_status') return withStyle('purple', t('Welke spelers worden gevolgd'));
+			if (type === 'clock') return withStyle('cyan', t('Stijl en weergave van de klok'));
+			if (type === 'date') return withStyle('blue', t('Datumweergave instellen'));
+			if (type === 'weather') return withStyle('cyan', t('Koppel aan een weer-entiteit'));
+			if (type === 'weather_forecast') return withStyle('cyan', t('Voorspelling weergeven'));
+			return {
+				icon: 'note',
+				tone: 'blue',
+				tint: 'rgba(96,165,250,0.18)',
+				color: '#60a5fa',
+				subtitle: t('Kaart bewerken')
+			};
+		})()
+	);
 
 	const scopedPickerRows = $derived(
 		usesScopedEntityPicker
 			? statusCandidates.map((entity) => {
-					const aliases = cardEditorType === 'media_players_status' ? mediaHubPlayerAliases : cardEditorStatusEntityAliases;
+					const aliases =
+						cardEditorType === 'media_players_status' ? mediaHubPlayerAliases : cardEditorStatusEntityAliases;
 					const alias = aliases?.[entity.entityId];
 					const displayName =
 						typeof alias === 'string' && alias.trim().length > 0 ? alias.trim() : entity.friendlyName;
@@ -468,25 +515,30 @@ let availabilityIgnoredOpen = $state(false);
 
 	// === Energy device-picker (live W + kWh vandaag) ===
 	// Toon alleen entiteiten die bij energie passen, op basis van unit_of_measurement of device_class.
-	const energyPowerCandidates = $derived((() => {
-		if (cardEditorType !== 'energy') return [] as typeof $filteredEntities;
-		return $filteredEntities.filter((entity) => {
-			const unit = (entity.unit ?? '').toLowerCase().trim();
-			const cls = (entity.deviceClass ?? '').toLowerCase().trim();
-			return unit === 'w' || unit === 'kw' || cls === 'power';
-		});
-	})());
-	const energyEnergyCandidates = $derived((() => {
-		if (cardEditorType !== 'energy') return [] as typeof $filteredEntities;
-		return $filteredEntities.filter((entity) => {
-			const unit = (entity.unit ?? '').toLowerCase().trim();
-			const cls = (entity.deviceClass ?? '').toLowerCase().trim();
-			return unit === 'wh' || unit === 'kwh' || unit === 'mwh' || cls === 'energy';
-		});
-	})());
+	const energyPowerCandidates = $derived(
+		(() => {
+			if (cardEditorType !== 'energy') return [] as typeof $filteredEntities;
+			return $filteredEntities.filter((entity) => {
+				const unit = (entity.unit ?? '').toLowerCase().trim();
+				const cls = (entity.deviceClass ?? '').toLowerCase().trim();
+				return unit === 'w' || unit === 'kw' || cls === 'power';
+			});
+		})()
+	);
+	const energyEnergyCandidates = $derived(
+		(() => {
+			if (cardEditorType !== 'energy') return [] as typeof $filteredEntities;
+			return $filteredEntities.filter((entity) => {
+				const unit = (entity.unit ?? '').toLowerCase().trim();
+				const cls = (entity.deviceClass ?? '').toLowerCase().trim();
+				return unit === 'wh' || unit === 'kwh' || unit === 'mwh' || cls === 'energy';
+			});
+		})()
+	);
 
 	function entityToRow(entity: { entityId: string; friendlyName: string }) {
-		const displayName = entity.friendlyName && entity.friendlyName.trim().length > 0 ? entity.friendlyName : entity.entityId;
+		const displayName =
+			entity.friendlyName && entity.friendlyName.trim().length > 0 ? entity.friendlyName : entity.entityId;
 		return {
 			id: entity.entityId,
 			key: entity.entityId.trim().toLowerCase(),
@@ -496,10 +548,18 @@ let availabilityIgnoredOpen = $state(false);
 	}
 
 	const energyPowerSelectedSet = $derived(
-		new Set((cardEditorEnergyDeviceEntityIds ?? []).map((value) => value.trim().toLowerCase()).filter((value) => value.length > 0))
+		new Set(
+			(cardEditorEnergyDeviceEntityIds ?? [])
+				.map((value) => value.trim().toLowerCase())
+				.filter((value) => value.length > 0)
+		)
 	);
 	const energyEnergySelectedSet = $derived(
-		new Set((cardEditorEnergyDeviceTodayEntityIds ?? []).map((value) => value.trim().toLowerCase()).filter((value) => value.length > 0))
+		new Set(
+			(cardEditorEnergyDeviceTodayEntityIds ?? [])
+				.map((value) => value.trim().toLowerCase())
+				.filter((value) => value.length > 0)
+		)
 	);
 
 	const energyPowerPickerRows = $derived(
@@ -524,13 +584,17 @@ let availabilityIgnoredOpen = $state(false);
 
 	function toggleEnergyDevicePowerEntity(entityId: string, checked: boolean) {
 		const key = entityId.trim().toLowerCase();
-		const next = (cardEditorEnergyDeviceEntityIds ?? []).filter((value) => value.trim().toLowerCase() !== key);
+		const next = (cardEditorEnergyDeviceEntityIds ?? []).filter(
+			(value) => value.trim().toLowerCase() !== key
+		);
 		if (checked) next.push(entityId);
 		onEnergyDeviceEntityIdsChange(next);
 	}
 	function toggleEnergyDeviceTodayEntity(entityId: string, checked: boolean) {
 		const key = entityId.trim().toLowerCase();
-		const next = (cardEditorEnergyDeviceTodayEntityIds ?? []).filter((value) => value.trim().toLowerCase() !== key);
+		const next = (cardEditorEnergyDeviceTodayEntityIds ?? []).filter(
+			(value) => value.trim().toLowerCase() !== key
+		);
 		if (checked) next.push(entityId);
 		onEnergyDeviceTodayEntityIdsChange(next);
 	}
@@ -549,30 +613,19 @@ let availabilityIgnoredOpen = $state(false);
 	let pickerOpen = $state(false);
 	let iconValidationState = $state<'idle' | 'checking' | 'ok' | 'error'>('idle');
 	let iconValidationMessage = $state('');
-	const iconPreviewSrc = $derived(
-		(() => {
-			const value = (cardEditorStatusIcon ?? '').trim();
-			if (!value.startsWith('mdi:')) return '';
-			const ingressBase =
-				typeof window !== 'undefined'
-					? (((window as unknown as { __novapanel_ingress?: string }).__novapanel_ingress || '') as string)
-					: '';
-			return `${ingressBase}/api/mdi-icon/${encodeURIComponent(value.slice(4))}`;
-		})()
-	);
 
 	const iconValidationNeeded = $derived(
 		cardEditorType === 'light_button' ||
-		cardEditorType === 'device_button' ||
-		cardEditorType === 'climate_button' ||
-		cardEditorType === 'cover_button' ||
-		cardEditorType === 'vacuum_button' ||
-		cardEditorType === 'media_player_button' ||
-		cardEditorType === 'lights_status' ||
-		cardEditorType === 'openings_status' ||
-		cardEditorType === 'devices_status' ||
-		cardEditorType === 'availability_status' ||
-		cardEditorType === 'media_players_status'
+			cardEditorType === 'device_button' ||
+			cardEditorType === 'climate_button' ||
+			cardEditorType === 'cover_button' ||
+			cardEditorType === 'vacuum_button' ||
+			cardEditorType === 'media_player_button' ||
+			cardEditorType === 'lights_status' ||
+			cardEditorType === 'openings_status' ||
+			cardEditorType === 'devices_status' ||
+			cardEditorType === 'availability_status' ||
+			cardEditorType === 'media_players_status'
 	);
 
 	function normalizeDiscoveredKeys(ids: string[] | undefined): Set<string> {
@@ -588,11 +641,7 @@ let availabilityIgnoredOpen = $state(false);
 	function discoveredBaseSet(): Set<string> {
 		const fromProp = cardEditorStatusDiscoveredEntityIds;
 		if (fromProp !== undefined) return normalizeDiscoveredKeys(fromProp);
-		return new Set(
-			statusCandidates
-				.map((e) => e.entityId.trim().toLowerCase())
-				.filter((k) => k.length > 0)
-		);
+		return new Set(statusCandidates.map((e) => e.entityId.trim().toLowerCase()).filter((k) => k.length > 0));
 	}
 
 	$effect(() => {
@@ -652,7 +701,6 @@ let availabilityIgnoredOpen = $state(false);
 
 	$effect(() => {
 		if (!usesScopedSeenTracking) {
-			availabilityIgnoredOpen = false;
 			return;
 		}
 
@@ -675,9 +723,7 @@ let availabilityIgnoredOpen = $state(false);
 		const migratedLegacy = rawDiscovered === undefined;
 
 		const selected = [...(cardEditorStatusEntityIds ?? [])];
-		const selectedSet = new Set(
-			selected.map((v) => v.trim().toLowerCase()).filter((v) => v.length > 0)
-		);
+		const selectedSet = new Set(selected.map((v) => v.trim().toLowerCase()).filter((v) => v.length > 0));
 
 		let discoveredDirty = migratedLegacy;
 		let selectedDirty = false;
@@ -732,16 +778,21 @@ let availabilityIgnoredOpen = $state(false);
 		const nextSeen = statusCandidates
 			.map((entity) => entity.entityId.trim().toLowerCase())
 			.filter((value) => value.length > 0);
-		const next = statusCandidates
-			.map((entity) => entity.entityId.trim())
-			.filter((value) => value.length > 0);
+		const next = statusCandidates.map((entity) => entity.entityId.trim()).filter((value) => value.length > 0);
 		onStatusDiscoveredEntityIdsChange(nextSeen);
 		onStatusEntityIdsChange(next);
 	}
 </script>
 
 <button type="button" class="modal-overlay" onclick={onClose} aria-label={t('closeOverlay')}></button>
-<section class="settings-modal app-popup card-editor-modal np-editor" class:camera-editor-wide={cardEditorType === 'cameras_strip'} role="dialog" aria-modal="true" aria-label={t('selectCardType')}>
+<div
+	class="settings-modal app-popup card-editor-modal np-editor"
+	class:camera-editor-wide={cardEditorType === 'cameras_strip'}
+	role="dialog"
+	aria-modal="true"
+	aria-label={t('selectCardType')}
+	use:modalBehavior={{ onClose }}
+>
 	<div class="np-editor-head" style="--np-tint: {cardTypeMeta.tint}; --np-color: {cardTypeMeta.color};">
 		<div class="np-editor-head-glow" aria-hidden="true"></div>
 		<div class="np-editor-head-icon">
@@ -764,11 +815,17 @@ let availabilityIgnoredOpen = $state(false);
 			</div>
 			<div class="np-editor-head-sub">{cardTypeMeta.subtitle}</div>
 		</div>
-		</div>
+	</div>
 	<div class="tab-content card-editor-content np-editor-body">
 		<div class="np-name-block">
 			<label for="card-editor-title" class="np-label">{t('cardTitle')}</label>
-			<input id="card-editor-title" type="text" class="np-input" value={cardEditorTitle} oninput={(event) => onTitleChange((event.currentTarget as HTMLInputElement).value)} />
+			<input
+				id="card-editor-title"
+				type="text"
+				class="np-input"
+				value={cardEditorTitle}
+				oninput={(event) => onTitleChange((event.currentTarget as HTMLInputElement).value)}
+			/>
 		</div>
 		{#if cardEditorType === 'weather' || cardEditorType === 'weather_forecast' || cardEditorType === 'alarm_panel'}
 			<WeatherAlarmEditor
@@ -792,12 +849,18 @@ let availabilityIgnoredOpen = $state(false);
 				homeTodayEntityId={cardEditorHomeTodayEntityId}
 				costTodayEntityId={cardEditorCostTodayEntityId}
 				compensationTodayEntityId={cardEditorCompensationTodayEntityId}
+				{currencyCode}
+				energyCostMode={cardEditorEnergyCostMode}
 				importPeakTodayEntityId={cardEditorImportPeakTodayEntityId}
 				importOffPeakTodayEntityId={cardEditorImportOffPeakTodayEntityId}
+				exportPeakTodayEntityId={cardEditorExportPeakTodayEntityId}
+				exportOffPeakTodayEntityId={cardEditorExportOffPeakTodayEntityId}
 				importTariffEntityId={cardEditorImportTariffEntityId}
 				exportTariffEntityId={cardEditorExportTariffEntityId}
 				importPeakTariff={cardEditorImportPeakTariff}
 				importOffPeakTariff={cardEditorImportOffPeakTariff}
+				exportPeakTariff={cardEditorExportPeakTariff}
+				exportOffPeakTariff={cardEditorExportOffPeakTariff}
 				exportTariff={cardEditorExportTariff}
 				selfSufficiencyEntityId={cardEditorSelfSufficiencyEntityId}
 				carChargingEntityId={cardEditorCarChargingEntityId}
@@ -825,12 +888,17 @@ let availabilityIgnoredOpen = $state(false);
 				{onHomeTodayEntityIdChange}
 				{onCostTodayEntityIdChange}
 				{onCompensationTodayEntityIdChange}
+				{onEnergyCostModeChange}
 				{onImportPeakTodayEntityIdChange}
 				{onImportOffPeakTodayEntityIdChange}
+				{onExportPeakTodayEntityIdChange}
+				{onExportOffPeakTodayEntityIdChange}
 				{onImportTariffEntityIdChange}
 				{onExportTariffEntityIdChange}
 				{onImportPeakTariffChange}
 				{onImportOffPeakTariffChange}
+				{onExportPeakTariffChange}
+				{onExportOffPeakTariffChange}
 				{onExportTariffChange}
 				{onSelfSufficiencyEntityIdChange}
 				{onCarChargingEntityIdChange}
@@ -839,10 +907,10 @@ let availabilityIgnoredOpen = $state(false);
 				{onEnergyDeviceEntityIdsChange}
 				{onEnergyDeviceTodayEntityIdsChange}
 				{onEnergyDeviceAliasesChange}
-				energyPowerSelectedRows={energyPowerSelectedRows}
-				energyPowerIgnoredRows={energyPowerIgnoredRows}
-				energyEnergySelectedRows={energyEnergySelectedRows}
-				energyEnergyIgnoredRows={energyEnergyIgnoredRows}
+				{energyPowerSelectedRows}
+				{energyPowerIgnoredRows}
+				{energyEnergySelectedRows}
+				{energyEnergyIgnoredRows}
 				{toggleEnergyDevicePowerEntity}
 				{toggleEnergyDeviceTodayEntity}
 				{selectAllEnergyDevicePower}
@@ -855,16 +923,10 @@ let availabilityIgnoredOpen = $state(false);
 			/>
 		{/if}
 		{#if cardEditorType === 'cameras_strip'}
-			<CamerasEditor
-				cameras={cardEditorCameras}
-				{onCamerasChange}
-			/>
+			<CamerasEditor cameras={cardEditorCameras} {onCamerasChange} />
 		{/if}
 		{#if cardEditorType === 'week_calendar'}
-			<WeekCalendarEditor
-				sources={cardEditorCameras}
-				onSourcesChange={onCamerasChange}
-			/>
+			<WeekCalendarEditor sources={cardEditorCameras} onSourcesChange={onCamerasChange} />
 		{/if}
 		{#if cardEditorType === 'light_button'}
 			<LightButtonEditor
@@ -873,7 +935,6 @@ let availabilityIgnoredOpen = $state(false);
 				linkedLightEntityIds={lightButtonEntityIds}
 				{iconValidationState}
 				{iconValidationMessage}
-				{iconPreviewSrc}
 				{onEntityIdChange}
 				{onStatusIconChange}
 			/>
@@ -885,7 +946,6 @@ let availabilityIgnoredOpen = $state(false);
 				statusIcon={cardEditorStatusIcon}
 				{iconValidationState}
 				{iconValidationMessage}
-				{iconPreviewSrc}
 				{onEntityIdChange}
 				{onStatusIconChange}
 			/>
@@ -898,7 +958,7 @@ let availabilityIgnoredOpen = $state(false);
 				statusEntityIds={cardEditorStatusEntityIds}
 				statusEntityAliases={cardEditorStatusEntityAliases}
 				statusEntityIconOverrides={cardEditorStatusEntityIconOverrides}
-				mediaHubPlayerAliases={mediaHubPlayerAliases}
+				{mediaHubPlayerAliases}
 				statusDeviceClasses={cardEditorStatusDeviceClasses}
 				statusIcon={cardEditorStatusIcon}
 				{usesScopedEntityPicker}
@@ -907,7 +967,6 @@ let availabilityIgnoredOpen = $state(false);
 				{statusCandidates}
 				{iconValidationState}
 				{iconValidationMessage}
-				{iconPreviewSrc}
 				{onStatusDomainsChange}
 				{onStatusDeviceClassesChange}
 				{onStatusIconChange}
@@ -977,17 +1036,40 @@ let availabilityIgnoredOpen = $state(false);
 	</div>
 	<div class="np-editor-foot">
 		<button type="button" class="np-btn danger" onclick={onDelete}>
-			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1.5 14a2 2 0 0 1-2 1.8H8.5A2 2 0 0 1 6.5 20L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"></path></svg>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+				><polyline points="3 6 5 6 21 6"></polyline><path
+					d="M19 6l-1.5 14a2 2 0 0 1-2 1.8H8.5A2 2 0 0 1 6.5 20L5 6m5 0V4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"
+				></path></svg
+			>
 			{t('delete')}
 		</button>
 		<div class="np-foot-spacer"></div>
 		<button type="button" class="np-btn ghost" onclick={onClose}>{t('closeOverlay')}</button>
 		<button type="button" class="np-btn primary" class:dirty={cardEditorHasChanges} onclick={onSave}>
-			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+			<svg
+				width="13"
+				height="13"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2.5"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg
+			>
 			{t('save')}
 		</button>
 	</div>
-</section>
+</div>
 
 {#if pickerOpen}
 	<StatusEntityPickerModal
@@ -1000,22 +1082,36 @@ let availabilityIgnoredOpen = $state(false);
 
 <!-- Light group picker - rendered outside modal to avoid overflow:hidden clipping -->
 {#if lgEntityPickerOpen && lgEditingId}
-	<button type="button" class="lg-picker-overlay" onclick={() => lgSave()} aria-label={t('closeOverlay')}></button>
-	<div class="lg-picker-modal" role="dialog" aria-modal="true" aria-label={t('Selecteer lampen voor deze groep')}>
+	<button type="button" class="lg-picker-overlay" onclick={lgCancel} aria-label={t('closeOverlay')}></button>
+	<div
+		class="lg-picker-modal"
+		role="dialog"
+		aria-modal="true"
+		aria-label={t('Selecteer lampen voor deze groep')}
+		use:modalBehavior={{ onClose: lgCancel, initialFocus: '.lg-name-input' }}
+	>
 		<div class="lg-picker-head">
-			<input class="lg-name-input" type="text" value={lgDraftName}
-				oninput={(e) => lgDraftName = (e.currentTarget as HTMLInputElement).value}
-				placeholder={t('Groepsnaam')} />
+			<input
+				class="lg-name-input"
+				type="text"
+				value={lgDraftName}
+				oninput={(e) => (lgDraftName = (e.currentTarget as HTMLInputElement).value)}
+				placeholder={t('Groepsnaam')}
+			/>
 			<span class="lg-picker-hint">{t('Selecteer lampen voor deze groep')}</span>
 		</div>
 		<div class="lg-picker-list">
-			{#each (cardEditorStatusEntityIds ?? []) as entityId}
-				{@const inOtherGroup = lightGroups.some(g => g.id !== lgEditingId && g.entityIds.includes(entityId))}
+			{#each cardEditorStatusEntityIds ?? [] as entityId (entityId)}
+				{@const inOtherGroup = lightGroups.some(
+					(g) => g.id !== lgEditingId && g.entityIds.includes(entityId)
+				)}
 				<label class="lg-entity-row" class:lg-in-other={inOtherGroup}>
-					<input type="checkbox"
+					<input
+						type="checkbox"
 						checked={lgDraftEntityIds.includes(entityId)}
 						disabled={inOtherGroup}
-						onchange={() => lgToggleEntity(entityId)} />
+						onchange={() => lgToggleEntity(entityId)}
+					/>
 					<span class="lg-entity-name">{getFriendlyName(entityId)}</span>
 					{#if inOtherGroup}<span class="lg-entity-tag">{t('in andere groep')}</span>{/if}
 				</label>
@@ -1025,8 +1121,17 @@ let availabilityIgnoredOpen = $state(false);
 			{/if}
 		</div>
 		<div class="lg-picker-actions">
-			<button type="button" class="lg-btn-delete-group" onclick={() => { lgDelete(lgEditingId!); lgEntityPickerOpen = false; lgEditingId = null; }}>
-				<StatusIcon icon="mdi:delete-outline" size={14} /> {t('Verwijder groep')}
+			<button
+				type="button"
+				class="lg-btn-delete-group"
+				onclick={() => {
+					lgDelete(lgEditingId!);
+					lgEntityPickerOpen = false;
+					lgEditingId = null;
+				}}
+			>
+				<StatusIcon icon="mdi:delete-outline" size={14} />
+				{t('Verwijder groep')}
 			</button>
 			<button type="button" class="lg-btn-save" onclick={lgSave}>{t('save')}</button>
 		</div>
@@ -1034,8 +1139,27 @@ let availabilityIgnoredOpen = $state(false);
 {/if}
 
 <style>
-	.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.36); border: 0; padding: 0; margin: 0; z-index: 40; cursor: default; }
-	.settings-modal { position: fixed; top: 50%; left: 50%; background: #121722; border: 1px solid #2e384d; border-radius: 0.6rem; padding: 1rem; z-index: 60; transform: translate(-50%, -50%); }
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.36);
+		border: 0;
+		padding: 0;
+		margin: 0;
+		z-index: 40;
+		cursor: default;
+	}
+	.settings-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		background: #121722;
+		border: 1px solid #2e384d;
+		border-radius: 0.6rem;
+		padding: 1rem;
+		z-index: 60;
+		transform: translate(-50%, -50%);
+	}
 	.app-popup {
 		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
 		height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
@@ -1047,35 +1171,167 @@ let availabilityIgnoredOpen = $state(false);
 		overflow: hidden;
 		min-height: 0;
 	}
-	.card-editor-modal { grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
-	.card-editor-modal.camera-editor-wide { width: min(980px, calc(100vw - 1.5rem)); }
-	.tab-content { min-height: 0; overflow-y: auto; overflow-x: hidden; padding-right: 0.2rem; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
-	.tab-content::-webkit-scrollbar { width: 0; height: 0; display: none; }
-	.card-editor-content { display: grid; gap: 0.6rem; align-content: start; }
+	.card-editor-modal {
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		min-height: 0;
+	}
+	.card-editor-modal.camera-editor-wide {
+		width: min(980px, calc(100vw - 1.5rem));
+	}
+	.tab-content {
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+		padding-right: 0.2rem;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
+		touch-action: pan-y;
+	}
+	.tab-content::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
+	.card-editor-content {
+		display: grid;
+		gap: 0.6rem;
+		align-content: start;
+	}
 	/* Picker popup */
-	.lg-name-input { flex: 1; height: 2rem; border-radius: 0.35rem; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #f5f5f5; padding: 0 0.5rem; font-size: 0.85rem; min-width: 0; }
-	.lg-picker-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; border: 0; padding: 0; cursor: default; }
-	.lg-picker-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 201; background: #121722; border: 1px solid #2e384d; border-radius: 0.85rem; width: min(340px, calc(100vw - 2rem)); display: flex; flex-direction: column; max-height: 80vh; overflow: hidden; }
-	.lg-picker-head { padding: 0.85rem 1rem 0; display: flex; flex-direction: column; gap: 0.3rem; }
-	.lg-picker-hint { font-size: 0.75rem; opacity: 0.5; }
-	.lg-picker-list { flex: 1; overflow-y: auto; scrollbar-width: none; padding: 0.5rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
-	.lg-picker-list::-webkit-scrollbar { display: none; }
-	.lg-entity-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.5rem; border-radius: 0.4rem; cursor: pointer; }
-	.lg-entity-row:hover { background: rgba(255,255,255,0.04); }
-	.lg-entity-row.lg-in-other { opacity: 0.4; cursor: not-allowed; }
-	.lg-entity-name { flex: 1; font-size: 0.85rem; }
-	.lg-entity-tag { font-size: 0.68rem; opacity: 0.5; white-space: nowrap; }
-	.lg-empty { font-size: 0.82rem; opacity: 0.45; padding: 1rem 0; text-align: center; }
-	.lg-picker-actions { display: flex; gap: 0.4rem; padding: 0.75rem 1rem; border-top: 1px solid rgba(255,255,255,0.07); }
-	.lg-btn-save { flex: 1; height: 2.2rem; border-radius: 0.4rem; border: 0; background: rgba(79,113,168,0.45); color: #f5f5f5; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 0.35rem; }
-	.lg-btn-save:hover { background: rgba(79,113,168,0.65); }
-	.lg-btn-delete-group { height: 2.2rem; padding: 0 0.85rem; border-radius: 0.4rem; border: 0; background: rgba(225,82,65,0.15); color: #e15241; cursor: pointer; font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem; }
-	.lg-btn-delete-group:hover { background: rgba(225,82,65,0.3); }
+	.lg-name-input {
+		flex: 1;
+		height: 2rem;
+		border-radius: 0.35rem;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.06);
+		color: #f5f5f5;
+		padding: 0 0.5rem;
+		font-size: 0.85rem;
+		min-width: 0;
+	}
+	.lg-picker-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.6);
+		z-index: 200;
+		border: 0;
+		padding: 0;
+		cursor: default;
+	}
+	.lg-picker-modal {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		z-index: 201;
+		background: #121722;
+		border: 1px solid #2e384d;
+		border-radius: 0.85rem;
+		width: min(340px, calc(100vw - 2rem));
+		display: flex;
+		flex-direction: column;
+		max-height: 80vh;
+		overflow: hidden;
+	}
+	.lg-picker-head {
+		padding: 0.85rem 1rem 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+	.lg-picker-hint {
+		font-size: 0.75rem;
+		opacity: 0.5;
+	}
+	.lg-picker-list {
+		flex: 1;
+		overflow-y: auto;
+		scrollbar-width: none;
+		padding: 0.5rem 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+	}
+	.lg-picker-list::-webkit-scrollbar {
+		display: none;
+	}
+	.lg-entity-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.45rem 0.5rem;
+		border-radius: 0.4rem;
+		cursor: pointer;
+	}
+	.lg-entity-row:hover {
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.lg-entity-row.lg-in-other {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	.lg-entity-name {
+		flex: 1;
+		font-size: 0.85rem;
+	}
+	.lg-entity-tag {
+		font-size: 0.68rem;
+		opacity: 0.5;
+		white-space: nowrap;
+	}
+	.lg-empty {
+		font-size: 0.82rem;
+		opacity: 0.45;
+		padding: 1rem 0;
+		text-align: center;
+	}
+	.lg-picker-actions {
+		display: flex;
+		gap: 0.4rem;
+		padding: 0.75rem 1rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.07);
+	}
+	.lg-btn-save {
+		flex: 1;
+		height: 2.2rem;
+		border-radius: 0.4rem;
+		border: 0;
+		background: rgba(79, 113, 168, 0.45);
+		color: #f5f5f5;
+		cursor: pointer;
+		font-size: 0.85rem;
+		font-weight: 500;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+	}
+	.lg-btn-save:hover {
+		background: rgba(79, 113, 168, 0.65);
+	}
+	.lg-btn-delete-group {
+		height: 2.2rem;
+		padding: 0 0.85rem;
+		border-radius: 0.4rem;
+		border: 0;
+		background: rgba(225, 82, 65, 0.15);
+		color: #e15241;
+		cursor: pointer;
+		font-size: 0.82rem;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+	.lg-btn-delete-group:hover {
+		background: rgba(225, 82, 65, 0.3);
+	}
 	/* === New editor shell + sections (np-* prefix) === */
 	.np-editor.settings-modal {
 		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
 		border-radius: 18px;
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		padding: 0;
 		grid-template-rows: auto minmax(0, 1fr) auto;
 		overflow: hidden;
@@ -1084,15 +1340,17 @@ let availabilityIgnoredOpen = $state(false);
 	.np-editor::before {
 		content: '';
 		position: absolute;
-		top: 0; left: 50%;
-		width: 60%; height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+		top: 0;
+		left: 50%;
+		width: 60%;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
 		transform: translateX(-50%);
 		pointer-events: none;
 	}
 	.np-editor-head {
 		padding: 18px 22px 14px;
-		border-bottom: 0.5px solid rgba(255,255,255,0.06);
+		border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
 		display: flex;
 		align-items: center;
 		gap: 12px;
@@ -1101,24 +1359,33 @@ let availabilityIgnoredOpen = $state(false);
 	}
 	.np-editor-head-glow {
 		position: absolute;
-		top: -100px; left: -40px;
-		width: 220px; height: 220px;
-		background: radial-gradient(circle, var(--np-tint, rgba(96,165,250,0.18)), transparent 70%);
+		top: -100px;
+		left: -40px;
+		width: 220px;
+		height: 220px;
+		background: radial-gradient(circle, var(--np-tint, rgba(96, 165, 250, 0.18)), transparent 70%);
 		pointer-events: none;
 		filter: blur(20px);
 	}
 	.np-editor-head-icon {
-		width: 38px; height: 38px;
+		width: 38px;
+		height: 38px;
 		border-radius: 10px;
-		display: grid; place-items: center;
+		display: grid;
+		place-items: center;
 		background: var(--np-tint);
-		border: 0.5px solid rgba(255,255,255,0.10);
+		border: 0.5px solid rgba(255, 255, 255, 0.1);
 		color: var(--np-color);
 		flex-shrink: 0;
 		position: relative;
 		z-index: 1;
 	}
-	.np-editor-head-text { flex: 1; min-width: 0; position: relative; z-index: 1; }
+	.np-editor-head-text {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		z-index: 1;
+	}
 	.np-editor-head-title {
 		font-size: 15px;
 		font-weight: 500;
@@ -1132,7 +1399,7 @@ let availabilityIgnoredOpen = $state(false);
 	}
 	.np-editor-head-sub {
 		font-size: 11.5px;
-		color: rgba(255,255,255,0.5);
+		color: rgba(255, 255, 255, 0.5);
 		margin-top: 3px;
 	}
 	.np-saved-pill {
@@ -1142,18 +1409,19 @@ let availabilityIgnoredOpen = $state(false);
 		font-size: 10.5px;
 		padding: 3px 9px 3px 7px;
 		border-radius: 999px;
-		background: rgba(74,222,128,0.10);
-		border: 0.5px solid rgba(74,222,128,0.22);
+		background: rgba(74, 222, 128, 0.1);
+		border: 0.5px solid rgba(74, 222, 128, 0.22);
 		color: #4ade80;
 		font-weight: 500;
 	}
 	.np-saved-pill.dirty {
-		background: rgba(250,204,21,0.10);
-		border-color: rgba(250,204,21,0.22);
+		background: rgba(250, 204, 21, 0.1);
+		border-color: rgba(250, 204, 21, 0.22);
 		color: #facc15;
 	}
 	.np-saved-dot {
-		width: 6px; height: 6px;
+		width: 6px;
+		height: 6px;
 		border-radius: 50%;
 		background: currentColor;
 	}
@@ -1161,8 +1429,15 @@ let availabilityIgnoredOpen = $state(false);
 		animation: npPulse 1.6s ease-in-out infinite;
 	}
 	@keyframes npPulse {
-		0%, 100% { opacity: 1; transform: scale(1); }
-		50% { opacity: 0.4; transform: scale(1.4); }
+		0%,
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.4;
+			transform: scale(1.4);
+		}
 	}
 	.np-editor-body {
 		padding: 14px 22px calc(28px + env(safe-area-inset-bottom, 0px));
@@ -1181,7 +1456,11 @@ let availabilityIgnoredOpen = $state(false);
 		overscroll-behavior: contain;
 		scroll-padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 	}
-	.np-editor-body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+	.np-editor-body::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
 	.np-name-block {
 		margin-bottom: 4px;
 		display: flex;
@@ -1192,13 +1471,13 @@ let availabilityIgnoredOpen = $state(false);
 		font-size: 10.5px;
 		text-transform: uppercase;
 		letter-spacing: 0.09em;
-		color: rgba(255,255,255,0.5);
+		color: rgba(255, 255, 255, 0.5);
 		font-weight: 500;
 		display: block;
 	}
 	.np-input {
-		background: rgba(255,255,255,0.04);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.04);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 9px;
 		padding: 9px 11px;
 		color: #f5f5f5;
@@ -1207,26 +1486,37 @@ let availabilityIgnoredOpen = $state(false);
 		width: 100%;
 		box-sizing: border-box;
 		height: auto;
-		transition: border-color 0.15s, background 0.15s;
+		transition:
+			border-color 0.15s,
+			background 0.15s;
 	}
-	.np-input::placeholder { color: rgba(255,255,255,0.3); }
+	.np-input::placeholder {
+		color: rgba(255, 255, 255, 0.3);
+	}
 	.np-input:focus {
 		outline: none;
-		border-color: rgba(96,165,250,0.45);
-		background: rgba(96,165,250,0.06);
-		box-shadow: 0 0 0 3px rgba(96,165,250,0.08);
+		border-color: rgba(96, 165, 250, 0.45);
+		background: rgba(96, 165, 250, 0.06);
+		box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.08);
 	}
 	/* Footer */
 	.np-editor-foot {
 		display: flex;
 		gap: 8px;
 		padding: 12px 22px;
-		background: linear-gradient(180deg, rgba(15,20,36,0.4) 0%, rgba(15,20,36,0.92) 60%, rgba(15,20,36,0.96) 100%);
+		background: linear-gradient(
+			180deg,
+			rgba(15, 20, 36, 0.4) 0%,
+			rgba(15, 20, 36, 0.92) 60%,
+			rgba(15, 20, 36, 0.96) 100%
+		);
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
-		border-top: 0.5px solid rgba(255,255,255,0.08);
+		border-top: 0.5px solid rgba(255, 255, 255, 0.08);
 	}
-	.np-foot-spacer { flex: 1; }
+	.np-foot-spacer {
+		flex: 1;
+	}
 	.np-btn {
 		padding: 8px 14px;
 		border-radius: 9px;
@@ -1239,35 +1529,46 @@ let availabilityIgnoredOpen = $state(false);
 		align-items: center;
 		gap: 6px;
 		height: auto;
-		transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+		transition:
+			transform 0.1s,
+			background 0.15s,
+			box-shadow 0.15s;
 	}
-	.np-btn:hover { transform: translateY(-1px); }
-	.np-btn:active { transform: translateY(0); }
+	.np-btn:hover {
+		transform: translateY(-1px);
+	}
+	.np-btn:active {
+		transform: translateY(0);
+	}
 	.np-btn.danger {
-		background: rgba(239,68,68,0.10);
-		border-color: rgba(239,68,68,0.20);
+		background: rgba(239, 68, 68, 0.1);
+		border-color: rgba(239, 68, 68, 0.2);
 		color: #f87171;
 	}
-	.np-btn.danger:hover { background: rgba(239,68,68,0.16); }
-	.np-btn.ghost {
-		background: rgba(255,255,255,0.05);
-		border-color: rgba(255,255,255,0.10);
-		color: rgba(255,255,255,0.85);
+	.np-btn.danger:hover {
+		background: rgba(239, 68, 68, 0.16);
 	}
-	.np-btn.ghost:hover { background: rgba(255,255,255,0.10); }
+	.np-btn.ghost {
+		background: rgba(255, 255, 255, 0.05);
+		border-color: rgba(255, 255, 255, 0.1);
+		color: rgba(255, 255, 255, 0.85);
+	}
+	.np-btn.ghost:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
 	.np-btn.primary {
-		background: rgba(255,255,255,0.06);
-		color: rgba(255,255,255,0.7);
-		border-color: rgba(255,255,255,0.10);
+		background: rgba(255, 255, 255, 0.06);
+		color: rgba(255, 255, 255, 0.7);
+		border-color: rgba(255, 255, 255, 0.1);
 	}
 	.np-btn.primary.dirty {
 		background: linear-gradient(135deg, #2563eb, #1d4ed8);
 		color: #fff;
-		border-color: rgba(96,165,250,0.40);
-		box-shadow: 0 4px 14px rgba(37,99,235,0.30);
+		border-color: rgba(96, 165, 250, 0.4);
+		box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
 	}
 	.np-btn.primary.dirty:hover {
 		background: linear-gradient(135deg, #3b82f6, #2563eb);
-		box-shadow: 0 6px 18px rgba(37,99,235,0.40);
+		box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
 	}
 </style>

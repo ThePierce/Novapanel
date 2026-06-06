@@ -23,7 +23,13 @@
 	statusLabel={p.t(p.entityId ? 'gekoppeld' : 'vereist')}
 	open
 >
-	<div class="np-help">{p.t(p.isAlarm ? 'Selecteer het alarm_control_panel uit Home Assistant.' : 'Selecteer een weer-entiteit uit Home Assistant.')}</div>
+	<div class="np-help">
+		{p.t(
+			p.isAlarm
+				? 'Selecteer het alarm_control_panel uit Home Assistant.'
+				: 'Selecteer een weer-entiteit uit Home Assistant.'
+		)}
+	</div>
 	<EntitySelectPicker
 		label={p.t('Kies uit beschikbare entiteiten')}
 		value={p.entityId ?? ''}

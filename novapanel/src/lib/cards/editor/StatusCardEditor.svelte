@@ -6,7 +6,12 @@
 	import { filteredEntities } from '$lib/ha/entities-store';
 
 	type Row = { id: string; label: string; displayName: string };
-	type CardType = 'lights_status' | 'openings_status' | 'devices_status' | 'availability_status' | 'media_players_status';
+	type CardType =
+		| 'lights_status'
+		| 'openings_status'
+		| 'devices_status'
+		| 'availability_status'
+		| 'media_players_status';
 	type Tone = 'gold' | 'blue' | 'green' | 'cyan' | 'purple';
 	type Status = 'required' | 'filled' | 'partial' | 'empty';
 
@@ -26,7 +31,6 @@
 		statusCandidates: { entityId: string }[];
 		iconValidationState: string;
 		iconValidationMessage: string;
-		iconPreviewSrc?: string;
 		onStatusDomainsChange: (v: string[]) => void;
 		onStatusDeviceClassesChange: (v: string[]) => void;
 		onStatusIconChange: (v: string) => void;
@@ -40,10 +44,6 @@
 	};
 
 	let p: Props = $props();
-
-	function nonEmpty(v: string | undefined): boolean {
-		return typeof v === 'string' && v.trim().length > 0;
-	}
 
 	const selectedEntityIds = $derived.by(() => {
 		const rawIds = p.usesScopedEntityPicker
@@ -60,40 +60,48 @@
 			});
 	});
 	const statusEntitiesCount = $derived(selectedEntityIds.length);
-	const statusDomainsCount = $derived((p.statusDomains ?? []).filter(v => v.trim().length > 0).length);
+	const statusDomainsCount = $derived((p.statusDomains ?? []).filter((v) => v.trim().length > 0).length);
 
-	const statusFilterStatus = $derived((() => {
-		const sel = statusEntitiesCount;
-		const dom = statusDomainsCount;
-		if (sel === 0 && dom === 0) return { status: 'required' as Status, label: 'kies entiteiten of domein' };
-		if (sel > 0) return { status: 'filled' as Status, label: `${sel} geselecteerd` };
-		return { status: 'filled' as Status, label: `${dom} domein${dom === 1 ? '' : 'en'}` };
-	})());
-	const deviceClassesStatus = $derived((() => {
-		const n = (p.statusDeviceClasses ?? []).filter(v => v.trim().length > 0).length;
-		if (n === 0) return { status: 'empty' as Status, label: 'auto' };
-		return { status: 'filled' as Status, label: `${n} ingesteld` };
-	})());
+	const statusFilterStatus = $derived(
+		(() => {
+			const sel = statusEntitiesCount;
+			const dom = statusDomainsCount;
+			if (sel === 0 && dom === 0) return { status: 'required' as Status, label: 'kies entiteiten of domein' };
+			if (sel > 0) return { status: 'filled' as Status, label: `${sel} geselecteerd` };
+			return { status: 'filled' as Status, label: `${dom} domein${dom === 1 ? '' : 'en'}` };
+		})()
+	);
+	const deviceClassesStatus = $derived(
+		(() => {
+			const n = (p.statusDeviceClasses ?? []).filter((v) => v.trim().length > 0).length;
+			if (n === 0) return { status: 'empty' as Status, label: 'auto' };
+			return { status: 'filled' as Status, label: `${n} ingesteld` };
+		})()
+	);
 
-	const statusTone = $derived((() => {
-		const m: Record<CardType, Tone> = {
-			lights_status: 'gold',
-			openings_status: 'blue',
-			devices_status: 'green',
-			availability_status: 'cyan',
-			media_players_status: 'purple'
-		};
-		return m[p.cardType];
-	})());
+	const statusTone = $derived(
+		(() => {
+			const m: Record<CardType, Tone> = {
+				lights_status: 'gold',
+				openings_status: 'blue',
+				devices_status: 'green',
+				availability_status: 'cyan',
+				media_players_status: 'purple'
+			};
+			return m[p.cardType];
+		})()
+	);
 
 	const showsIconField = $derived(true);
-	const statusIconPlaceholder = $derived((() => {
-		if (p.cardType === 'lights_status') return 'mdi:lightbulb-outline';
-		if (p.cardType === 'openings_status') return 'mdi:door-closed';
-		if (p.cardType === 'devices_status') return 'mdi:power-plug-outline';
-		if (p.cardType === 'availability_status') return 'mdi:lan-check';
-		return 'mdi:speaker';
-	})());
+	const statusIconPlaceholder = $derived(
+		(() => {
+			if (p.cardType === 'lights_status') return 'mdi:lightbulb-outline';
+			if (p.cardType === 'openings_status') return 'mdi:door-closed';
+			if (p.cardType === 'devices_status') return 'mdi:power-plug-outline';
+			if (p.cardType === 'availability_status') return 'mdi:lan-check';
+			return 'mdi:speaker';
+		})()
+	);
 	const statusIconChoices = $derived.by(() => {
 		if (p.cardType === 'lights_status') {
 			return [
@@ -190,10 +198,14 @@
 				const entity = $filteredEntities.find((entry) => entry.entityId.toLowerCase() === id.toLowerCase());
 				const pickerRow = selectedRowsById.get(id.toLowerCase());
 				const originalName = entity?.friendlyName?.trim() || pickerRow?.displayName?.trim() || id;
-				const aliases = p.cardType === 'media_players_status' ? (p.mediaHubPlayerAliases ?? {}) : (p.statusEntityAliases ?? {});
+				const aliases =
+					p.cardType === 'media_players_status'
+						? (p.mediaHubPlayerAliases ?? {})
+						: (p.statusEntityAliases ?? {});
 				const alias = aliases[id] ?? aliases[entity?.entityId ?? id] ?? '';
 				const canonicalId = entity?.entityId ?? id;
-				const iconOverride = p.statusEntityIconOverrides?.[canonicalId] ?? p.statusEntityIconOverrides?.[id] ?? '';
+				const iconOverride =
+					p.statusEntityIconOverrides?.[canonicalId] ?? p.statusEntityIconOverrides?.[id] ?? '';
 				return {
 					id: canonicalId,
 					originalName,
@@ -205,10 +217,11 @@
 	});
 
 	function updateEntityAlias(entityId: string, value: string) {
-		const aliases = p.cardType === 'media_players_status' ? (p.mediaHubPlayerAliases ?? {}) : (p.statusEntityAliases ?? {});
+		const aliases =
+			p.cardType === 'media_players_status' ? (p.mediaHubPlayerAliases ?? {}) : (p.statusEntityAliases ?? {});
 		const next = { ...aliases };
 		const trimmed = value.trim();
-		if (trimmed) next[entityId] = value;
+		if (trimmed) next[entityId] = trimmed;
 		else delete next[entityId];
 		if (p.cardType === 'media_players_status') p.onMediaHubPlayerAliasesChange?.(next);
 		else p.onStatusEntityAliasesChange(next);
@@ -240,7 +253,9 @@
 	statusLabel={statusFilterStatus.label}
 	open
 >
-	<div class="np-help">{p.t('Kies de domeinen die meetellen, en/of selecteer specifieke entiteiten handmatig.')}</div>
+	<div class="np-help">
+		{p.t('Kies de domeinen die meetellen, en/of selecteer specifieke entiteiten handmatig.')}
+	</div>
 	<div class="np-field">
 		<span class="np-label">{p.t('Domeinen')} <span class="np-hint">({p.t('komma-gescheiden')})</span></span>
 		<input
@@ -290,16 +305,25 @@
 		title={p.t(supportsEntityIconOverrides ? 'Namen en iconen' : 'Namen')}
 		icon="pencil"
 		tone={statusTone}
-		status={aliasRows.some((row) => row.alias.trim().length > 0 || row.iconOverride.trim().length > 0) ? 'partial' : 'empty'}
+		status={aliasRows.some((row) => row.alias.trim().length > 0 || row.iconOverride.trim().length > 0)
+			? 'partial'
+			: 'empty'}
 		statusLabel={`${aliasRows.length} ${p.t(aliasRows.length === 1 ? 'entiteit' : 'entiteiten')}`}
 	>
-		<div class="np-help">{p.t(supportsEntityIconOverrides ? 'Pas hier de namen en iconen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.' : 'Pas hier de namen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.')}</div>
+		<div class="np-help">
+			{p.t(
+				supportsEntityIconOverrides
+					? 'Pas hier de namen en iconen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.'
+					: 'Pas hier de namen aan die Nova Panel toont. De oorspronkelijke Home Assistant naam blijft tussen haakjes zichtbaar.'
+			)}
+		</div>
 		{#if supportsEntityIconOverrides}
 			<div class="np-help np-help-tip">
 				Tip: iconen werken met <code>mdi:naam</code>, zoals <code>mdi:lightbulb</code>,
-				<code>mdi:robot-vacuum-variant</code> of <code>mdi:thermometer</code>.
-				Je kunt ze opzoeken via
-				<a href="https://pictogrammers.com/library/mdi/" target="_blank" rel="noreferrer">pictogrammers.com/library/mdi</a>.
+				<code>mdi:robot-vacuum-variant</code> of <code>mdi:thermometer</code>. Je kunt ze opzoeken via
+				<a href="https://pictogrammers.com/library/mdi/" target="_blank" rel="noreferrer"
+					>pictogrammers.com/library/mdi</a
+				>.
 			</div>
 		{/if}
 		<div class="alias-editor-list">
@@ -332,8 +356,10 @@
 									aria-label={p.t('Icoon')}
 									value={row.iconOverride}
 									placeholder={row.defaultIcon}
-									oninput={(event) => updateEntityIcon(row.id, (event.currentTarget as HTMLInputElement).value)}
-									onblur={(event) => commitEntityIcon(row.id, (event.currentTarget as HTMLInputElement).value)}
+									oninput={(event) =>
+										updateEntityIcon(row.id, (event.currentTarget as HTMLInputElement).value)}
+									onblur={(event) =>
+										commitEntityIcon(row.id, (event.currentTarget as HTMLInputElement).value)}
 								/>
 							</div>
 						{/if}
@@ -352,7 +378,9 @@
 		status={deviceClassesStatus.status}
 		statusLabel={deviceClassesStatus.label}
 	>
-		<div class="np-help">{p.t('Optioneel. Beperk tot specifieke device classes (door, window, garage…).')}</div>
+		<div class="np-help">
+			{p.t('Optioneel. Beperk tot specifieke device classes (door, window, garage…).')}
+		</div>
 		<div class="np-field">
 			<span class="np-label">{p.t('Classes')} <span class="np-hint">({p.t('komma-gescheiden')})</span></span>
 			<input
@@ -374,18 +402,18 @@
 
 <style>
 	.np-help-tip {
-		background: rgba(96,165,250,0.07);
-		border: 0.5px solid rgba(96,165,250,0.15);
+		background: rgba(96, 165, 250, 0.07);
+		border: 0.5px solid rgba(96, 165, 250, 0.15);
 		border-radius: 8px;
 		padding: 8px 10px;
 		font-size: 11.5px;
-		color: rgba(255,255,255,0.7);
+		color: rgba(255, 255, 255, 0.7);
 		margin-bottom: 8px;
 	}
 	.np-help-tip code {
 		font-family: ui-monospace, 'SF Mono', monospace;
 		font-size: 11px;
-		background: rgba(0,0,0,0.25);
+		background: rgba(0, 0, 0, 0.25);
 		padding: 1px 5px;
 		border-radius: 4px;
 		color: #93c5fd;
@@ -407,9 +435,9 @@
 		gap: 0.5rem;
 		align-items: center;
 		padding: 0.55rem;
-		border: 1px solid rgba(255,255,255,0.08);
+		border: 1px solid rgba(255, 255, 255, 0.08);
 		border-radius: 0.45rem;
-		background: rgba(255,255,255,0.035);
+		background: rgba(255, 255, 255, 0.035);
 		min-width: 0;
 	}
 	.alias-editor-meta {
@@ -426,12 +454,13 @@
 	}
 	.alias-editor-name {
 		font-size: 0.86rem;
-		color: rgba(255,255,255,0.92);
+		color: rgba(255, 255, 255, 0.92);
 	}
 	.alias-editor-id {
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+		font-family:
+			ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 		font-size: 0.68rem;
-		color: rgba(255,255,255,0.42);
+		color: rgba(255, 255, 255, 0.42);
 	}
 	.alias-editor-controls {
 		display: grid;
@@ -455,7 +484,7 @@
 		justify-content: center;
 		width: 1.25rem;
 		height: 1.25rem;
-		color: rgba(255,255,255,0.72);
+		color: rgba(255, 255, 255, 0.72);
 		transform: translateY(-50%);
 		pointer-events: none;
 	}

@@ -19,7 +19,14 @@
 	let p: Props = $props();
 </script>
 
-<EditorSection title="Layout en uitlijning" icon="layout" tone="blue" status="filled" statusLabel={p.dateLayout ?? 'vertical'} open>
+<EditorSection
+	title="Layout en uitlijning"
+	icon="layout"
+	tone="blue"
+	status="filled"
+	statusLabel={p.dateLayout ?? 'vertical'}
+	open
+>
 	<div class="np-help">Hoe wordt de datum weergegeven.</div>
 	<div class="np-grid-2">
 		<div class="np-field">
@@ -27,7 +34,8 @@
 			<select
 				class="np-input"
 				value={p.dateLayout ?? 'vertical'}
-				onchange={(event) => p.onDateLayoutChange((event.currentTarget as HTMLSelectElement).value as 'vertical' | 'horizontal')}
+				onchange={(event) =>
+					p.onDateLayoutChange((event.currentTarget as HTMLSelectElement).value as 'vertical' | 'horizontal')}
 			>
 				<option value="vertical">{p.t('dateLayoutVertical')}</option>
 				<option value="horizontal">{p.t('dateLayoutHorizontal')}</option>
@@ -38,7 +46,10 @@
 			<select
 				class="np-input"
 				value={p.dateAlign ?? 'center'}
-				onchange={(event) => p.onDateAlignChange((event.currentTarget as HTMLSelectElement).value as 'left' | 'center' | 'right')}
+				onchange={(event) =>
+					p.onDateAlignChange(
+						(event.currentTarget as HTMLSelectElement).value as 'left' | 'center' | 'right'
+					)}
 			>
 				<option value="left">{p.t('alignLeft')}</option>
 				<option value="center">{p.t('alignCenter')}</option>

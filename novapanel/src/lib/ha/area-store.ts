@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { getHassWithRetry, getNovaApiCandidates } from './entities-service-helpers';
+import { fetchWithTimeout } from '$lib/fetch-with-timeout';
 
 export type HaArea = {
 	area_id: string;
@@ -25,23 +26,44 @@ type AreaStoreState = {
 };
 
 const initialState: AreaStoreState = { areas: [], entityAreaMap: {}, loaded: false };
+const AREA_LOAD_RETRY_DELAYS_MS = [1500, 3000, 6000, 12000, 30000];
 
 function createAreaStore() {
 	const { subscribe, set } = writable<AreaStoreState>(initialState);
+	let retryTimer: ReturnType<typeof setTimeout> | null = null;
+	let loadAttempt = 0;
+
+	function clearRetryTimer() {
+		if (!retryTimer) return;
+		clearTimeout(retryTimer);
+		retryTimer = null;
+	}
+
+	function scheduleLoad(delayMs: number) {
+		clearRetryTimer();
+		retryTimer = setTimeout(() => {
+			retryTimer = null;
+			void load();
+		}, delayMs);
+	}
 
 	async function callHaWs<T>(payload: Record<string, unknown>): Promise<T> {
 		const hass = await getHassWithRetry(1, 0);
-		if (hass?.callWS) return await hass.callWS(payload) as T;
+		if (hass?.callWS) return (await hass.callWS(payload)) as T;
 		let lastError: unknown = null;
 		for (const endpoint of getNovaApiCandidates('/api/ha/ws')) {
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					credentials: 'same-origin',
-					cache: 'no-store',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ payload, timeoutMs: 12000 })
-				});
+				const response = await fetchWithTimeout(
+					endpoint,
+					{
+						method: 'POST',
+						credentials: 'same-origin',
+						cache: 'no-store',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({ payload, timeoutMs: 12000 })
+					},
+					14000
+				);
 				if (!response.ok) throw new Error(`ha_ws_proxy_http_${response.status}`);
 				const data = (await response.json()) as { ok?: boolean; result?: T; error?: string };
 				if (data.ok !== true) throw new Error(data.error || 'ha_ws_proxy_failed');
@@ -75,17 +97,28 @@ function createAreaStore() {
 			}
 
 			set({ areas: areaList ?? [], entityAreaMap, loaded: true });
+			loadAttempt = 0;
 		} catch {
-			set({ areas: [], entityAreaMap: {}, loaded: true });
+			const delay = AREA_LOAD_RETRY_DELAYS_MS[loadAttempt];
+			loadAttempt += 1;
+			set({ areas: [], entityAreaMap: {}, loaded: delay === undefined });
+			if (delay !== undefined) scheduleLoad(delay);
 		}
 	}
 
 	if (typeof window !== 'undefined') {
 		// Small delay to let HA connection establish first
-		setTimeout(() => void load(), 1500);
+		scheduleLoad(1500);
 	}
 
-	return { subscribe, reload: load };
+	return {
+		subscribe,
+		reload: () => {
+			loadAttempt = 0;
+			clearRetryTimer();
+			return load();
+		}
+	};
 }
 
 export const areaStore = createAreaStore();

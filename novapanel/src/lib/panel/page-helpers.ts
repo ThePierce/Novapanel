@@ -1,36 +1,6 @@
-import type { CameraConfig, CardDraft, ViewSectionDraft } from '$lib/persistence/panel-state';
-import type { ClockStyle } from '$lib/persistence/panel-state-types';
-import { coerceEnergyAnchorsFromUnknown } from '$lib/persistence/panel-state-coercion';
-
-function coerceCamerasInPageHelpers(value: unknown): CameraConfig[] | undefined {
-	if (!Array.isArray(value)) return undefined;
-	const out: CameraConfig[] = [];
-	for (const raw of value) {
-		if (!raw || typeof raw !== 'object') continue;
-		const v = raw as Record<string, unknown>;
-		const entityId = typeof v.entityId === 'string' ? v.entityId.trim() : '';
-		if (!entityId) continue;
-		const config: CameraConfig = { entityId };
-		if (typeof v.alias === 'string' && v.alias.trim().length > 0) config.alias = v.alias.trim();
-		if (typeof v.color === 'string' && /^#[0-9a-f]{6}$/i.test(v.color.trim())) config.color = v.color.trim();
-		if (typeof v.personEntityId === 'string' && v.personEntityId.trim().length > 0) config.personEntityId = v.personEntityId.trim();
-		if (v.isLarge === true) config.isLarge = true;
-		if (v.useAdvanced === true) config.useAdvanced = true;
-		if (typeof v.advancedConfig === 'string' && v.advancedConfig.length > 0) config.advancedConfig = v.advancedConfig;
-		out.push(config);
-	}
-	return out.length > 0 ? out : undefined;
-}
-
-function coerceTariffInPageHelpers(value: unknown): number | undefined {
-	const n =
-		typeof value === 'number'
-			? value
-			: typeof value === 'string'
-				? Number(value.trim().replace(',', '.'))
-				: NaN;
-	return Number.isFinite(n) && n >= 0 ? n : undefined;
-}
+import type { CardDraft, ViewSectionDraft } from '$lib/persistence/panel-state';
+import { coerceCardDraft } from '$lib/persistence/panel-state-coercion';
+import { fetchWithTimeout as fetchWithTimeoutBase } from '$lib/fetch-with-timeout';
 
 export type CardLibraryTab = 'sidebar' | 'view';
 
@@ -43,9 +13,18 @@ type PanelStatePayload = {
 	};
 	configuration?: {
 		language?: string;
+		theme?: string;
+		currencyCode?: unknown;
 		cardLibraryTab?: CardLibraryTab;
 		titles?: { cardLibrary?: string; homeviewPreview?: string };
+		updatedAt?: unknown;
 	};
+};
+
+export type PanelStateWriteAck = {
+	ok: boolean;
+	dashboardUpdatedAt?: number;
+	configurationUpdatedAt?: number;
 };
 
 const SYNC_DIAG_READ_KEY = 'np_sync_diag_last_read';
@@ -61,7 +40,9 @@ const PREFERRED_PANEL_STATE_URL_KEY = 'np_panel_state_api_preferred';
 
 const RESERVED_APP_BASE_SEGMENTS = new Set(['api', '_app', 'favicon.ico', 'hacsfiles', 'energy-asset']);
 
-function getCurrentAppPathBase(pathname = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'): string {
+function getCurrentAppPathBase(
+	pathname = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'
+): string {
 	const normalized = pathname.startsWith('/') ? pathname : `/${pathname}`;
 	const ingressMatch = normalized.match(/^(\/api\/hassio_ingress\/[^/]+)/);
 	if (ingressMatch?.[1]) return ingressMatch[1];
@@ -78,7 +59,12 @@ function loadPreferredPanelStateUrls(): string[] {
 		if (!raw) return [];
 		const parsed = JSON.parse(raw) as unknown;
 		if (typeof parsed === 'string' && parsed.trim()) return [parsed.trim()];
-		if (parsed && typeof parsed === 'object' && 'url' in parsed && typeof (parsed as { url: unknown }).url === 'string') {
+		if (
+			parsed &&
+			typeof parsed === 'object' &&
+			'url' in parsed &&
+			typeof (parsed as { url: unknown }).url === 'string'
+		) {
 			const u = (parsed as { url: string }).url.trim();
 			return u ? [u] : [];
 		}
@@ -140,350 +126,18 @@ function touchSyncDiagProbe(context: string) {
 	});
 }
 
-export function getClockStyleValue(value: unknown): 1 | 2 | 3 | 4 | undefined {
-	return value === 1 || value === 2 || value === 3 || value === 4 ? value : undefined;
-}
-
-export function getClockStyleName(value: unknown): ClockStyle | undefined {
-	if (
-		value === 'digital' ||
-		value === 'classic' ||
-		value === 'luxury_gold' ||
-		value === 'luxury_steel' ||
-		value === 'minimal' ||
-		value === 'dark' ||
-		value === 'dots'
-	) {
-		return value;
-	}
-	return undefined;
-}
-
 export function dedupeCards(cards: CardDraft[]): CardDraft[] {
 	return cards.filter((card, index, list) => list.findIndex((entry) => entry.id === card.id) === index);
 }
 
 export function toCardDraft(value: unknown, index: number): CardDraft | null {
-	if (!value || typeof value !== 'object') return null;
-	const item = value as Record<string, unknown>;
-	const rawId = item.id;
-	const rawTitle = item.title;
-	const rawType = item.cardType;
-	const rawHiddenInSection = item.hiddenInSection;
-	const rawEntityId = item.entityId;
-	const rawAlarmEntityId = item.alarmEntityId;
-	const rawAnalogClockStyle = item.analogClockStyle;
-	const rawDigitalClockStyle = item.digitalClockStyle;
-	const rawClockStyle = item.clockStyle;
-	const rawClockShowAnalog = item.clockShowAnalog;
-	const rawClockShowDigital = item.clockShowDigital;
-	const rawClockHour12 = item.clockHour12;
-	const rawClockSeconds = item.clockSeconds;
-	const rawDateLayout = item.dateLayout;
-	const rawDateShortDay = item.dateShortDay;
-	const rawDateShortMonth = item.dateShortMonth;
-	const rawDateAlign = item.dateAlign;
-	const rawDateWeekdayWithDate = item.dateWeekdayWithDate;
-	const rawWeatherForecastType = item.weatherForecastType;
-	const rawWeatherForecastDaysToShow = item.weatherForecastDaysToShow;
-	const rawStatusDomains = item.statusDomains;
-	const rawStatusDeviceClasses = item.statusDeviceClasses;
-	const rawStatusEntityIds = item.statusEntityIds;
-	const rawStatusDiscoveredEntityIds = item.statusDiscoveredEntityIds;
-	const rawStatusEntityAliases = item.statusEntityAliases;
-	const rawStatusEntityIconOverrides = item.statusEntityIconOverrides;
-	const rawStatusIcon = item.statusIcon;
-	const rawIgnoredEntityIds = item.ignoredEntityIds;
-	const rawNetEntityId = item.netEntityId;
-	const rawSolarEntityId = item.solarEntityId;
-	const rawBatteryEntityId = item.batteryEntityId;
-	const rawGridEntityId = item.gridEntityId;
-	const rawBatteryChargeEntityId = item.batteryChargeEntityId;
-	const rawImportTodayEntityId = item.importTodayEntityId;
-	const rawExportTodayEntityId = item.exportTodayEntityId;
-	const rawSolarTodayEntityId = item.solarTodayEntityId;
-	const rawHomeTodayEntityId = item.homeTodayEntityId;
-	const rawCostTodayEntityId = item.costTodayEntityId;
-	const rawCompensationTodayEntityId = item.compensationTodayEntityId;
-	const rawImportPeakTodayEntityId = item.importPeakTodayEntityId;
-	const rawImportOffPeakTodayEntityId = item.importOffPeakTodayEntityId;
-	const rawImportTariffEntityId = item.importTariffEntityId;
-	const rawExportTariffEntityId = item.exportTariffEntityId;
-	const rawImportPeakTariff = item.importPeakTariff;
-	const rawImportOffPeakTariff = item.importOffPeakTariff;
-	const rawExportTariff = item.exportTariff;
-	const rawSelfSufficiencyEntityId = item.selfSufficiencyEntityId;
-	const rawCarChargingEntityId = item.carChargingEntityId;
-	const rawCarCableEntityId = item.carCableEntityId;
-	const rawCarChargingPowerEntityId = item.carChargingPowerEntityId;
-	const rawEnergyDeviceEntityIds = item.energyDeviceEntityIds;
-	const rawEnergyDeviceTodayEntityIds = item.energyDeviceTodayEntityIds;
-	const rawEnergyDeviceAliases = item.energyDeviceAliases;
-	const rawEnergyDeviceSnapshot = item.energyDeviceSnapshot;
-	const rawHasCustomDayNoCar = item.hasCustomDayNoCar;
-	const rawHasCustomDayWithCar = item.hasCustomDayWithCar;
-	const rawHasCustomNightNoCar = item.hasCustomNightNoCar;
-	const rawHasCustomNightWithCar = item.hasCustomNightWithCar;
-	const rawAnchorsDayNoCar = item.anchorsDayNoCar;
-	const rawAnchorsDayWithCar = item.anchorsDayWithCar;
-	const rawAnchorsNightNoCar = item.anchorsNightNoCar;
-	const rawAnchorsNightWithCar = item.anchorsNightWithCar;
-	const id =
-		typeof rawId === 'string' && rawId.length > 0
-			? rawId
-			: `card-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`;
-	const title = typeof rawTitle === 'string' ? rawTitle : '';
-	const cardType = typeof rawType === 'string' && rawType.length > 0 ? rawType : 'custom';
-	const entityId = typeof rawEntityId === 'string' && rawEntityId.length > 0 ? rawEntityId : undefined;
-	const alarmEntityId =
-		typeof rawAlarmEntityId === 'string' && rawAlarmEntityId.length > 0
-			? rawAlarmEntityId
-			: undefined;
-	const analogClockStyle = getClockStyleValue(Number(rawAnalogClockStyle));
-	const digitalClockStyle = getClockStyleValue(Number(rawDigitalClockStyle));
-	const clockStyle = getClockStyleName(rawClockStyle);
-	const clockShowAnalog =
-		typeof rawClockShowAnalog === 'boolean' ? rawClockShowAnalog : undefined;
-	const clockShowDigital =
-		typeof rawClockShowDigital === 'boolean' ? rawClockShowDigital : undefined;
-	const clockHour12 = typeof rawClockHour12 === 'boolean' ? rawClockHour12 : undefined;
-	const clockSeconds = typeof rawClockSeconds === 'boolean' ? rawClockSeconds : undefined;
-	const dateLayout = rawDateLayout === 'vertical' || rawDateLayout === 'horizontal' ? rawDateLayout : undefined;
-	const dateShortDay = typeof rawDateShortDay === 'boolean' ? rawDateShortDay : undefined;
-	const dateShortMonth = typeof rawDateShortMonth === 'boolean' ? rawDateShortMonth : undefined;
-	const dateAlign =
-		rawDateAlign === 'left' || rawDateAlign === 'center' || rawDateAlign === 'right'
-			? rawDateAlign
-			: undefined;
-	const dateWeekdayWithDate =
-		typeof rawDateWeekdayWithDate === 'boolean' ? rawDateWeekdayWithDate : undefined;
-	const weatherForecastType =
-		rawWeatherForecastType === 'daily' || rawWeatherForecastType === 'hourly' || rawWeatherForecastType === 'twice_daily'
-			? rawWeatherForecastType
-			: undefined;
-	const weatherForecastDaysToShow =
-		typeof rawWeatherForecastDaysToShow === 'number' && Number.isFinite(rawWeatherForecastDaysToShow)
-			? Math.max(1, Math.min(7, Math.round(rawWeatherForecastDaysToShow)))
-			: undefined;
-	const statusDomains = Array.isArray(rawStatusDomains)
-		? rawStatusDomains.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-		: undefined;
-	const statusDeviceClasses = Array.isArray(rawStatusDeviceClasses)
-		? rawStatusDeviceClasses.filter(
-				(value): value is string => typeof value === 'string' && value.trim().length > 0
-			)
-		: undefined;
-	const statusEntityIds = Array.isArray(rawStatusEntityIds)
-		? rawStatusEntityIds.filter(
-				(value): value is string => typeof value === 'string' && value.trim().length > 0
-			)
-		: undefined;
-	const statusDiscoveredEntityIds = Array.isArray(rawStatusDiscoveredEntityIds)
-		? rawStatusDiscoveredEntityIds
-				.map((value) => (typeof value === 'string' ? value.trim().toLowerCase() : ''))
-				.filter((value) => value.length > 0)
-		: undefined;
-	const statusEntityAliases =
-		rawStatusEntityAliases && typeof rawStatusEntityAliases === 'object'
-			? Object.fromEntries(
-					Object.entries(rawStatusEntityAliases).filter(
-						([k, v]) =>
-							typeof k === 'string' &&
-							k.trim().length > 0 &&
-							typeof v === 'string' &&
-							v.trim().length > 0
-					)
-				)
-			: undefined;
-	const statusEntityIconOverrides =
-		rawStatusEntityIconOverrides && typeof rawStatusEntityIconOverrides === 'object'
-			? Object.fromEntries(
-					Object.entries(rawStatusEntityIconOverrides).filter(
-						([k, v]) =>
-							typeof k === 'string' &&
-							k.trim().length > 0 &&
-							typeof v === 'string' &&
-							v.trim().length > 0
-					)
-				)
-			: undefined;
-	const statusIcon =
-		typeof rawStatusIcon === 'string' && rawStatusIcon.trim().length > 0
-			? rawStatusIcon.trim()
-			: undefined;
-	const ignoredEntityIds = Array.isArray(rawIgnoredEntityIds)
-		? rawIgnoredEntityIds.filter(
-				(value): value is string => typeof value === 'string' && value.trim().length > 0
-			)
-		: undefined;
-	return {
-		id,
-		title,
-		cardType,
-		hiddenInSection: rawHiddenInSection === true ? true : undefined,
-		entityId,
-		alarmEntityId,
-		analogClockStyle,
-		digitalClockStyle,
-		clockStyle,
-		clockShowAnalog,
-		clockShowDigital,
-		clockHour12,
-		clockSeconds,
-		dateLayout,
-		dateShortDay,
-		dateShortMonth,
-		dateAlign,
-		dateWeekdayWithDate
-		,
-		weatherForecastType,
-		weatherForecastDaysToShow,
-		statusDomains,
-		statusDeviceClasses,
-		statusEntityIds,
-		statusDiscoveredEntityIds,
-		statusEntityAliases,
-		statusEntityIconOverrides,
-		statusIcon,
-		ignoredEntityIds,
-		netEntityId:
-			typeof rawNetEntityId === 'string' && rawNetEntityId.length > 0 ? rawNetEntityId : undefined,
-		solarEntityId:
-			typeof rawSolarEntityId === 'string' && rawSolarEntityId.length > 0
-				? rawSolarEntityId
-				: undefined,
-		batteryEntityId:
-			typeof rawBatteryEntityId === 'string' && rawBatteryEntityId.length > 0
-				? rawBatteryEntityId
-				: undefined,
-		gridEntityId:
-			typeof rawGridEntityId === 'string' && rawGridEntityId.length > 0
-				? rawGridEntityId
-				: undefined,
-		batteryChargeEntityId:
-			typeof rawBatteryChargeEntityId === 'string' && rawBatteryChargeEntityId.length > 0
-				? rawBatteryChargeEntityId
-				: undefined,
-		importTodayEntityId:
-			typeof rawImportTodayEntityId === 'string' && rawImportTodayEntityId.length > 0
-				? rawImportTodayEntityId
-				: undefined,
-		exportTodayEntityId:
-			typeof rawExportTodayEntityId === 'string' && rawExportTodayEntityId.length > 0
-				? rawExportTodayEntityId
-				: undefined,
-		solarTodayEntityId:
-			typeof rawSolarTodayEntityId === 'string' && rawSolarTodayEntityId.length > 0
-				? rawSolarTodayEntityId
-				: undefined,
-		homeTodayEntityId:
-			typeof rawHomeTodayEntityId === 'string' && rawHomeTodayEntityId.length > 0
-				? rawHomeTodayEntityId
-				: undefined,
-		costTodayEntityId:
-			typeof rawCostTodayEntityId === 'string' && rawCostTodayEntityId.length > 0
-				? rawCostTodayEntityId
-				: undefined,
-		compensationTodayEntityId:
-			typeof rawCompensationTodayEntityId === 'string' && rawCompensationTodayEntityId.length > 0
-				? rawCompensationTodayEntityId
-				: undefined,
-		importPeakTodayEntityId:
-			typeof rawImportPeakTodayEntityId === 'string' && rawImportPeakTodayEntityId.length > 0
-				? rawImportPeakTodayEntityId
-				: undefined,
-		importOffPeakTodayEntityId:
-			typeof rawImportOffPeakTodayEntityId === 'string' && rawImportOffPeakTodayEntityId.length > 0
-				? rawImportOffPeakTodayEntityId
-				: undefined,
-		importTariffEntityId:
-			typeof rawImportTariffEntityId === 'string' && rawImportTariffEntityId.length > 0
-				? rawImportTariffEntityId
-				: undefined,
-		exportTariffEntityId:
-			typeof rawExportTariffEntityId === 'string' && rawExportTariffEntityId.length > 0
-				? rawExportTariffEntityId
-				: undefined,
-		importPeakTariff:
-			coerceTariffInPageHelpers(rawImportPeakTariff),
-		importOffPeakTariff:
-			coerceTariffInPageHelpers(rawImportOffPeakTariff),
-		exportTariff:
-			coerceTariffInPageHelpers(rawExportTariff),
-		selfSufficiencyEntityId:
-			typeof rawSelfSufficiencyEntityId === 'string' && rawSelfSufficiencyEntityId.length > 0
-				? rawSelfSufficiencyEntityId
-				: undefined,
-		carChargingEntityId:
-			typeof rawCarChargingEntityId === 'string' && rawCarChargingEntityId.length > 0
-				? rawCarChargingEntityId
-				: undefined,
-		carCableEntityId:
-			typeof rawCarCableEntityId === 'string' && rawCarCableEntityId.length > 0
-				? rawCarCableEntityId
-				: undefined,
-		carChargingPowerEntityId:
-			typeof rawCarChargingPowerEntityId === 'string' && rawCarChargingPowerEntityId.length > 0
-				? rawCarChargingPowerEntityId
-				: undefined,
-		energyDeviceEntityIds: Array.isArray(rawEnergyDeviceEntityIds)
-			? (rawEnergyDeviceEntityIds as unknown[])
-				.filter((v): v is string => typeof v === 'string')
-				.map((v) => v.trim())
-				.filter((v) => v.length > 0)
-			: undefined,
-		energyDeviceTodayEntityIds: Array.isArray(rawEnergyDeviceTodayEntityIds)
-			? (rawEnergyDeviceTodayEntityIds as unknown[])
-				.filter((v): v is string => typeof v === 'string')
-				.map((v) => v.trim())
-				.filter((v) => v.length > 0)
-			: undefined,
-		energyDeviceAliases:
-			rawEnergyDeviceAliases && typeof rawEnergyDeviceAliases === 'object' && !Array.isArray(rawEnergyDeviceAliases)
-				? Object.fromEntries(
-						Object.entries(rawEnergyDeviceAliases as Record<string, unknown>).filter(
-							(entry): entry is [string, string] =>
-								typeof entry[0] === 'string' && entry[0].length > 0 && typeof entry[1] === 'string' && entry[1].trim().length > 0
-						)
-					)
-				: undefined,
-		energyDeviceSnapshot:
-			rawEnergyDeviceSnapshot &&
-			typeof rawEnergyDeviceSnapshot === 'object' &&
-			!Array.isArray(rawEnergyDeviceSnapshot) &&
-			typeof (rawEnergyDeviceSnapshot as { date?: unknown }).date === 'string' &&
-			(rawEnergyDeviceSnapshot as { values?: unknown }).values &&
-			typeof (rawEnergyDeviceSnapshot as { values?: unknown }).values === 'object'
-				? {
-						date: (rawEnergyDeviceSnapshot as { date: string }).date,
-						values: Object.fromEntries(
-							Object.entries(
-								(rawEnergyDeviceSnapshot as { values: Record<string, unknown> }).values
-							).filter(
-								(entry): entry is [string, number] =>
-									typeof entry[1] === 'number' && isFinite(entry[1])
-							)
-						)
-					}
-				: undefined,
-		hasCustomDayNoCar: typeof rawHasCustomDayNoCar === 'boolean' ? rawHasCustomDayNoCar : undefined,
-		hasCustomDayWithCar: typeof rawHasCustomDayWithCar === 'boolean' ? rawHasCustomDayWithCar : undefined,
-		hasCustomNightNoCar: typeof rawHasCustomNightNoCar === 'boolean' ? rawHasCustomNightNoCar : undefined,
-		hasCustomNightWithCar: typeof rawHasCustomNightWithCar === 'boolean' ? rawHasCustomNightWithCar : undefined,
-		anchorsDayNoCar: coerceEnergyAnchorsFromUnknown(rawAnchorsDayNoCar),
-		anchorsDayWithCar: coerceEnergyAnchorsFromUnknown(rawAnchorsDayWithCar),
-		anchorsNightNoCar: coerceEnergyAnchorsFromUnknown(rawAnchorsNightNoCar),
-		anchorsNightWithCar: coerceEnergyAnchorsFromUnknown(rawAnchorsNightWithCar),
-		cameras: coerceCamerasInPageHelpers(item.cameras)
-	};
+	return coerceCardDraft(value, index);
 }
 
 export function sanitizeSidebarCardsInput(input: unknown): CardDraft[] {
 	if (!Array.isArray(input)) return [];
 	return dedupeCards(
-		input
-			.map((card, index) => toCardDraft(card, index))
-			.filter((card): card is CardDraft => card !== null)
+		input.map((card, index) => toCardDraft(card, index)).filter((card): card is CardDraft => card !== null)
 	);
 }
 
@@ -506,21 +160,17 @@ export function sanitizeViewSectionsInput(
 			const rawColumn = Number(value.column);
 			const rawOrder = Number(value.order);
 			const rawSpan = Number(value.span);
-			return {
+			const section: ViewSectionDraft = {
 				id:
 					typeof value.id === 'string' && value.id.length > 0
 						? value.id
 						: `section-${Date.now()}-${sectionIndex}`,
-				title:
-					typeof value.title === 'string'
-						? value.title
-						: `${tSection} ${sectionIndex + 1}`,
+				title: typeof value.title === 'string' ? value.title : `${tSection} ${sectionIndex + 1}`,
 				icon:
-					typeof value.icon === 'string' && value.icon.trim().length > 0
-						? value.icon.trim()
-						: 'layout-grid',
+					typeof value.icon === 'string' && value.icon.trim().length > 0 ? value.icon.trim() : 'layout-grid',
 				headerTemperatureEntityId:
-					typeof value.headerTemperatureEntityId === 'string' && value.headerTemperatureEntityId.trim().length > 0
+					typeof value.headerTemperatureEntityId === 'string' &&
+					value.headerTemperatureEntityId.trim().length > 0
 						? value.headerTemperatureEntityId.trim()
 						: undefined,
 				headerHumidityEntityId:
@@ -536,7 +186,8 @@ export function sanitizeViewSectionsInput(
 				order: Number.isFinite(rawOrder) ? rawOrder : sectionIndex,
 				cardColumns: value.cardColumns === 2 || Number(value.cardColumns) === 2 ? 2 : 1,
 				cards
-			} satisfies ViewSectionDraft;
+			};
+			return section;
 		})
 		.filter((section): section is ViewSectionDraft => section !== null);
 	return normalizeSectionPositions(sections);
@@ -566,13 +217,7 @@ export function localizeLegacyTitles(
 }
 
 export async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs = 2500) {
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), timeoutMs);
-	try {
-		return await fetch(input, { ...init, signal: controller.signal });
-	} finally {
-		clearTimeout(timeout);
-	}
+	return fetchWithTimeoutBase(input, init, timeoutMs);
 }
 
 function withNoCacheParam(url: string): string {
@@ -749,7 +394,9 @@ function collectPanelStateDiscoveryCandidates(panelStateApiPath: string): string
 
 	// Onder HA Ingress is /api/panel-state zonder prefix nooit valide (HA proxiet 404).
 	// Sla die fallbacks alleen aan voor non-ingress setups (lokale dev / direct-LAN).
-	const runningUnderIngress = Boolean(normalizedIngress || perfIngressBase || pathnameIngressMatchEarly || currentAppBase);
+	const runningUnderIngress = Boolean(
+		normalizedIngress || perfIngressBase || pathnameIngressMatchEarly || currentAppBase
+	);
 	if (!runningUnderIngress) {
 		append(`${origin}/local_novapanel/${normalizedApiPath}`);
 		append(`/local_novapanel/${normalizedApiPath}`);
@@ -877,28 +524,13 @@ export async function readAddonPanelState(candidates: string[]): Promise<PanelSt
 			return { url, ok: false, note: 'unexpected_shape' };
 		}
 		// Count keys ignoring the internal _np_api_base hint field
-		const relevantKeys = Object.keys(p).filter(k => k !== '_np_api_base');
+		const relevantKeys = Object.keys(p).filter((k) => k !== '_np_api_base');
 		if (relevantKeys.length === 0) {
 			return { url, ok: false, note: 'empty_payload' };
 		}
 		const typedPayload = payload as PanelStatePayload;
 		const score = scorePayload(typedPayload);
 		const updatedAt = getUpdatedAt(typedPayload);
-		// Extract and register the writing device's canonical API base as a preferred URL hint
-		const apiBaseHint = typeof p._np_api_base === 'string' ? p._np_api_base.trim() : '';
-		if (apiBaseHint) {
-			try {
-				const hintUrl = `${apiBaseHint.replace(/\/+$/, '')}/api/panel-state`;
-				rememberPreferredPanelStateUrl(hintUrl);
-				// Also seed it into the authority resolution if not set yet
-				if (!resolvedPanelAuthorityOrigin) {
-					const u = new URL(apiBaseHint);
-					resolvedPanelAuthorityOrigin = u.pathname && u.pathname.length > 1
-						? `${u.protocol}//${u.host}${u.pathname}`.replace(/\/+$/, '')
-						: `${u.protocol}//${u.host}`;
-				}
-			} catch {}
-		}
 		return { url, ok: true, score, updatedAt, payload: typedPayload };
 	};
 
@@ -981,7 +613,13 @@ export async function readAddonPanelState(candidates: string[]): Promise<PanelSt
 					attempts.push({ url: row.url, ok: false, note: `fallback_${row.note}` });
 					continue;
 				}
-				attempts.push({ url: row.url, ok: true, score: row.score, updatedAt: row.updatedAt, note: 'fallback_post_read' });
+				attempts.push({
+					url: row.url,
+					ok: true,
+					score: row.score,
+					updatedAt: row.updatedAt,
+					note: 'fallback_post_read'
+				});
 				const { updatedAt, score, payload: typedPayload, url } = row;
 				if (updatedAt > bestUpdatedAt || (updatedAt === bestUpdatedAt && score > bestScore)) {
 					bestUpdatedAt = updatedAt;
@@ -1029,25 +667,33 @@ export async function readAddonPanelState(candidates: string[]): Promise<PanelSt
 	return bestPayload;
 }
 
-export async function writeAddonPanelState(candidates: string[], payload: {
-	dashboard?: {
-		layout: { columns: 1 | 2 | 3; popupWidth: number; popupHeight: number };
-		viewSections: ViewSectionDraft[];
-		sidebarCards: CardDraft[];
-		updatedAt?: number;
-	};
-	configuration?: {
-		language: string;
-		cardLibraryTab: CardLibraryTab;
-		titles: { cardLibrary?: string; homeviewPreview?: string };
-	};
-}): Promise<boolean> {
-	if (typeof window === 'undefined') return false;
+export async function writeAddonPanelState(
+	candidates: string[],
+	payload: {
+		dashboard?: {
+			layout: { columns: 1 | 2 | 3; popupWidth: number; popupHeight: number };
+			viewSections: ViewSectionDraft[];
+			sidebarCards: CardDraft[];
+			updatedAt?: number;
+		};
+		configuration?: {
+			language: string;
+			theme?: string;
+			currencyCode?: string;
+			cardLibraryTab?: CardLibraryTab;
+			titles?: { cardLibrary?: string; homeviewPreview?: string };
+			oauth?: unknown;
+			mediaHub?: unknown;
+			updatedAt?: number;
+		};
+	}
+): Promise<PanelStateWriteAck> {
+	if (typeof window === 'undefined') return { ok: false };
 	await ensurePanelAuthorityReady();
 	touchSyncDiagProbe('writeAddonPanelState');
 	const writeTimeoutMs = 8000;
 	const body = JSON.stringify(payload);
-	let wroteAny = false;
+	let writeAck: PanelStateWriteAck = { ok: false };
 	const attempts: Array<{ url: string; ok: boolean; note?: string }> = [];
 	for (let round = 0; round < 2; round += 1) {
 		if (round > 0) {
@@ -1077,14 +723,15 @@ export async function writeAddonPanelState(candidates: string[], payload: {
 					}
 					const headerOk = response.headers.get('x-novapanel-state') === '1';
 					let bodyOk = false;
+					let ack: PanelStateWriteAck = { ok: false };
 					try {
-						const ack = (await response.json()) as { ok?: boolean };
+						ack = (await response.json()) as PanelStateWriteAck;
 						bodyOk = ack?.ok === true;
 					} catch {
 						bodyOk = false;
 					}
 					if (bodyOk || headerOk) {
-						wroteAny = true;
+						writeAck = bodyOk ? ack : { ok: true };
 						attempts.push({ url, ok: true });
 						rememberPreferredPanelStateUrl(url);
 						break;
@@ -1097,21 +744,21 @@ export async function writeAddonPanelState(candidates: string[], payload: {
 				}
 			}
 		} catch {}
-		if (wroteAny) {
+		if (writeAck.ok) {
 			storeSyncDiag(SYNC_DIAG_WRITE_KEY, {
 				ts: Date.now(),
 				wroteAny: true,
 				attempts
 			});
-			return true;
+			return writeAck;
 		}
 	}
 	storeSyncDiag(SYNC_DIAG_WRITE_KEY, {
 		ts: Date.now(),
-		wroteAny,
+		wroteAny: writeAck.ok,
 		attempts
 	});
-	return wroteAny;
+	return writeAck;
 }
 
 export function isRemovedLegacySidebarSeed(cards: CardDraft[]) {

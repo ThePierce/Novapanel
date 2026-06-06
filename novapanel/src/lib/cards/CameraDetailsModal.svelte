@@ -14,6 +14,8 @@
 	import HaCameraLiveView from '$lib/cards/HaCameraLiveView.svelte';
 	import type { CameraConfig } from '$lib/persistence/panel-state-types';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
+	import { fetchWithTimeout } from '$lib/fetch-with-timeout';
 
 	type AdvancedCameraCardElement = HTMLElement & {
 		setConfig?: (config: Record<string, unknown>) => void;
@@ -50,7 +52,9 @@
 	let advancedCameraCardLoad: Promise<void> | null = null;
 
 	function asRecord(value: unknown): Record<string, unknown> {
-		return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+		return value && typeof value === 'object' && !Array.isArray(value)
+			? (value as Record<string, unknown>)
+			: {};
 	}
 
 	function parseAdvancedConfig(raw: string | undefined): Record<string, unknown> {
@@ -105,9 +109,10 @@
 	function buildAdvancedConfig(cameraConfig: CameraConfig): Record<string, unknown> {
 		const parsed = parseAdvancedConfig(cameraConfig.advancedConfig);
 		const config = findAdvancedCameraCardConfig(parsed, cameraConfig.entityId) ?? parsed;
-		config.type = typeof config.type === 'string' && config.type.trim().length > 0
-			? config.type
-			: 'custom:advanced-camera-card';
+		config.type =
+			typeof config.type === 'string' && config.type.trim().length > 0
+				? config.type
+				: 'custom:advanced-camera-card';
 
 		if (!Array.isArray(config.cameras) || config.cameras.length === 0) {
 			config.cameras = [{ camera_entity: cameraConfig.entityId }];
@@ -148,11 +153,7 @@
 
 	function createFallbackCardElement(config: Record<string, unknown>): HTMLElement {
 		const rawType = typeof config.type === 'string' ? config.type.trim() : '';
-		const tagName = rawType.startsWith('custom:')
-			? rawType.slice(7)
-			: rawType
-				? `hui-${rawType}-card`
-				: '';
+		const tagName = rawType.startsWith('custom:') ? rawType.slice(7) : rawType ? `hui-${rawType}-card` : '';
 		const element = document.createElement(safeCustomElementName(tagName)) as AdvancedCameraCardElement;
 		if (typeof element.setConfig === 'function') element.setConfig(config);
 		return element;
@@ -177,7 +178,8 @@
 			if (window.parent && window.parent !== window) candidates.push(window.parent);
 		} catch {}
 		try {
-			if (window.top && window.top !== window && !candidates.includes(window.top)) candidates.push(window.top);
+			if (window.top && window.top !== window && !candidates.includes(window.top))
+				candidates.push(window.top);
 		} catch {}
 
 		for (const candidate of candidates) {
@@ -238,16 +240,21 @@
 		let lastError: unknown = null;
 		for (const endpoint of getNovaApiCandidates('/api/ha/ws')) {
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					credentials: 'same-origin',
-					cache: 'no-store',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ payload: params, timeoutMs: 15000 })
-				});
+				const response = await fetchWithTimeout(
+					endpoint,
+					{
+						method: 'POST',
+						credentials: 'same-origin',
+						cache: 'no-store',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({ payload: params, timeoutMs: 15000 })
+					},
+					17000
+				);
 				if (!response.ok) throw new Error(`ha_ws_proxy_http_${response.status}`);
 				const payload = asRecord(await response.json());
-				if (payload.ok !== true) throw new Error(typeof payload.error === 'string' ? payload.error : 'ha_ws_proxy_failed');
+				if (payload.ok !== true)
+					throw new Error(typeof payload.error === 'string' ? payload.error : 'ha_ws_proxy_failed');
 				return payload.result;
 			} catch (error) {
 				lastError = error;
@@ -272,7 +279,9 @@
 					let resolved = false;
 					const cleanup = () => {
 						closed = true;
-						try { ws.close(); } catch {}
+						try {
+							ws.close();
+						} catch {}
 					};
 					const timeout = window.setTimeout(() => {
 						cleanup();
@@ -286,7 +295,8 @@
 							if (type === 'auth_required') {
 								getHaConnectionConfig()
 									.then((config) => {
-										if (!closed && config?.token) ws.send(JSON.stringify({ type: 'auth', access_token: config.token }));
+										if (!closed && config?.token)
+											ws.send(JSON.stringify({ type: 'auth', access_token: config.token }));
 									})
 									.catch(() => {});
 								return;
@@ -368,15 +378,18 @@
 		return () => window.clearInterval(interval);
 	});
 
-	const snapshotUrl = $derived((() => {
-		const fallback = typeof window !== 'undefined'
-			? getNovaApiUrl(`/api/camera_proxy/${encodeURIComponent(camera.entityId)}`)
-			: '';
-		const path = entityPicture ? browserSafeHomeAssistantUrl(entityPicture) : fallback;
-		if (!path) return '';
-		const joiner = path.includes('?') ? '&' : '?';
-		return `${path}${joiner}_t=${tick}`;
-	})());
+	const snapshotUrl = $derived(
+		(() => {
+			const fallback =
+				typeof window !== 'undefined'
+					? getNovaApiUrl(`/api/camera_proxy/${encodeURIComponent(camera.entityId)}`)
+					: '';
+			const path = entityPicture ? browserSafeHomeAssistantUrl(entityPicture) : fallback;
+			if (!path) return '';
+			const joiner = path.includes('?') ? '&' : '?';
+			return `${path}${joiner}_t=${tick}`;
+		})()
+	);
 
 	const cameraProxyStreamUrl = $derived(
 		typeof window !== 'undefined'
@@ -386,7 +399,9 @@
 
 	let useAdvancedHA = $derived(camera.useAdvanced === true);
 	let imageAspectRatio = $state<number | null>(null);
-	const cameraAspectRatio = $derived(imageAspectRatio && Number.isFinite(imageAspectRatio) ? imageAspectRatio : 16 / 9);
+	const cameraAspectRatio = $derived(
+		imageAspectRatio && Number.isFinite(imageAspectRatio) ? imageAspectRatio : 16 / 9
+	);
 	let advancedError = $state('');
 	let advancedFallbackVisible = $state(false);
 
@@ -452,7 +467,7 @@
 				};
 				init.body = JSON.stringify(parameters);
 			}
-			const response = await fetch(url, init);
+			const response = await fetchWithTimeout(url, init, 16000);
 			if (!response.ok) throw new Error(`ha_api_${response.status}`);
 			const contentType = response.headers.get('content-type') ?? '';
 			return contentType.includes('application/json') ? response.json() : response.text();
@@ -468,13 +483,18 @@
 			callWS,
 			callService,
 			callApi,
-			fetchWithAuth: (path: string, init?: RequestInit) => fetch(makeHassUrl(path), {
-				...init,
-				headers: {
-					...(token ? { Authorization: `Bearer ${token}` } : {}),
-					...(init?.headers as Record<string, string> | undefined)
-				}
-			}),
+			fetchWithAuth: (path: string, init?: RequestInit) =>
+				fetchWithTimeout(
+					makeHassUrl(path),
+					{
+						...init,
+						headers: {
+							...(token ? { Authorization: `Bearer ${token}` } : {}),
+							...(init?.headers as Record<string, string> | undefined)
+						}
+					},
+					16000
+				),
 			hassUrl: makeHassUrl,
 			connection: {
 				sendMessage: (params: Record<string, unknown>) => {
@@ -482,12 +502,11 @@
 				},
 				sendMessagePromise: callWS,
 				subscribeMessage: subscribeHaWs,
-				subscribeEvents: (callback: (message: unknown) => void, eventType?: string) => subscribeHaWs(
-					callback,
-					eventType
-						? { type: 'subscribe_events', event_type: eventType }
-						: { type: 'subscribe_events' }
-				),
+				subscribeEvents: (callback: (message: unknown) => void, eventType?: string) =>
+					subscribeHaWs(
+						callback,
+						eventType ? { type: 'subscribe_events', event_type: eventType } : { type: 'subscribe_events' }
+					),
 				connected: true
 			},
 			connected: true,
@@ -531,8 +550,29 @@
 		let observedMediaRoot: ShadowRoot | AdvancedCameraCardElement | null = null;
 		let advancedElement: AdvancedCameraCardElement | null = null;
 		let watchedVideo: HTMLVideoElement | null = null;
+		let watchedVideoCleanup: (() => void) | null = null;
 		let videoProgressTimer: number | null = null;
 		let fallbackReasonLogged = false;
+		const cleanupWatchedVideo = () => {
+			watchedVideoCleanup?.();
+			watchedVideoCleanup = null;
+			watchedVideo = null;
+		};
+		const stopAdvancedMedia = () => {
+			const root = advancedElement?.shadowRoot ?? advancedElement;
+			root?.querySelectorAll('video').forEach((video) => {
+				if (!(video instanceof HTMLVideoElement)) return;
+				const stream = video.srcObject;
+				if (stream instanceof MediaStream) {
+					for (const track of stream.getTracks()) track.stop();
+				}
+				video.removeAttribute('src');
+				video.srcObject = null;
+				try {
+					video.load();
+				} catch {}
+			});
+		};
 		const stopMediaWatch = () => {
 			if (mediaPollTimer !== null) {
 				window.clearInterval(mediaPollTimer);
@@ -545,7 +585,7 @@
 			mediaObserver?.disconnect();
 			mediaObserver = null;
 			observedMediaRoot = null;
-			watchedVideo = null;
+			cleanupWatchedVideo();
 		};
 		const markMediaLoaded = () => {
 			if (mediaLoaded) return;
@@ -582,6 +622,7 @@
 					video.controls = true;
 				});
 				if (video !== watchedVideo) {
+					cleanupWatchedVideo();
 					watchedVideo = video;
 					if (videoProgressTimer !== null) window.clearTimeout(videoProgressTimer);
 					const startTime = video.currentTime;
@@ -591,29 +632,41 @@
 						if (!advancedEnough && (snapshotUrl || cameraProxyStreamUrl)) {
 							if (!fallbackReasonLogged) {
 								fallbackReasonLogged = true;
-								if (CAMERA_DEBUG) console.info('[NovaPanel] ACC video blijft stil; schakel naar NovaPanel live-stream fallback.', {
-									entityId: camera.entityId,
-									src: video.currentSrc || video.src || '',
-									poster: video.poster || '',
-									readyState: video.readyState,
-									networkState: video.networkState,
-									currentTime: video.currentTime
-								});
+								if (CAMERA_DEBUG)
+									console.info(
+										'[NovaPanel] ACC video blijft stil; schakel naar NovaPanel live-stream fallback.',
+										{
+											entityId: camera.entityId,
+											src: video.currentSrc || video.src || '',
+											poster: video.poster || '',
+											readyState: video.readyState,
+											networkState: video.networkState,
+											currentTime: video.currentTime
+										}
+									);
 							}
 							advancedFallbackVisible = true;
 						}
 					}, 8500);
+					let playingCheckTimer: number | null = null;
+					const handleLoadedMetadata = () => updateAspectFromVideo(video);
+					const handlePlaying = () => {
+						const playingTime = video.currentTime;
+						playingCheckTimer = window.setTimeout(() => {
+							if (!cancelled && watchedVideo === video && video.currentTime > playingTime + 0.2) {
+								markMediaLoaded();
+							}
+						}, 1200);
+					};
+					video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+					video.addEventListener('playing', handlePlaying, { once: true });
+					watchedVideoCleanup = () => {
+						if (playingCheckTimer !== null) window.clearTimeout(playingCheckTimer);
+						video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+						video.removeEventListener('playing', handlePlaying);
+					};
 				}
 				updateAspectFromVideo(video);
-				video.addEventListener('loadedmetadata', () => updateAspectFromVideo(video), { once: true });
-				video.addEventListener('playing', () => {
-					const playingTime = video.currentTime;
-					window.setTimeout(() => {
-						if (!cancelled && watchedVideo === video && video.currentTime > playingTime + 0.2) {
-							markMediaLoaded();
-						}
-					}, 1200);
-				}, { once: true });
 				const stream = video.srcObject;
 				if (
 					stream instanceof MediaStream &&
@@ -636,29 +689,30 @@
 
 		(async () => {
 			try {
-					const config = buildAdvancedConfig(camera);
-					await loadAdvancedCameraCard(baseUrl());
+				const config = buildAdvancedConfig(camera);
+				await loadAdvancedCameraCard(baseUrl());
+				if (cancelled) return;
+				const localHass = await createDirectHass().catch(() => null);
+				const parentHass = localHass ? null : await getHassWithRetry(6, 250);
+				const hass = localHass ?? parentHass;
+				if (!hass) throw new Error('hass_unavailable');
+				if (cancelled) return;
+				const el = document.createElement(ADVANCED_CAMERA_ELEMENT) as AdvancedCameraCardElement;
+				advancedElement = el;
+				el.style.display = 'block';
+				el.style.width = '100%';
+				el.style.height = '100%';
+				el.style.minHeight = '0';
+				el.style.setProperty('--advanced-camera-card-height', '100%');
+				el.addEventListener('advanced-camera-card:media:loaded', markMediaLoaded);
+				if (!el.setConfig) throw new Error('advanced_camera_card_set_config_missing');
+				el.hass = hass;
+				el.setConfig(config);
+				el.hass = hass;
+				container.replaceChildren(el);
+				requestAnimationFrame(() => {
 					if (cancelled) return;
-					const localHass = await createDirectHass().catch(() => null);
-					const parentHass = localHass ? null : await getHassWithRetry(6, 250);
-					const hass = localHass ?? parentHass;
-					if (!hass) throw new Error('hass_unavailable');
-					if (cancelled) return;
-					const el = document.createElement(ADVANCED_CAMERA_ELEMENT) as AdvancedCameraCardElement;
-					advancedElement = el;
-					el.style.display = 'block';
-					el.style.width = '100%';
-					el.style.height = '100%';
-					el.style.minHeight = '0';
-					el.style.setProperty('--advanced-camera-card-height', '100%');
-					el.addEventListener('advanced-camera-card:media:loaded', markMediaLoaded);
-					if (!el.setConfig) throw new Error('advanced_camera_card_set_config_missing');
 					el.hass = hass;
-					el.setConfig(config);
-					el.hass = hass;
-					container.replaceChildren(el);
-					requestAnimationFrame(() => {
-						if (!cancelled) el.hass = hass;
 					detectRenderedMedia();
 				});
 				startMediaWatch();
@@ -668,7 +722,10 @@
 			} catch (err) {
 				if (cancelled) return;
 				if (CAMERA_DEBUG) console.warn('[NovaPanel] advanced-camera-card niet beschikbaar:', err);
-				advancedError = translate('Advanced Camera Card kon niet worden geladen. Ik toon de normale cameraview.', $selectedLanguageStore);
+				advancedError = translate(
+					'Advanced Camera Card kon niet worden geladen. Ik toon de normale cameraview.',
+					$selectedLanguageStore
+				);
 			}
 		})();
 
@@ -677,13 +734,27 @@
 			if (fallbackTimer !== null) window.clearTimeout(fallbackTimer);
 			stopMediaWatch();
 			advancedElement?.removeEventListener('advanced-camera-card:media:loaded', markMediaLoaded);
+			stopAdvancedMedia();
 			container.replaceChildren();
+			advancedElement = null;
 		};
 	});
 </script>
 
-<button type="button" class="modal-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
-<section class="camera-detail-modal np-detail" role="dialog" aria-modal="true" aria-label={name} style:--camera-aspect={String(cameraAspectRatio)}>
+<button
+	type="button"
+	class="modal-overlay"
+	onclick={onClose}
+	aria-label={translate('close', $selectedLanguageStore)}
+></button>
+<div
+	class="camera-detail-modal np-detail"
+	role="dialog"
+	aria-modal="true"
+	aria-label={name}
+	use:modalBehavior={{ onClose }}
+	style:--camera-aspect={String(cameraAspectRatio)}
+>
 	<div class="np-detail-head" style="--np-tint: rgba(96,165,250,0.18); --np-color: #60a5fa;">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
 		<div class="np-detail-head-icon"><TablerIcon name="device-cctv" size={22} /></div>
@@ -715,17 +786,17 @@
 				</div>
 			{:else}
 				<div class="camera-live-shell">
-				<HaCameraLiveView
-					entityId={camera.entityId}
-					active={true}
-					fallbackSrc={snapshotUrl}
-					fallbackStreamSrc={cameraProxyStreamUrl}
-					alt={name}
-					muted={false}
-					audioToggle={true}
-					fit="contain"
-					onAspectRatio={handleAspectRatio}
-				/>
+					<HaCameraLiveView
+						entityId={camera.entityId}
+						active={true}
+						fallbackSrc={snapshotUrl}
+						fallbackStreamSrc={cameraProxyStreamUrl}
+						alt={name}
+						muted={false}
+						audioToggle={true}
+						fit="contain"
+						onAspectRatio={handleAspectRatio}
+					/>
 				</div>
 			{/if}
 		{:else}
@@ -738,63 +809,93 @@
 			<div class="camera-advanced-error">{advancedError}</div>
 		{/if}
 	</div>
-</section>
+</div>
 
 <style>
 	.modal-overlay {
-		position: fixed; inset: 0;
-		background: rgba(0,0,0,0.65);
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.65);
 		backdrop-filter: blur(3px);
-		border: 0; padding: 0; margin: 0;
-		z-index: 80; cursor: default;
+		border: 0;
+		padding: 0;
+		margin: 0;
+		z-index: 80;
+		cursor: default;
 	}
 	.camera-detail-modal {
 		position: fixed;
-		top: 50%; left: 50%;
+		top: 50%;
+		left: 50%;
 		transform: translate(-50%, -50%);
 		z-index: 90;
 		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
 		height: auto;
 		max-height: calc(100vh - 1.5rem);
-		display: flex; flex-direction: column;
+		display: flex;
+		flex-direction: column;
 		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 18px;
 		overflow: hidden;
 	}
 	.camera-detail-modal::before {
 		content: '';
 		position: absolute;
-		top: 0; left: 50%;
-		width: 60%; height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+		top: 0;
+		left: 50%;
+		width: 60%;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
 		transform: translateX(-50%);
 		pointer-events: none;
 		z-index: 5;
 	}
 	:global(.camera-detail-modal .np-detail-head) {
 		padding: 16px 20px 12px;
-		border-bottom: 0.5px solid rgba(255,255,255,0.06);
-		display: flex; align-items: center; gap: 12px;
-		position: relative; overflow: hidden;
+		border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		position: relative;
+		overflow: hidden;
 		flex-shrink: 0;
 	}
 	:global(.camera-detail-modal .np-detail-head-glow) {
-		position: absolute; top: -100px; left: -40px;
-		width: 220px; height: 220px;
-		background: radial-gradient(circle, var(--np-tint, rgba(96,165,250,0.18)), transparent 70%);
-		pointer-events: none; filter: blur(20px);
+		position: absolute;
+		top: -100px;
+		left: -40px;
+		width: 220px;
+		height: 220px;
+		background: radial-gradient(circle, var(--np-tint, rgba(96, 165, 250, 0.18)), transparent 70%);
+		pointer-events: none;
+		filter: blur(20px);
 	}
 	:global(.camera-detail-modal .np-detail-head-icon) {
-		width: 38px; height: 38px; border-radius: 10px;
-		display: grid; place-items: center;
+		width: 38px;
+		height: 38px;
+		border-radius: 10px;
+		display: grid;
+		place-items: center;
 		background: var(--np-tint);
-		border: 0.5px solid rgba(255,255,255,0.10);
+		border: 0.5px solid rgba(255, 255, 255, 0.1);
 		color: var(--np-color);
-		flex-shrink: 0; position: relative; z-index: 1;
+		flex-shrink: 0;
+		position: relative;
+		z-index: 1;
 	}
-	:global(.camera-detail-modal .np-detail-head-text) { flex: 1; min-width: 0; position: relative; z-index: 1; }
-	:global(.camera-detail-modal .np-detail-head-title) { font-size: 15px; font-weight: 500; color: #f5f5f5; line-height: 1.2; }
+	:global(.camera-detail-modal .np-detail-head-text) {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		z-index: 1;
+	}
+	:global(.camera-detail-modal .np-detail-head-title) {
+		font-size: 15px;
+		font-weight: 500;
+		color: #f5f5f5;
+		line-height: 1.2;
+	}
 
 	.camera-body {
 		position: relative;
@@ -845,7 +946,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 10px;
-		color: rgba(255,255,255,0.45);
+		color: rgba(255, 255, 255, 0.45);
 		text-align: center;
 	}
 	.camera-advanced-error {
@@ -854,10 +955,10 @@
 		right: 1rem;
 		bottom: 1rem;
 		padding: 0.55rem 0.7rem;
-		border: 0.5px solid rgba(248,113,113,0.24);
+		border: 0.5px solid rgba(248, 113, 113, 0.24);
 		border-radius: 0.6rem;
 		background: rgba(24, 8, 12, 0.78);
-		color: rgba(255,255,255,0.76);
+		color: rgba(255, 255, 255, 0.76);
 		font-size: 0.76rem;
 		text-align: center;
 		backdrop-filter: blur(10px);
@@ -871,6 +972,7 @@
 	}
 	:global(.camera-detail-modal *::-webkit-scrollbar) {
 		display: none;
-		width: 0; height: 0;
+		width: 0;
+		height: 0;
 	}
 </style>

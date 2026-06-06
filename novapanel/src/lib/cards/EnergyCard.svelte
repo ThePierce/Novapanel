@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { entityStore } from '$lib/ha/entities-store';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
-	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import { localeFor, selectedLanguageStore, translate } from '$lib/i18n';
 
 	type Props = {
 		netEntityId?: string;
@@ -49,31 +49,60 @@
 		const u = unit || 'W';
 		if (u.toLowerCase().includes('kw') || abs >= 1000) {
 			const kw = u.toLowerCase().includes('kw') ? abs : abs / 1000;
-			return `${kw.toFixed(1)} kW`;
+			return `${kw.toLocaleString(localeFor($selectedLanguageStore), {
+				minimumFractionDigits: 1,
+				maximumFractionDigits: 1
+			})} kW`;
 		}
 		return `${Math.round(abs)} W`;
 	}
 
 	// Summary line for the sidebar card
-	const netLabel = $derived((() => {
-		if (!netEntityId) return translate('Geen entiteit ingesteld', $selectedLanguageStore);
-		if (net === null) {
-			const found = entities.some(e => e.entityId === (netEntityId || '').trim());
-			return found ? translate('Sensor geeft geen getal', $selectedLanguageStore) : `${translate('Niet gevonden', $selectedLanguageStore)}: ${(netEntityId || '').trim()}`;
-		}
-		const abs = Math.abs(net);
-		const unit = getUnit(netEntityId);
-		const formatted = fmtW(net, unit);
-		if (net < 0) return `↑ ${formatted} ${translate('terug', $selectedLanguageStore)}`;
-		if (net === 0) return translate('Geen verbruik', $selectedLanguageStore);
-		return `↓ ${formatted} ${translate('afname', $selectedLanguageStore)}`;
-	})());
+	const netLabel = $derived(
+		(() => {
+			if (!netEntityId) return translate('Geen entiteit ingesteld', $selectedLanguageStore);
+			if (net === null) {
+				const found = entities.some((e) => e.entityId === (netEntityId || '').trim());
+				return found
+					? translate('Sensor geeft geen getal', $selectedLanguageStore)
+					: `${translate('Niet gevonden', $selectedLanguageStore)}: ${(netEntityId || '').trim()}`;
+			}
+			const unit = getUnit(netEntityId);
+			const formatted = fmtW(net, unit);
+			if (net < 0) return `↑ ${formatted} ${translate('terug', $selectedLanguageStore)}`;
+			if (net === 0) return translate('Geen verbruik', $selectedLanguageStore);
+			return `↓ ${formatted} ${translate('afname', $selectedLanguageStore)}`;
+		})()
+	);
 
 	const netColor = $derived(
-		net === null ? 'rgba(255,255,255,0.35)'
-		: net < 0 ? '#4ade80'   // returning to grid
-		: net === 0 ? '#f5f5f5'
-		: '#f5a623'              // consuming from grid
+		net === null
+			? 'rgba(255,255,255,0.35)'
+			: net < 0
+				? '#4ade80' // returning to grid
+				: net === 0
+					? '#f5f5f5'
+					: '#f5a623' // consuming from grid
+	);
+
+	const detailLabel = $derived(
+		(() => {
+			const parts: string[] = [];
+			if (solar !== null)
+				parts.push(
+					`${translate('Zonnepanelen', $selectedLanguageStore)} ${fmtW(solar, getUnit(solarEntityId))}`
+				);
+			if (battery !== null) {
+				parts.push(`${translate('Accu', $selectedLanguageStore)} ${fmtW(battery, getUnit(batteryEntityId))}`);
+			} else if (batteryCharge !== null) {
+				parts.push(`${translate('Accu', $selectedLanguageStore)} ${Math.round(batteryCharge)}%`);
+			}
+			if (grid !== null)
+				parts.push(
+					`${translate('Huisverbruik', $selectedLanguageStore)} ${fmtW(grid, getUnit(gridEntityId))}`
+				);
+			return parts.join(' · ');
+		})()
 	);
 </script>
 
@@ -86,6 +115,9 @@
 	<div class="info">
 		<div class="name">{translate('Energie', $selectedLanguageStore)}</div>
 		<div class="summary" style="color:{netColor}">{netLabel}</div>
+		{#if detailLabel}
+			<div class="details">{detailLabel}</div>
+		{/if}
 	</div>
 </div>
 
@@ -96,18 +128,55 @@
 		gap: 0.75rem;
 		align-items: center;
 		padding: 0.2rem 0.1rem;
-		text-shadow: 0 0 5px rgba(0,0,0,0.15);
+		text-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
 		width: 100%;
 		min-width: 0;
 		max-width: 100%;
 		box-sizing: border-box;
 		container-type: inline-size;
 	}
-	.tile { border-radius: 10px; background: transparent; }
-	.status-icon-wrap { position: relative; width: 2.4rem; height: 2.4rem; display: grid; place-items: center; }
-	.status-icon { width: 2.4rem; height: 2.4rem; border-radius: 999px; background: transparent; display: grid; place-items: center; }
-	.info { min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
-	.name { font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f5f5f5; }
+	.tile {
+		border-radius: 10px;
+		background: transparent;
+	}
+	.status-icon-wrap {
+		position: relative;
+		width: 2.4rem;
+		height: 2.4rem;
+		display: grid;
+		place-items: center;
+	}
+	.status-icon {
+		width: 2.4rem;
+		height: 2.4rem;
+		border-radius: 999px;
+		background: transparent;
+		display: grid;
+		place-items: center;
+	}
+	.info {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	.name {
+		font-weight: 500;
+		font-size: 0.95rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: #f5f5f5;
+	}
+	.details {
+		margin-top: 0.05rem;
+		font-size: 0.72rem;
+		line-height: 0.9rem;
+		color: rgba(255, 255, 255, 0.55);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 	.summary {
 		font-size: 0.82rem;
 		line-height: 1.08rem;
@@ -117,6 +186,7 @@
 		margin-top: 0.1rem;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow-wrap: anywhere;
 	}

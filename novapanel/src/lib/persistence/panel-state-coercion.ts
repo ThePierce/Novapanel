@@ -1,4 +1,15 @@
-import type { CameraConfig, CardDraft, ClockStyle, EnergyAnchors, EnergyFlowKey, EnergyFlowWaypoints, PanelDashboard, PanelDashboardLayout, ViewSectionDraft } from './panel-state-types';
+import type {
+	CameraConfig,
+	CardDraft,
+	ClockStyle,
+	EnergyAnchors,
+	EnergyFlowKey,
+	EnergyFlowWaypoints,
+	PanelDashboard,
+	PanelDashboardLayout,
+	ViewSectionDraft
+} from './panel-state-types';
+import { deriveEnergyCostMode } from '$lib/energy-costs';
 
 function coerceCamerasFromUnknown(value: unknown): CameraConfig[] | undefined {
 	if (!Array.isArray(value)) return undefined;
@@ -11,10 +22,12 @@ function coerceCamerasFromUnknown(value: unknown): CameraConfig[] | undefined {
 		const config: CameraConfig = { entityId };
 		if (typeof v.alias === 'string' && v.alias.trim().length > 0) config.alias = v.alias.trim();
 		if (typeof v.color === 'string' && /^#[0-9a-f]{6}$/i.test(v.color.trim())) config.color = v.color.trim();
-		if (typeof v.personEntityId === 'string' && v.personEntityId.trim().length > 0) config.personEntityId = v.personEntityId.trim();
+		if (typeof v.personEntityId === 'string' && v.personEntityId.trim().length > 0)
+			config.personEntityId = v.personEntityId.trim();
 		if (v.isLarge === true) config.isLarge = true;
 		if (v.useAdvanced === true) config.useAdvanced = true;
-		if (typeof v.advancedConfig === 'string' && v.advancedConfig.length > 0) config.advancedConfig = v.advancedConfig;
+		if (typeof v.advancedConfig === 'string' && v.advancedConfig.length > 0)
+			config.advancedConfig = v.advancedConfig;
 		out.push(config);
 	}
 	return out.length > 0 ? out : undefined;
@@ -49,9 +62,15 @@ function clampRail(n: number): number {
 }
 
 const VALID_FLOW_KEYS: EnergyFlowKey[] = [
-	'solarToBattery', 'solarToCar', 'solarToHome', 'solarToGrid',
-	'gridToHome', 'gridToCar', 'gridToBattery',
-	'batteryToHome', 'batteryToCar'
+	'solarToBattery',
+	'solarToCar',
+	'solarToHome',
+	'solarToGrid',
+	'gridToHome',
+	'gridToCar',
+	'gridToBattery',
+	'batteryToHome',
+	'batteryToCar'
 ];
 
 function coerceFlowWaypointsFromUnknown(value: unknown): EnergyFlowWaypoints | undefined {
@@ -123,7 +142,7 @@ export function getClockStyleName(value: unknown): ClockStyle | undefined {
 	return undefined;
 }
 
-export function coerceCardDraftFromUnknown(value: unknown, index: number): CardDraft | null {
+export function coerceCardDraft(value: unknown, index: number): CardDraft | null {
 	if (!value || typeof value !== 'object') return null;
 	const item = value as Record<string, unknown>;
 	const rawId = item.id;
@@ -162,9 +181,7 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 	const cardType = typeof rawType === 'string' && rawType.length > 0 ? rawType : 'custom';
 	const entityId = typeof rawEntityId === 'string' && rawEntityId.length > 0 ? rawEntityId : undefined;
 	const alarmEntityId =
-		typeof rawAlarmEntityId === 'string' && rawAlarmEntityId.length > 0
-			? rawAlarmEntityId
-			: undefined;
+		typeof rawAlarmEntityId === 'string' && rawAlarmEntityId.length > 0 ? rawAlarmEntityId : undefined;
 	const analogClockStyle = getClockStyleValue(Number(rawAnalogClockStyle));
 	const digitalClockStyle = getClockStyleValue(Number(rawDigitalClockStyle));
 	const clockStyle = getClockStyleName(rawClockStyle);
@@ -172,7 +189,8 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 	const clockShowDigital = typeof rawClockShowDigital === 'boolean' ? rawClockShowDigital : undefined;
 	const clockHour12 = typeof rawClockHour12 === 'boolean' ? rawClockHour12 : undefined;
 	const clockSeconds = typeof rawClockSeconds === 'boolean' ? rawClockSeconds : undefined;
-	const dateLayout = rawDateLayout === 'vertical' || rawDateLayout === 'horizontal' ? rawDateLayout : undefined;
+	const dateLayout =
+		rawDateLayout === 'vertical' || rawDateLayout === 'horizontal' ? rawDateLayout : undefined;
 	const dateShortDay = typeof rawDateShortDay === 'boolean' ? rawDateShortDay : undefined;
 	const dateShortMonth = typeof rawDateShortMonth === 'boolean' ? rawDateShortMonth : undefined;
 	const dateAlign =
@@ -182,7 +200,9 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 	const dateWeekdayWithDate =
 		typeof rawDateWeekdayWithDate === 'boolean' ? rawDateWeekdayWithDate : undefined;
 	const weatherForecastType =
-		rawWeatherForecastType === 'daily' || rawWeatherForecastType === 'hourly' || rawWeatherForecastType === 'twice_daily'
+		rawWeatherForecastType === 'daily' ||
+		rawWeatherForecastType === 'hourly' ||
+		rawWeatherForecastType === 'twice_daily'
 			? rawWeatherForecastType
 			: undefined;
 	const weatherForecastDaysToShow =
@@ -190,7 +210,9 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 			? Math.max(1, Math.min(7, Math.round(rawWeatherForecastDaysToShow)))
 			: undefined;
 	const statusDomains = Array.isArray(rawStatusDomains)
-		? rawStatusDomains.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+		? rawStatusDomains.filter(
+				(value): value is string => typeof value === 'string' && value.trim().length > 0
+			)
 		: undefined;
 	const statusDeviceClasses = Array.isArray(rawStatusDeviceClasses)
 		? rawStatusDeviceClasses.filter(
@@ -212,10 +234,7 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 			? Object.fromEntries(
 					Object.entries(rawStatusEntityAliases).filter(
 						([k, v]) =>
-							typeof k === 'string' &&
-							k.trim().length > 0 &&
-							typeof v === 'string' &&
-							v.trim().length > 0
+							typeof k === 'string' && k.trim().length > 0 && typeof v === 'string' && v.trim().length > 0
 					)
 				)
 			: undefined;
@@ -224,21 +243,14 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 			? Object.fromEntries(
 					Object.entries(rawStatusEntityIconOverrides).filter(
 						([k, v]) =>
-							typeof k === 'string' &&
-							k.trim().length > 0 &&
-							typeof v === 'string' &&
-							v.trim().length > 0
+							typeof k === 'string' && k.trim().length > 0 && typeof v === 'string' && v.trim().length > 0
 					)
 				)
 			: undefined;
 	const statusIcon =
-		typeof rawStatusIcon === 'string' && rawStatusIcon.trim().length > 0
-			? rawStatusIcon.trim()
-			: undefined;
+		typeof rawStatusIcon === 'string' && rawStatusIcon.trim().length > 0 ? rawStatusIcon.trim() : undefined;
 	const statusIconNormalized =
-		cardType === 'media_players_status' && statusIcon === 'mdi:play-network'
-			? 'mdi:audio-video'
-			: statusIcon;
+		cardType === 'media_players_status' && statusIcon === 'mdi:play-network' ? 'mdi:audio-video' : statusIcon;
 	const ignoredEntityIds = Array.isArray(rawIgnoredEntityIds)
 		? rawIgnoredEntityIds.filter(
 				(value): value is string => typeof value === 'string' && value.trim().length > 0
@@ -273,36 +285,105 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 		statusEntityIconOverrides,
 		statusIcon: statusIconNormalized,
 		ignoredEntityIds,
-		netEntityId: typeof item.netEntityId === 'string' && item.netEntityId.length > 0 ? item.netEntityId : undefined,
-		solarEntityId: typeof item.solarEntityId === 'string' && item.solarEntityId.length > 0 ? item.solarEntityId : undefined,
-		batteryEntityId: typeof item.batteryEntityId === 'string' && item.batteryEntityId.length > 0 ? item.batteryEntityId : undefined,
-		gridEntityId: typeof item.gridEntityId === 'string' && item.gridEntityId.length > 0 ? item.gridEntityId : undefined,
-		batteryChargeEntityId: typeof item.batteryChargeEntityId === 'string' && item.batteryChargeEntityId.length > 0 ? item.batteryChargeEntityId : undefined,
-		importTodayEntityId: typeof item.importTodayEntityId === 'string' && item.importTodayEntityId.length > 0 ? item.importTodayEntityId : undefined,
-		exportTodayEntityId: typeof item.exportTodayEntityId === 'string' && item.exportTodayEntityId.length > 0 ? item.exportTodayEntityId : undefined,
-		solarTodayEntityId: typeof item.solarTodayEntityId === 'string' && item.solarTodayEntityId.length > 0 ? item.solarTodayEntityId : undefined,
-		homeTodayEntityId: typeof item.homeTodayEntityId === 'string' && item.homeTodayEntityId.length > 0 ? item.homeTodayEntityId : undefined,
-		costTodayEntityId: typeof item.costTodayEntityId === 'string' && item.costTodayEntityId.length > 0 ? item.costTodayEntityId : undefined,
-		compensationTodayEntityId: typeof item.compensationTodayEntityId === 'string' && item.compensationTodayEntityId.length > 0 ? item.compensationTodayEntityId : undefined,
+		netEntityId:
+			typeof item.netEntityId === 'string' && item.netEntityId.length > 0 ? item.netEntityId : undefined,
+		solarEntityId:
+			typeof item.solarEntityId === 'string' && item.solarEntityId.length > 0
+				? item.solarEntityId
+				: undefined,
+		batteryEntityId:
+			typeof item.batteryEntityId === 'string' && item.batteryEntityId.length > 0
+				? item.batteryEntityId
+				: undefined,
+		gridEntityId:
+			typeof item.gridEntityId === 'string' && item.gridEntityId.length > 0 ? item.gridEntityId : undefined,
+		batteryChargeEntityId:
+			typeof item.batteryChargeEntityId === 'string' && item.batteryChargeEntityId.length > 0
+				? item.batteryChargeEntityId
+				: undefined,
+		importTodayEntityId:
+			typeof item.importTodayEntityId === 'string' && item.importTodayEntityId.length > 0
+				? item.importTodayEntityId
+				: undefined,
+		exportTodayEntityId:
+			typeof item.exportTodayEntityId === 'string' && item.exportTodayEntityId.length > 0
+				? item.exportTodayEntityId
+				: undefined,
+		solarTodayEntityId:
+			typeof item.solarTodayEntityId === 'string' && item.solarTodayEntityId.length > 0
+				? item.solarTodayEntityId
+				: undefined,
+		homeTodayEntityId:
+			typeof item.homeTodayEntityId === 'string' && item.homeTodayEntityId.length > 0
+				? item.homeTodayEntityId
+				: undefined,
+		costTodayEntityId:
+			typeof item.costTodayEntityId === 'string' && item.costTodayEntityId.length > 0
+				? item.costTodayEntityId
+				: undefined,
+		compensationTodayEntityId:
+			typeof item.compensationTodayEntityId === 'string' && item.compensationTodayEntityId.length > 0
+				? item.compensationTodayEntityId
+				: undefined,
+		energyCostMode: deriveEnergyCostMode({
+			energyCostMode: item.energyCostMode as CardDraft['energyCostMode'],
+			costTodayEntityId: coerceEntityIdFromUnknown(item.costTodayEntityId),
+			compensationTodayEntityId: coerceEntityIdFromUnknown(item.compensationTodayEntityId),
+			importPeakTodayEntityId: coerceEntityIdFromUnknown(item.importPeakTodayEntityId),
+			importOffPeakTodayEntityId: coerceEntityIdFromUnknown(item.importOffPeakTodayEntityId),
+			exportPeakTodayEntityId: coerceEntityIdFromUnknown(item.exportPeakTodayEntityId),
+			exportOffPeakTodayEntityId: coerceEntityIdFromUnknown(item.exportOffPeakTodayEntityId),
+			importTariffEntityId: coerceEntityIdFromUnknown(item.importTariffEntityId),
+			exportTariffEntityId: coerceEntityIdFromUnknown(item.exportTariffEntityId),
+			importPeakTariff: coerceTariffFromUnknown(item.importPeakTariff),
+			importOffPeakTariff: coerceTariffFromUnknown(item.importOffPeakTariff),
+			exportPeakTariff: coerceTariffFromUnknown(item.exportPeakTariff),
+			exportOffPeakTariff: coerceTariffFromUnknown(item.exportOffPeakTariff),
+			exportTariff: coerceTariffFromUnknown(item.exportTariff)
+		}),
 		importPeakTodayEntityId: coerceEntityIdFromUnknown(item.importPeakTodayEntityId),
 		importOffPeakTodayEntityId: coerceEntityIdFromUnknown(item.importOffPeakTodayEntityId),
+		exportPeakTodayEntityId: coerceEntityIdFromUnknown(item.exportPeakTodayEntityId),
+		exportOffPeakTodayEntityId: coerceEntityIdFromUnknown(item.exportOffPeakTodayEntityId),
 		importTariffEntityId: coerceEntityIdFromUnknown(item.importTariffEntityId),
 		exportTariffEntityId: coerceEntityIdFromUnknown(item.exportTariffEntityId),
 		importPeakTariff: coerceTariffFromUnknown(item.importPeakTariff),
 		importOffPeakTariff: coerceTariffFromUnknown(item.importOffPeakTariff),
+		exportPeakTariff: coerceTariffFromUnknown(item.exportPeakTariff),
+		exportOffPeakTariff: coerceTariffFromUnknown(item.exportOffPeakTariff),
 		exportTariff: coerceTariffFromUnknown(item.exportTariff),
-		selfSufficiencyEntityId: typeof item.selfSufficiencyEntityId === 'string' && item.selfSufficiencyEntityId.length > 0 ? item.selfSufficiencyEntityId : undefined,
-		carChargingEntityId: typeof item.carChargingEntityId === 'string' && item.carChargingEntityId.length > 0 ? item.carChargingEntityId : undefined,
-		carCableEntityId: typeof item.carCableEntityId === 'string' && item.carCableEntityId.length > 0 ? item.carCableEntityId : undefined,
-		carChargingPowerEntityId: typeof item.carChargingPowerEntityId === 'string' && item.carChargingPowerEntityId.length > 0 ? item.carChargingPowerEntityId : undefined,
+		selfSufficiencyEntityId:
+			typeof item.selfSufficiencyEntityId === 'string' && item.selfSufficiencyEntityId.length > 0
+				? item.selfSufficiencyEntityId
+				: undefined,
+		carChargingEntityId:
+			typeof item.carChargingEntityId === 'string' && item.carChargingEntityId.length > 0
+				? item.carChargingEntityId
+				: undefined,
+		carCableEntityId:
+			typeof item.carCableEntityId === 'string' && item.carCableEntityId.length > 0
+				? item.carCableEntityId
+				: undefined,
+		carChargingPowerEntityId:
+			typeof item.carChargingPowerEntityId === 'string' && item.carChargingPowerEntityId.length > 0
+				? item.carChargingPowerEntityId
+				: undefined,
 		energyDeviceEntityIds: Array.isArray(item.energyDeviceEntityIds)
-			? item.energyDeviceEntityIds.filter((v: unknown): v is string => typeof v === 'string' && v.trim().length > 0)
+			? item.energyDeviceEntityIds
+					.filter((v: unknown): v is string => typeof v === 'string')
+					.map((v) => v.trim())
+					.filter((v) => v.length > 0)
 			: undefined,
 		energyDeviceTodayEntityIds: Array.isArray(item.energyDeviceTodayEntityIds)
-			? item.energyDeviceTodayEntityIds.filter((v: unknown): v is string => typeof v === 'string' && v.trim().length > 0)
+			? item.energyDeviceTodayEntityIds
+					.filter((v: unknown): v is string => typeof v === 'string')
+					.map((v) => v.trim())
+					.filter((v) => v.length > 0)
 			: undefined,
 		energyDeviceAliases:
-			item.energyDeviceAliases && typeof item.energyDeviceAliases === 'object' && !Array.isArray(item.energyDeviceAliases)
+			item.energyDeviceAliases &&
+			typeof item.energyDeviceAliases === 'object' &&
+			!Array.isArray(item.energyDeviceAliases)
 				? Object.fromEntries(
 						Object.entries(item.energyDeviceAliases as Record<string, unknown>).filter(
 							(entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0
@@ -322,8 +403,7 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 							Object.entries(
 								(item.energyDeviceSnapshot as { values: Record<string, unknown> }).values
 							).filter(
-								(entry): entry is [string, number] =>
-									typeof entry[1] === 'number' && isFinite(entry[1])
+								(entry): entry is [string, number] => typeof entry[1] === 'number' && isFinite(entry[1])
 							)
 						)
 					}
@@ -331,14 +411,17 @@ export function coerceCardDraftFromUnknown(value: unknown, index: number): CardD
 		hasCustomDayNoCar: typeof item.hasCustomDayNoCar === 'boolean' ? item.hasCustomDayNoCar : undefined,
 		hasCustomDayWithCar: typeof item.hasCustomDayWithCar === 'boolean' ? item.hasCustomDayWithCar : undefined,
 		hasCustomNightNoCar: typeof item.hasCustomNightNoCar === 'boolean' ? item.hasCustomNightNoCar : undefined,
-		hasCustomNightWithCar: typeof item.hasCustomNightWithCar === 'boolean' ? item.hasCustomNightWithCar : undefined,
+		hasCustomNightWithCar:
+			typeof item.hasCustomNightWithCar === 'boolean' ? item.hasCustomNightWithCar : undefined,
 		anchorsDayNoCar: coerceEnergyAnchorsFromUnknown(item.anchorsDayNoCar),
 		anchorsDayWithCar: coerceEnergyAnchorsFromUnknown(item.anchorsDayWithCar),
 		anchorsNightNoCar: coerceEnergyAnchorsFromUnknown(item.anchorsNightNoCar),
 		anchorsNightWithCar: coerceEnergyAnchorsFromUnknown(item.anchorsNightWithCar),
-		cameras: coerceCamerasFromUnknown(item.cameras),
+		cameras: coerceCamerasFromUnknown(item.cameras)
 	};
 }
+
+export const coerceCardDraftFromUnknown = coerceCardDraft;
 
 export function coerceViewSectionFromUnknown(entry: unknown, sectionIndex: number): ViewSectionDraft | null {
 	if (!entry || typeof entry !== 'object') return null;
@@ -351,18 +434,14 @@ export function coerceViewSectionFromUnknown(entry: unknown, sectionIndex: numbe
 	const rawOrder = Number(value.order);
 	const rawSpan = Number(value.span);
 	const rawTitle = value.title;
-	const title =
-		typeof rawTitle === 'string' ? rawTitle : `Section ${sectionIndex + 1}`;
+	const title = typeof rawTitle === 'string' ? rawTitle : `Section ${sectionIndex + 1}`;
 	return {
 		id:
 			typeof value.id === 'string' && value.id.length > 0
 				? value.id
 				: `section-${Date.now()}-${sectionIndex}`,
 		title,
-		icon:
-			typeof value.icon === 'string' && value.icon.trim().length > 0
-				? value.icon.trim()
-				: 'layout-grid',
+		icon: typeof value.icon === 'string' && value.icon.trim().length > 0 ? value.icon.trim() : 'layout-grid',
 		headerTemperatureEntityId:
 			typeof value.headerTemperatureEntityId === 'string' && value.headerTemperatureEntityId.trim().length > 0
 				? value.headerTemperatureEntityId.trim()
@@ -384,215 +463,13 @@ export function coerceViewSectionFromUnknown(entry: unknown, sectionIndex: numbe
 }
 
 export function withCardType(card: CardDraft): CardDraft {
-	const analogClockStyle =
-		card.analogClockStyle === 1 ||
-		card.analogClockStyle === 2 ||
-		card.analogClockStyle === 3 ||
-		card.analogClockStyle === 4
-			? card.analogClockStyle
-			: undefined;
-	const digitalClockStyle =
-		card.digitalClockStyle === 1 ||
-		card.digitalClockStyle === 2 ||
-		card.digitalClockStyle === 3 ||
-		card.digitalClockStyle === 4
-			? card.digitalClockStyle
-			: undefined;
-	return {
-		id: card.id,
-		title: card.title,
-		cardType: typeof card.cardType === 'string' ? card.cardType : 'custom',
-		hiddenInSection: card.hiddenInSection === true ? true : undefined,
-		entityId: typeof card.entityId === 'string' ? card.entityId : undefined,
-		alarmEntityId: typeof card.alarmEntityId === 'string' ? card.alarmEntityId : undefined,
-		analogClockStyle,
-		digitalClockStyle,
-		clockStyle: getClockStyleName(card.clockStyle),
-		clockShowAnalog: typeof card.clockShowAnalog === 'boolean' ? card.clockShowAnalog : undefined,
-		clockShowDigital: typeof card.clockShowDigital === 'boolean' ? card.clockShowDigital : undefined,
-		clockHour12: typeof card.clockHour12 === 'boolean' ? card.clockHour12 : undefined,
-		clockSeconds: typeof card.clockSeconds === 'boolean' ? card.clockSeconds : undefined,
-		dateLayout: card.dateLayout === 'vertical' || card.dateLayout === 'horizontal' ? card.dateLayout : undefined,
-		dateShortDay: typeof card.dateShortDay === 'boolean' ? card.dateShortDay : undefined,
-		dateShortMonth: typeof card.dateShortMonth === 'boolean' ? card.dateShortMonth : undefined,
-		dateAlign:
-			card.dateAlign === 'left' || card.dateAlign === 'center' || card.dateAlign === 'right'
-				? card.dateAlign
-				: undefined,
-		dateWeekdayWithDate:
-			typeof card.dateWeekdayWithDate === 'boolean' ? card.dateWeekdayWithDate : undefined,
-		weatherForecastType:
-			card.weatherForecastType === 'daily' || card.weatherForecastType === 'hourly' || card.weatherForecastType === 'twice_daily'
-				? card.weatherForecastType
-				: undefined,
-		weatherForecastDaysToShow:
-			typeof card.weatherForecastDaysToShow === 'number' && Number.isFinite(card.weatherForecastDaysToShow)
-				? Math.max(1, Math.min(7, Math.round(card.weatherForecastDaysToShow)))
-				: undefined,
-		statusDomains: Array.isArray(card.statusDomains)
-			? card.statusDomains.filter((value) => typeof value === 'string' && value.trim().length > 0)
-			: undefined,
-		statusDeviceClasses: Array.isArray(card.statusDeviceClasses)
-			? card.statusDeviceClasses.filter(
-					(value) => typeof value === 'string' && value.trim().length > 0
-				)
-			: undefined,
-		statusEntityIds: Array.isArray(card.statusEntityIds)
-			? card.statusEntityIds.filter((value) => typeof value === 'string' && value.trim().length > 0)
-			: undefined,
-		statusDiscoveredEntityIds: Array.isArray(card.statusDiscoveredEntityIds)
-			? card.statusDiscoveredEntityIds
-					.map((value) => (typeof value === 'string' ? value.trim().toLowerCase() : ''))
-					.filter((value) => value.length > 0)
-			: undefined,
-		statusEntityAliases:
-			card.statusEntityAliases && typeof card.statusEntityAliases === 'object'
-				? Object.fromEntries(
-						Object.entries(card.statusEntityAliases).filter(
-							([k, v]) =>
-								typeof k === 'string' &&
-								k.trim().length > 0 &&
-								typeof v === 'string' &&
-								v.trim().length > 0
-						)
-					)
-				: undefined,
-		statusEntityIconOverrides:
-			card.statusEntityIconOverrides && typeof card.statusEntityIconOverrides === 'object'
-				? Object.fromEntries(
-						Object.entries(card.statusEntityIconOverrides).filter(
-							([k, v]) =>
-								typeof k === 'string' &&
-								k.trim().length > 0 &&
-								typeof v === 'string' &&
-								v.trim().length > 0
-						)
-					)
-				: undefined,
-		statusIcon:
-			typeof card.statusIcon === 'string' && card.statusIcon.trim().length > 0
-				? card.statusIcon.trim()
-				: undefined,
-		ignoredEntityIds: Array.isArray(card.ignoredEntityIds)
-			? card.ignoredEntityIds.filter((value) => typeof value === 'string' && value.trim().length > 0)
-			: undefined,
-		netEntityId:
-			typeof card.netEntityId === 'string' && card.netEntityId.trim().length > 0
-				? card.netEntityId.trim()
-				: undefined,
-		solarEntityId:
-			typeof card.solarEntityId === 'string' && card.solarEntityId.trim().length > 0
-				? card.solarEntityId.trim()
-				: undefined,
-		batteryEntityId:
-			typeof card.batteryEntityId === 'string' && card.batteryEntityId.trim().length > 0
-				? card.batteryEntityId.trim()
-				: undefined,
-		gridEntityId:
-			typeof card.gridEntityId === 'string' && card.gridEntityId.trim().length > 0
-				? card.gridEntityId.trim()
-				: undefined,
-		batteryChargeEntityId:
-			typeof card.batteryChargeEntityId === 'string' && card.batteryChargeEntityId.trim().length > 0
-				? card.batteryChargeEntityId.trim()
-				: undefined,
-		importTodayEntityId:
-			typeof card.importTodayEntityId === 'string' && card.importTodayEntityId.trim().length > 0
-				? card.importTodayEntityId.trim()
-				: undefined,
-		exportTodayEntityId:
-			typeof card.exportTodayEntityId === 'string' && card.exportTodayEntityId.trim().length > 0
-				? card.exportTodayEntityId.trim()
-				: undefined,
-		solarTodayEntityId:
-			typeof card.solarTodayEntityId === 'string' && card.solarTodayEntityId.trim().length > 0
-				? card.solarTodayEntityId.trim()
-				: undefined,
-		homeTodayEntityId:
-			typeof card.homeTodayEntityId === 'string' && card.homeTodayEntityId.trim().length > 0
-				? card.homeTodayEntityId.trim()
-				: undefined,
-		costTodayEntityId:
-			typeof card.costTodayEntityId === 'string' && card.costTodayEntityId.trim().length > 0
-				? card.costTodayEntityId.trim()
-				: undefined,
-		compensationTodayEntityId:
-			typeof card.compensationTodayEntityId === 'string' && card.compensationTodayEntityId.trim().length > 0
-				? card.compensationTodayEntityId.trim()
-				: undefined,
-		importPeakTodayEntityId: coerceEntityIdFromUnknown(card.importPeakTodayEntityId),
-		importOffPeakTodayEntityId: coerceEntityIdFromUnknown(card.importOffPeakTodayEntityId),
-		importTariffEntityId: coerceEntityIdFromUnknown(card.importTariffEntityId),
-		exportTariffEntityId: coerceEntityIdFromUnknown(card.exportTariffEntityId),
-		importPeakTariff: coerceTariffFromUnknown(card.importPeakTariff),
-		importOffPeakTariff: coerceTariffFromUnknown(card.importOffPeakTariff),
-		exportTariff: coerceTariffFromUnknown(card.exportTariff),
-		selfSufficiencyEntityId:
-			typeof card.selfSufficiencyEntityId === 'string' && card.selfSufficiencyEntityId.trim().length > 0
-				? card.selfSufficiencyEntityId.trim()
-				: undefined,
-		carChargingEntityId:
-			typeof card.carChargingEntityId === 'string' && card.carChargingEntityId.trim().length > 0
-				? card.carChargingEntityId.trim()
-				: undefined,
-		carCableEntityId:
-			typeof card.carCableEntityId === 'string' && card.carCableEntityId.trim().length > 0
-				? card.carCableEntityId.trim()
-				: undefined,
-		carChargingPowerEntityId:
-			typeof card.carChargingPowerEntityId === 'string' && card.carChargingPowerEntityId.trim().length > 0
-				? card.carChargingPowerEntityId.trim()
-				: undefined,
-		energyDeviceEntityIds: Array.isArray(card.energyDeviceEntityIds)
-			? (card.energyDeviceEntityIds as unknown[])
-				.filter((v): v is string => typeof v === 'string')
-				.map((v) => v.trim())
-				.filter((v) => v.length > 0)
-			: undefined,
-		energyDeviceTodayEntityIds: Array.isArray(card.energyDeviceTodayEntityIds)
-			? (card.energyDeviceTodayEntityIds as unknown[])
-				.filter((v): v is string => typeof v === 'string')
-				.map((v) => v.trim())
-				.filter((v) => v.length > 0)
-			: undefined,
-		energyDeviceAliases:
-			card.energyDeviceAliases && typeof card.energyDeviceAliases === 'object' && !Array.isArray(card.energyDeviceAliases)
-				? Object.fromEntries(
-						Object.entries(card.energyDeviceAliases as Record<string, unknown>).filter(
-							(entry): entry is [string, string] =>
-								typeof entry[0] === 'string' && entry[0].length > 0 && typeof entry[1] === 'string' && entry[1].trim().length > 0
-						)
-					)
-				: undefined,
-		energyDeviceSnapshot:
-			card.energyDeviceSnapshot &&
-			typeof card.energyDeviceSnapshot === 'object' &&
-			!Array.isArray(card.energyDeviceSnapshot) &&
-			typeof (card.energyDeviceSnapshot as { date?: unknown }).date === 'string' &&
-			(card.energyDeviceSnapshot as { values?: unknown }).values &&
-			typeof (card.energyDeviceSnapshot as { values?: unknown }).values === 'object'
-				? {
-						date: (card.energyDeviceSnapshot as { date: string }).date,
-						values: Object.fromEntries(
-							Object.entries(
-								(card.energyDeviceSnapshot as { values: Record<string, unknown> }).values
-							).filter(
-								(entry): entry is [string, number] =>
-									typeof entry[1] === 'number' && isFinite(entry[1])
-							)
-						)
-					}
-				: undefined,
-		hasCustomDayNoCar: typeof card.hasCustomDayNoCar === 'boolean' ? card.hasCustomDayNoCar : undefined,
-		hasCustomDayWithCar: typeof card.hasCustomDayWithCar === 'boolean' ? card.hasCustomDayWithCar : undefined,
-		hasCustomNightNoCar: typeof card.hasCustomNightNoCar === 'boolean' ? card.hasCustomNightNoCar : undefined,
-		hasCustomNightWithCar: typeof card.hasCustomNightWithCar === 'boolean' ? card.hasCustomNightWithCar : undefined,
-		anchorsDayNoCar: coerceEnergyAnchorsFromUnknown(card.anchorsDayNoCar),
-		anchorsDayWithCar: coerceEnergyAnchorsFromUnknown(card.anchorsDayWithCar),
-		anchorsNightNoCar: coerceEnergyAnchorsFromUnknown(card.anchorsNightNoCar),
-		anchorsNightWithCar: coerceEnergyAnchorsFromUnknown(card.anchorsNightWithCar),
-		cameras: coerceCamerasFromUnknown(card.cameras)
-	};
+	return (
+		coerceCardDraft(card, 0) ?? {
+			id: card.id,
+			title: card.title,
+			cardType: typeof card.cardType === 'string' ? card.cardType : 'custom'
+		}
+	);
 }
 
 export function withSectionCards(section: ViewSectionDraft): ViewSectionDraft {
@@ -636,13 +513,9 @@ export function sanitizeLayout(
 	fallback: PanelDashboardLayout
 ): PanelDashboardLayout {
 	const clampNumber = (value: unknown, min: number, max: number, fallbackValue: number) =>
-		typeof value === 'number' && Number.isFinite(value)
-			? Math.min(max, Math.max(min, value))
-			: fallbackValue;
+		typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallbackValue;
 	const columns =
-		layout.columns === 1 || layout.columns === 2 || layout.columns === 3
-			? layout.columns
-			: fallback.columns;
+		layout.columns === 1 || layout.columns === 2 || layout.columns === 3 ? layout.columns : fallback.columns;
 	const popupWidth = clampNumber(layout.popupWidth, 420, 1640, fallback.popupWidth);
 	const popupHeight = clampNumber(layout.popupHeight, 440, 1200, fallback.popupHeight);
 	return { columns, popupWidth, popupHeight };
@@ -672,9 +545,10 @@ export function parseDashboardValue(
 				.filter((card): card is CardDraft => card !== null)
 				.map(withCardType)
 		: legacyCards;
-	const hasExplicitViewSections = Array.isArray(value.viewSections);
+	const rawViewSections = Array.isArray(value.viewSections) ? value.viewSections : undefined;
+	const hasExplicitViewSections = rawViewSections !== undefined;
 	const parsedSections = hasExplicitViewSections
-		? value.viewSections
+		? rawViewSections
 				.map((entry, sectionIndex) => coerceViewSectionFromUnknown(entry, sectionIndex))
 				.filter((section): section is ViewSectionDraft => section !== null)
 				.map(withSectionCards)
@@ -703,14 +577,7 @@ export function parseDashboardValue(
 			: defaults.viewSections;
 	return {
 		layout,
-		viewSections:
-			hasExplicitViewSections
-				? viewSections.length > 0
-					? viewSections
-					: fallbackFromViewCards
-				: viewSections.length > 0
-					? viewSections
-					: fallbackFromViewCards,
+		viewSections: viewSections.length > 0 ? viewSections : fallbackFromViewCards,
 		sidebarCards: sidebarCards.length > 0 ? sidebarCards : defaults.sidebarCards,
 		updatedAt:
 			typeof value.updatedAt === 'number' && Number.isFinite(value.updatedAt)
@@ -720,6 +587,9 @@ export function parseDashboardValue(
 }
 
 export function dashboardScore(dashboard: PanelDashboard): number {
+	const updatedAt =
+		typeof dashboard.updatedAt === 'number' && Number.isFinite(dashboard.updatedAt) ? dashboard.updatedAt : 0;
+	if (updatedAt > 0) return updatedAt;
 	const viewCards = dashboard.viewSections.reduce(
 		(total, section) => total + (Array.isArray(section.cards) ? section.cards.length : 0),
 		0

@@ -48,7 +48,7 @@ function readDashboardCardCounts(storageKey: string): {
 		const sections = Array.isArray(parsed?.viewSections) ? parsed.viewSections : [];
 		const sidebar = Array.isArray(parsed?.sidebarCards) ? parsed.sidebarCards : [];
 		viewCards = sections.reduce((total, section) => {
-			if (!section || typeof section !== "object") return total;
+			if (!section || typeof section !== 'object') return total;
 			const cards = (section as Record<string, unknown>).cards;
 			return total + (Array.isArray(cards) ? cards.length : 0);
 		}, 0);

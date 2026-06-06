@@ -6,9 +6,10 @@
 	import type { EntityButtonKind } from '$lib/cards/entity-button-types';
 	import { selectedLanguageStore, translate } from '$lib/i18n';
 	import LazyComponent from '$lib/lazy/LazyComponent.svelte';
+	import { modalBehavior } from '$lib/modal/modal-behavior';
+	import { getCardDraftTitle, getCardTypeIcon } from '$lib/cards/card-meta';
 
-	let camerasStripCardPromise: Promise<typeof import('$lib/cards/CamerasStripCard.svelte')> | null =
-		null;
+	let camerasStripCardPromise: Promise<typeof import('$lib/cards/CamerasStripCard.svelte')> | null = null;
 	const loadCamerasStripCard = () =>
 		(camerasStripCardPromise ??= import('$lib/cards/CamerasStripCard.svelte'));
 
@@ -29,38 +30,29 @@
 		onClose: () => void;
 	};
 
-	let { title, icon = 'layout-grid', cardColumns = 1, cards, getLocalizedCardLabel, onClose }: Props = $props();
+	let {
+		title,
+		icon = 'layout-grid',
+		cardColumns = 1,
+		cards,
+		getLocalizedCardLabel,
+		onClose
+	}: Props = $props();
 
 	function groupKey(cardType: string): GroupKey {
 		if (cardType === 'light_button' || cardType === 'lights_status') return 'lights';
-		if (cardType === 'device_button' || cardType === 'climate_button' || cardType === 'cover_button' || cardType === 'vacuum_button' || cardType === 'devices_status' || cardType === 'openings_status' || cardType === 'availability_status') return 'devices';
+		if (
+			cardType === 'device_button' ||
+			cardType === 'climate_button' ||
+			cardType === 'cover_button' ||
+			cardType === 'vacuum_button' ||
+			cardType === 'devices_status' ||
+			cardType === 'openings_status' ||
+			cardType === 'availability_status'
+		)
+			return 'devices';
 		if (cardType === 'media_players_status' || cardType === 'media_player_button') return 'media';
 		return 'other';
-	}
-
-	function cardIcon(cardType: string): string {
-		if (cardType === 'light_button' || cardType === 'lights_status') return 'bulb';
-		if (cardType === 'device_button') return 'plug';
-		if (cardType === 'climate_button') return 'temperature';
-		if (cardType === 'cover_button') return 'blinds';
-		if (cardType === 'vacuum_button') return 'robot';
-		if (cardType === 'media_player_button') return 'device-speaker';
-		if (cardType === 'devices_status') return 'plug';
-		if (cardType === 'openings_status') return 'door';
-		if (cardType === 'availability_status') return 'wifi';
-		if (cardType === 'media_players_status') return 'device-speaker';
-		if (cardType === 'weather' || cardType === 'weather_forecast') return 'cloud';
-		if (cardType === 'alarm_panel') return 'shield-lock';
-		if (cardType === 'energy') return 'bolt';
-		if (cardType === 'cameras_strip') return 'device-cctv';
-		if (cardType === 'date') return 'calendar';
-		return 'square';
-	}
-
-	function cardTitle(card: CardDraft, index: number): string {
-		const title = card.title?.trim();
-		if (title) return title;
-		return `${getLocalizedCardLabel(card.cardType)} ${index + 1}`;
 	}
 
 	function entityButtonKindForCard(cardType: string): EntityButtonKind | null {
@@ -78,7 +70,12 @@
 		const base: Group[] = [
 			{ key: 'lights', title: translate('Lampen', $selectedLanguageStore), icon: 'bulb', cards: [] },
 			{ key: 'devices', title: translate('Apparaten', $selectedLanguageStore), icon: 'plug', cards: [] },
-			{ key: 'media', title: translate('Media Spelers', $selectedLanguageStore), icon: 'device-speaker', cards: [] },
+			{
+				key: 'media',
+				title: translate('Media Spelers', $selectedLanguageStore),
+				icon: 'device-speaker',
+				cards: []
+			},
 			{ key: 'other', title: translate('Overig', $selectedLanguageStore), icon: 'layout-grid', cards: [] }
 		];
 		const map = new Map(base.map((group) => [group.key, group]));
@@ -89,8 +86,19 @@
 	});
 </script>
 
-<button type="button" class="modal-overlay section-cards-overlay" onclick={onClose} aria-label={translate('close', $selectedLanguageStore)}></button>
-<section class="settings-modal app-popup section-cards-modal np-detail" role="dialog" aria-modal="true" aria-label={title}>
+<button
+	type="button"
+	class="modal-overlay section-cards-overlay"
+	onclick={onClose}
+	aria-label={translate('close', $selectedLanguageStore)}
+></button>
+<div
+	class="settings-modal app-popup section-cards-modal np-detail"
+	role="dialog"
+	aria-modal="true"
+	aria-label={title}
+	use:modalBehavior={{ onClose }}
+>
 	<div class="np-detail-head" style="--np-tint: rgba(96,165,250,0.18); --np-color: #60a5fa;">
 		<div class="np-detail-head-glow" aria-hidden="true"></div>
 		<div class="np-detail-head-icon"><TablerIcon name={icon || 'layout-grid'} size={22} /></div>
@@ -148,9 +156,11 @@
 									/>
 								{:else}
 									<div class="section-card-row">
-										<div class="section-card-icon"><TablerIcon name={cardIcon(card.cardType)} size={17} /></div>
+										<div class="section-card-icon">
+											<TablerIcon name={getCardTypeIcon(card.cardType)} size={17} />
+										</div>
 										<div class="section-card-main">
-											<strong>{cardTitle(card, index)}</strong>
+											<strong>{getCardDraftTitle(card, index, getLocalizedCardLabel)}</strong>
 											<span>{getLocalizedCardLabel(card.cardType)}</span>
 										</div>
 									</div>
@@ -162,7 +172,7 @@
 			{/each}
 		{/if}
 	</div>
-</section>
+</div>
 
 <style>
 	.modal-overlay {
@@ -172,17 +182,17 @@
 		margin: 0;
 		padding: 0;
 		border: 0;
-		background: rgba(0,0,0,0.36);
+		background: rgba(0, 0, 0, 0.36);
 	}
 	.section-cards-modal {
 		--popup-width: var(--np-detail-popup-width, min(850px, calc(100vw - 1.5rem)));
 		--popup-height: var(--np-detail-popup-height, min(1140px, calc(100vh - 1.5rem)));
 		padding: 0 !important;
-		border: 0.5px solid rgba(255,255,255,0.08);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 18px;
 		grid-template-rows: auto minmax(0, 1fr);
 		background:
-			radial-gradient(circle at 20% 0%, rgba(96,165,250,0.16), transparent 36%),
+			radial-gradient(circle at 20% 0%, rgba(96, 165, 250, 0.16), transparent 36%),
 			linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
 		overflow: hidden;
 		box-sizing: border-box;
@@ -194,7 +204,7 @@
 		left: 50%;
 		width: 60%;
 		height: 1px;
-		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
 		transform: translateX(-50%);
 		pointer-events: none;
 		z-index: 5;
@@ -223,7 +233,7 @@
 		place-items: center;
 		align-content: center;
 		gap: 0.65rem;
-		color: rgba(255,255,255,0.58);
+		color: rgba(255, 255, 255, 0.58);
 		font-size: 0.9rem;
 	}
 	.section-card-group {
@@ -234,7 +244,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		color: rgba(255,255,255,0.9);
+		color: rgba(255, 255, 255, 0.9);
 		font-weight: 780;
 		font-size: 0.9rem;
 	}
@@ -244,7 +254,7 @@
 		display: grid;
 		place-items: center;
 		border-radius: 9px;
-		background: rgba(255,255,255,0.06);
+		background: rgba(255, 255, 255, 0.06);
 		color: #93c5fd;
 	}
 	.section-card-list {
@@ -317,10 +327,8 @@
 		min-height: 3.15rem;
 		padding: 0.42rem 0.52rem;
 		border-radius: 11px;
-		background:
-			linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
-			#20293a;
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.055);
+		background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)), #20293a;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
 		min-width: 0;
 	}
 	.section-card-icon {
@@ -330,8 +338,8 @@
 		place-items: center;
 		border-radius: 10px;
 		color: #60a5fa;
-		background: rgba(96,165,250,0.16);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+		background: rgba(96, 165, 250, 0.16);
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 	}
 	.section-card-main {
 		min-width: 0;
@@ -351,7 +359,7 @@
 		font-weight: 750;
 	}
 	.section-card-main span {
-		color: rgba(255,255,255,0.52);
+		color: rgba(255, 255, 255, 0.52);
 		font-size: 0.68rem;
 		font-weight: 650;
 	}

@@ -6,6 +6,7 @@
 		getNovaWebSocketCandidates
 	} from '$lib/ha/entities-service-helpers';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
+	import { fetchWithTimeout } from '$lib/fetch-with-timeout';
 
 	type Props = {
 		entityId: string;
@@ -36,14 +37,15 @@
 	}: Props = $props();
 
 	let videoEl = $state<HTMLVideoElement | null>(null);
-	let mode = $state<'loading' | 'webrtc' | 'hls' | 'mjpeg' | 'snapshot'>('loading');
+	let mode = $state<'loading' | 'webrtc' | 'hls' | 'mjpeg' | 'snapshot' | 'offline'>('loading');
 	let mediaReady = $state(false);
 	let fallbackStreamFailed = $state(false);
 	let hlsInstance: HlsType | null = null;
 	let peerConnection: RTCPeerConnection | null = null;
 	let remoteStream: MediaStream | null = null;
-	let audioEnabled = $state(!muted);
+	let audioEnabled = $state(true);
 	let needsAudioGesture = $state(false);
+	let lastMutedProp = $state<boolean | null>(null);
 	let webRtcUnsubscribe: (() => void) | null = null;
 	let streamTimeout: number | null = null;
 	let bufferingTimer: number | null = null;
@@ -54,7 +56,9 @@
 	);
 
 	function asRecord(value: unknown): Record<string, unknown> {
-		return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+		return value && typeof value === 'object' && !Array.isArray(value)
+			? (value as Record<string, unknown>)
+			: {};
 	}
 
 	function resolveHaUrl(rawUrl: string): string {
@@ -65,16 +69,21 @@
 		let lastError: unknown = null;
 		for (const endpoint of getNovaApiCandidates('/api/ha/ws')) {
 			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					credentials: 'same-origin',
-					cache: 'no-store',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ payload: params, timeoutMs: 15000 })
-				});
+				const response = await fetchWithTimeout(
+					endpoint,
+					{
+						method: 'POST',
+						credentials: 'same-origin',
+						cache: 'no-store',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({ payload: params, timeoutMs: 15000 })
+					},
+					17000
+				);
 				if (!response.ok) throw new Error(`ha_ws_proxy_http_${response.status}`);
 				const payload = asRecord(await response.json());
-				if (payload.ok !== true) throw new Error(typeof payload.error === 'string' ? payload.error : 'ha_ws_proxy_failed');
+				if (payload.ok !== true)
+					throw new Error(typeof payload.error === 'string' ? payload.error : 'ha_ws_proxy_failed');
 				return payload.result;
 			} catch (error) {
 				lastError = error;
@@ -114,7 +123,9 @@
 			const failTimer = window.setTimeout(() => {
 				if (!settled) {
 					closed = true;
-					try { ws.close(); } catch {}
+					try {
+						ws.close();
+					} catch {}
 					reject(new Error('ha_ws_subscribe_timeout'));
 				}
 			}, 12000);
@@ -127,15 +138,19 @@
 					closed = true;
 					try {
 						if (ws.readyState === WebSocket.OPEN && subscribed) {
-							ws.send(JSON.stringify({
-								id: nextId++,
-								type: 'unsubscribe_events',
-								subscription: commandId
-							}));
+							ws.send(
+								JSON.stringify({
+									id: nextId++,
+									type: 'unsubscribe_events',
+									subscription: commandId
+								})
+							);
 						}
 					} catch {}
 					window.setTimeout(() => {
-						try { ws.close(); } catch {}
+						try {
+							ws.close();
+						} catch {}
 					}, 60);
 				});
 			};
@@ -144,7 +159,9 @@
 				settled = true;
 				closed = true;
 				window.clearTimeout(failTimer);
-				try { ws.close(); } catch {}
+				try {
+					ws.close();
+				} catch {}
 				reject(error);
 			};
 			ws.addEventListener('message', (event) => {
@@ -202,24 +219,50 @@
 		}
 	}
 
+	function closePeerConnection(connection: RTCPeerConnection | null) {
+		if (!connection) return;
+		connection.onicecandidate = null;
+		connection.oniceconnectionstatechange = null;
+		connection.ontrack = null;
+		try {
+			connection.close();
+		} catch {}
+	}
+
+	function stopMediaStream(stream: MediaStream | null) {
+		if (!stream) return;
+		for (const track of stream.getTracks()) track.stop();
+	}
+
+	function discardWebRtcAttempt(
+		connection: RTCPeerConnection,
+		stream: MediaStream,
+		unsubscribe?: (() => void) | null
+	) {
+		try {
+			unsubscribe?.();
+		} catch {}
+		if (peerConnection === connection) peerConnection = null;
+		if (remoteStream === stream) remoteStream = null;
+		if (videoEl?.srcObject === stream) videoEl.srcObject = null;
+		stopMediaStream(stream);
+		closePeerConnection(connection);
+	}
+
 	function cleanupPlayback() {
 		cleanedToken += 1;
 		clearStreamTimeout();
 		clearBufferingTimer();
 		webRtcUnsubscribe?.();
 		webRtcUnsubscribe = null;
-		peerConnection?.close();
+		closePeerConnection(peerConnection);
 		peerConnection = null;
-		if (remoteStream) {
-			for (const track of remoteStream.getTracks()) track.stop();
-			remoteStream = null;
-		}
+		stopMediaStream(remoteStream);
+		remoteStream = null;
 		hlsInstance?.destroy();
 		hlsInstance = null;
 		const stream = videoEl?.srcObject;
-		if (stream instanceof MediaStream) {
-			for (const track of stream.getTracks()) track.stop();
-		}
+		if (stream instanceof MediaStream) stopMediaStream(stream);
 		if (videoEl) {
 			videoEl.removeAttribute('src');
 			videoEl.srcObject = null;
@@ -239,8 +282,11 @@
 	}
 
 	$effect(() => {
-		audioEnabled = !muted;
-		needsAudioGesture = false;
+		if (lastMutedProp !== muted) {
+			audioEnabled = !muted;
+			needsAudioGesture = false;
+			lastMutedProp = muted;
+		}
 		if (videoEl) videoEl.muted = !audioEnabled;
 	});
 
@@ -308,13 +354,18 @@
 	}
 
 	async function getPlayableHlsUrl(masterUrl: string): Promise<string> {
-		const response = await fetch(masterUrl, {
-			cache: 'no-store',
-			credentials: 'same-origin'
-		});
+		const response = await fetchWithTimeout(
+			masterUrl,
+			{
+				cache: 'no-store',
+				credentials: 'same-origin'
+			},
+			12000
+		);
 		if (!response.ok) throw new Error(`hls_manifest_${response.status}`);
 		const masterPlaylist = await response.text();
-		const playlistRegexp = /#EXT-X-STREAM-INF:.*?(?:CODECS=".*?([^.]*)?\..*?,([^.]*)?\..*?".*?)?(?:\n|\r\n)(.+)/g;
+		const playlistRegexp =
+			/#EXT-X-STREAM-INF:.*?(?:CODECS=".*?([^.]*)?\..*?,([^.]*)?\..*?".*?)?(?:\n|\r\n)(.+)/g;
 		const match = playlistRegexp.exec(masterPlaylist);
 		const secondMatch = playlistRegexp.exec(masterPlaylist);
 		if (match !== null && secondMatch === null && match[3]) {
@@ -349,25 +400,33 @@
 		mode = 'webrtc';
 		mediaReady = false;
 		onWebRtcState?.('starting');
+		let pc: RTCPeerConnection | null = null;
+		let stream: MediaStream | null = null;
+		let unsubscribe: (() => void) | null = null;
 		try {
-			const clientConfig = asRecord(await callHaWs({
-				type: 'camera/webrtc/get_client_config',
-				entity_id: entity
-			}));
+			const clientConfig = asRecord(
+				await callHaWs({
+					type: 'camera/webrtc/get_client_config',
+					entity_id: entity
+				})
+			);
 			if (token !== cleanedToken || !videoEl) return false;
 			const configuration = asRecord(clientConfig.configuration) as RTCConfiguration;
 			const dataChannel = typeof clientConfig.dataChannel === 'string' ? clientConfig.dataChannel : '';
-			const pc = new RTCPeerConnection(configuration);
-			const stream = new MediaStream();
+			pc = new RTCPeerConnection(configuration);
+			stream = new MediaStream();
+			const currentPeer = pc;
+			const currentStream = stream;
 			let sessionId = '';
 			let answered = false;
 			const pendingCandidates: RTCIceCandidate[] = [];
-			peerConnection = pc;
-			remoteStream = stream;
-			videoEl.srcObject = stream;
+			peerConnection = currentPeer;
+			remoteStream = currentStream;
+			videoEl.srcObject = currentStream;
 			applyAudioPreference();
 
 			const sendCandidate = (candidate: RTCIceCandidate) => {
+				if (token !== cleanedToken || peerConnection !== currentPeer) return;
 				if (!sessionId) {
 					pendingCandidates.push(candidate);
 					return;
@@ -380,33 +439,43 @@
 				}).catch((error) => console.warn('[NovaPanel] WebRTC candidate fallback:', entity, error));
 			};
 
-			pc.onicecandidate = (event) => {
+			currentPeer.onicecandidate = (event) => {
 				if (event.candidate?.candidate) sendCandidate(event.candidate);
 			};
-			pc.oniceconnectionstatechange = () => {
-				if (token !== cleanedToken) return;
-				if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+			currentPeer.oniceconnectionstatechange = () => {
+				if (token !== cleanedToken || peerConnection !== currentPeer) return;
+				if (
+					currentPeer.iceConnectionState === 'connected' ||
+					currentPeer.iceConnectionState === 'completed'
+				) {
 					onWebRtcState?.('playing');
 				}
-				if (pc.iceConnectionState === 'failed') {
+				if (currentPeer.iceConnectionState === 'failed') {
 					void fallbackToHlsOrImage(entity, token);
 				}
 			};
-			pc.ontrack = (event) => {
-				if (token !== cleanedToken) return;
-				stream.addTrack(event.track);
+			currentPeer.ontrack = (event) => {
+				if (token !== cleanedToken || peerConnection !== currentPeer) return;
+				currentStream.addTrack(event.track);
 				if (event.track.kind === 'video') {
 					markMediaReady();
 					playVideo();
 				}
 			};
-			if (dataChannel) pc.createDataChannel(dataChannel);
-			pc.addTransceiver('audio', { direction: 'recvonly' });
-			pc.addTransceiver('video', { direction: 'recvonly' });
+			if (dataChannel) currentPeer.createDataChannel(dataChannel);
+			currentPeer.addTransceiver('audio', { direction: 'recvonly' });
+			currentPeer.addTransceiver('video', { direction: 'recvonly' });
 
-			const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-			if (token !== cleanedToken || !peerConnection) return false;
-			await pc.setLocalDescription(offer);
+			const offer = await currentPeer.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+			if (token !== cleanedToken || peerConnection !== currentPeer || !videoEl) {
+				discardWebRtcAttempt(currentPeer, currentStream);
+				return false;
+			}
+			await currentPeer.setLocalDescription(offer);
+			if (token !== cleanedToken || peerConnection !== currentPeer || !videoEl) {
+				discardWebRtcAttempt(currentPeer, currentStream);
+				return false;
+			}
 			let earlyCandidates = '';
 			while (pendingCandidates.length) {
 				const candidate = pendingCandidates.shift();
@@ -414,10 +483,10 @@
 			}
 			const offerSdp = `${offer.sdp ?? ''}${earlyCandidates}`;
 
-			webRtcUnsubscribe = await subscribeHaWs(
+			unsubscribe = await subscribeHaWs(
 				{ type: 'camera/webrtc/offer', entity_id: entity, offer: offerSdp },
 				(event) => {
-					if (token !== cleanedToken || !peerConnection) return;
+					if (token !== cleanedToken || peerConnection !== currentPeer) return;
 					const eventType = typeof event.type === 'string' ? event.type : '';
 					if (eventType === 'session') {
 						sessionId = typeof event.session_id === 'string' ? event.session_id : '';
@@ -428,21 +497,26 @@
 						const answer = typeof event.answer === 'string' ? event.answer : '';
 						if (!answer || answered) return;
 						answered = true;
-						void peerConnection.setRemoteDescription(new RTCSessionDescription({
-							type: 'answer',
-							sdp: answer
-						})).then(() => {
-							if (token === cleanedToken) playVideo();
-						}).catch((error) => {
-							console.warn('[NovaPanel] WebRTC answer fallback:', entity, error);
-							void fallbackToHlsOrImage(entity, token);
-						});
+						void currentPeer
+							.setRemoteDescription(
+								new RTCSessionDescription({
+									type: 'answer',
+									sdp: answer
+								})
+							)
+							.then(() => {
+								if (token === cleanedToken && peerConnection === currentPeer) playVideo();
+							})
+							.catch((error) => {
+								console.warn('[NovaPanel] WebRTC answer fallback:', entity, error);
+								void fallbackToHlsOrImage(entity, token);
+							});
 						return;
 					}
 					if (eventType === 'candidate') {
 						const candidate = asRecord(event.candidate);
 						if (candidate.candidate) {
-							peerConnection.addIceCandidate(createIceCandidate(candidate)).catch((error) => {
+							currentPeer.addIceCandidate(createIceCandidate(candidate)).catch((error) => {
 								console.warn('[NovaPanel] WebRTC remote candidate fallback:', entity, error);
 							});
 						}
@@ -454,11 +528,23 @@
 					}
 				}
 			);
-			if (token !== cleanedToken) return false;
+			if (token !== cleanedToken || peerConnection !== currentPeer || !videoEl) {
+				discardWebRtcAttempt(currentPeer, currentStream, unsubscribe);
+				unsubscribe = null;
+				return false;
+			}
+			webRtcUnsubscribe = unsubscribe;
+			unsubscribe = null;
 			setLoadWatch(token, () => void fallbackToHlsOrImage(entity, token), 18000);
 			playVideo();
 			return true;
 		} catch (error) {
+			if (pc && stream) discardWebRtcAttempt(pc, stream, unsubscribe);
+			else {
+				try {
+					unsubscribe?.();
+				} catch {}
+			}
 			console.warn('[NovaPanel] WebRTC camera fallback:', entity, error);
 			return false;
 		}
@@ -539,7 +625,7 @@
 			if (token !== cleanedToken || hlsStarted) return;
 		}
 		if (token !== cleanedToken) return;
-		mode = fallbackStreamSrc ? 'mjpeg' : 'snapshot';
+		mode = fallbackStreamSrc ? 'mjpeg' : fallbackSrc ? 'snapshot' : 'offline';
 	}
 
 	$effect(() => {
@@ -584,16 +670,25 @@
 		<img
 			class="ha-camera-fallback"
 			src={imageSrc}
-			alt={alt}
+			{alt}
 			loading="lazy"
 			onload={handleImageLoad}
 			onerror={() => {
 				if (imageSrc === fallbackStreamSrc) {
 					fallbackStreamFailed = true;
-					mode = fallbackSrc ? 'snapshot' : 'loading';
+					mode = fallbackSrc ? 'snapshot' : 'offline';
+				} else {
+					mode = 'offline';
 				}
 			}}
 		/>
+	{/if}
+
+	{#if active && mode === 'offline'}
+		<div class="camera-offline" role="status">
+			<TablerIcon name="video-off" size={18} />
+			<span>Camera offline</span>
+		</div>
 	{/if}
 
 	{#if audioToggle && needsAudioGesture && active && mode !== 'mjpeg' && mode !== 'snapshot'}
@@ -647,8 +742,10 @@
 		border: 0;
 		border-radius: 999px;
 		color: #f8fafc;
-		background: rgba(15,23,42,0.78);
-		box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 10px 30px rgba(0,0,0,0.28);
+		background: rgba(15, 23, 42, 0.78);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+			0 10px 30px rgba(0, 0, 0, 0.28);
 		backdrop-filter: blur(14px);
 		font: inherit;
 		font-size: 0.78rem;
@@ -656,6 +753,22 @@
 		cursor: pointer;
 	}
 	.camera-audio-btn:hover {
-		background: rgba(30,41,59,0.86);
+		background: rgba(30, 41, 59, 0.86);
+	}
+	.camera-offline {
+		position: absolute;
+		inset: 0;
+		z-index: 3;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.48rem;
+		padding: 1rem;
+		color: rgba(248, 250, 252, 0.82);
+		background: linear-gradient(135deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.52)), #050812;
+		font-size: 0.86rem;
+		font-weight: 800;
+		letter-spacing: 0.01em;
+		text-align: center;
 	}
 </style>

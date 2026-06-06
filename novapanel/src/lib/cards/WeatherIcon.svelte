@@ -24,13 +24,7 @@
 	const kind = $derived(toKind(condition, night));
 </script>
 
-<svg
-	width={size}
-	height={size}
-	viewBox="0 0 64 64"
-	xmlns="http://www.w3.org/2000/svg"
-	aria-hidden="true"
->
+<svg width={size} height={size} viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 	{#if kind === 'sunny'}
 		<circle cx="32" cy="32" r="12" fill="#ffd35a" />
 		{#each Array.from({ length: 8 }, (_, i) => i) as i (i)}
@@ -53,23 +47,11 @@
 		/>
 	{:else if kind === 'partly'}
 		<circle cx="24" cy="26" r="9" fill="#ffd35a" />
-		<path
-			d="M22 44h24a10 10 0 0 0 0-20 13 13 0 0 0-25 4A8 8 0 0 0 22 44z"
-			fill="#2e384d"
-			opacity="0.85"
-		/>
+		<path d="M22 44h24a10 10 0 0 0 0-20 13 13 0 0 0-25 4A8 8 0 0 0 22 44z" fill="#2e384d" opacity="0.85" />
 	{:else if kind === 'cloudy'}
-		<path
-			d="M18 46h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 46z"
-			fill="#2e384d"
-			opacity="0.9"
-		/>
+		<path d="M18 46h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 46z" fill="#2e384d" opacity="0.9" />
 	{:else if kind === 'rain'}
-		<path
-			d="M18 40h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 40z"
-			fill="#2e384d"
-			opacity="0.9"
-		/>
+		<path d="M18 40h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 40z" fill="#2e384d" opacity="0.9" />
 		{#each [0, 1, 2] as i (i)}
 			<path
 				d={`M${24 + i * 10} 44c0 4-3 6-3 9 0 2 2 4 4 4 3 0 5-2 5-5 0-3-2-5-6-8z`}
@@ -78,30 +60,26 @@
 			/>
 		{/each}
 	{:else if kind === 'snow'}
-		<path
-			d="M18 40h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 40z"
-			fill="#2e384d"
-			opacity="0.9"
-		/>
+		<path d="M18 40h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 40z" fill="#2e384d" opacity="0.9" />
 		{#each [0, 1, 2] as i (i)}
 			<circle cx={26 + i * 10} cy="48" r="2.6" fill="#eaf2ff" />
 			<circle cx={23 + i * 10} cy="54" r="2.2" fill="#eaf2ff" opacity="0.9" />
 		{/each}
 	{:else if kind === 'lightning'}
-		<path
-			d="M18 40h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 40z"
-			fill="#2e384d"
-			opacity="0.9"
-		/>
+		<path d="M18 40h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 40z" fill="#2e384d" opacity="0.9" />
 		<path d="M34 42l-6 10h5l-3 10 12-16h-6l4-4z" fill="#ffd35a" />
 	{:else if kind === 'fog'}
-		<path
-			d="M18 38h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 38z"
-			fill="#2e384d"
-			opacity="0.85"
-		/>
+		<path d="M18 38h30a11 11 0 0 0 0-22 14 14 0 0 0-27 4A9 9 0 0 0 18 38z" fill="#2e384d" opacity="0.85" />
 		{#each [44, 50, 56] as y (y)}
-			<line x1="16" y1={y} x2="48" y2={y} stroke="rgba(245,245,245,0.55)" stroke-width="3" stroke-linecap="round" />
+			<line
+				x1="16"
+				y1={y}
+				x2="48"
+				y2={y}
+				stroke="rgba(245,245,245,0.55)"
+				stroke-width="3"
+				stroke-linecap="round"
+			/>
 		{/each}
 	{:else if kind === 'wind'}
 		{#each [28, 38, 48] as y (y)}

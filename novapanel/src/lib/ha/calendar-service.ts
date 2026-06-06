@@ -1,4 +1,5 @@
 import { getNovaApiCandidates } from '$lib/ha/entities-service-helpers';
+import { fetchWithTimeout } from '$lib/fetch-with-timeout';
 
 export type CalendarEvent = {
 	uid?: string;
@@ -28,11 +29,15 @@ async function fetchCalendarEvents(entityId: string, start: Date, end: Date): Pr
 	let lastError: unknown = null;
 	for (const endpoint of getNovaApiCandidates(path)) {
 		try {
-			const response = await fetch(endpoint, {
-				credentials: 'same-origin',
-				cache: 'no-store',
-				headers: { accept: 'application/json' }
-			});
+			const response = await fetchWithTimeout(
+				endpoint,
+				{
+					credentials: 'same-origin',
+					cache: 'no-store',
+					headers: { accept: 'application/json' }
+				},
+				16000
+			);
 			if (!response.ok) throw new Error(`ha_calendar_events_http_${response.status}`);
 			return await response.json();
 		} catch (error) {
@@ -42,10 +47,6 @@ async function fetchCalendarEvents(entityId: string, start: Date, end: Date): Pr
 	throw lastError ?? new Error('ha_calendar_events_unavailable');
 }
 
-export async function listCalendarEvents(
-	entityId: string,
-	start: Date,
-	end: Date
-): Promise<CalendarEvent[]> {
+export async function listCalendarEvents(entityId: string, start: Date, end: Date): Promise<CalendarEvent[]> {
 	return unwrapEvents(await fetchCalendarEvents(entityId, start, end));
 }

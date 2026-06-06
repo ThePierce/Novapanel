@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { entityStore } from '$lib/ha/entities-store';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
-	import { selectedLanguageStore, translate } from '$lib/i18n';
+	import { selectedLanguageStore, translate, type LanguageCode } from '$lib/i18n';
 
 	type Props = {
 		entityId?: string;
@@ -10,45 +10,52 @@
 
 	let { entityId, icon }: Props = $props();
 
-	const alarmEntity = $derived(
-		$entityStore.entities.find((entity) => entity.entityId === (entityId ?? ''))
-	);
+	function alarmIconForState(state: string, unavailable: boolean): string {
+		if (unavailable) return 'mdi:shield-alert-outline';
+		if (state === 'armed_home') return 'mdi:shield-home-outline';
+		if (state === 'armed_away') return 'mdi:shield-lock-outline';
+		if (state === 'armed_night') return 'mdi:shield-moon-outline';
+		if (state === 'pending' || state.includes('pending') || state.includes('arming')) {
+			return 'mdi:shield-half-full';
+		}
+		if (state === 'disarmed' || state.includes('disarmed')) return 'mdi:shield-off-outline';
+		if (state === 'triggered' || state.includes('triggered')) return 'mdi:shield-alert-outline';
+		return 'mdi:shield-lock-outline';
+	}
+
+	function alarmLabelForState(
+		state: string,
+		hasEntityId: boolean,
+		foundEntity: boolean,
+		language: LanguageCode
+	): string {
+		if (!hasEntityId) return translate('Geen entiteit gekoppeld', language);
+		if (!foundEntity || state === '' || state === 'unknown') return translate('Onbekend', language);
+		if (state === 'unavailable') return translate('Niet beschikbaar', language);
+		if (state.includes('disarmed')) return translate('Uitgeschakeld', language);
+		if (state.includes('arming')) return translate('Wordt ingeschakeld…', language);
+		if (state.includes('pending')) return translate('In afwachting', language);
+		if (state.includes('triggered')) return translate('ALARM!', language);
+		return translate('Ingeschakeld', language);
+	}
+
+	function alarmToneForState(state: string, unavailable: boolean): string {
+		if (unavailable) return 'unavailable';
+		if (state.includes('disarmed')) return 'safe';
+		if (state.includes('arming') || state.includes('pending')) return 'pending';
+		if (state.includes('triggered')) return 'triggered';
+		return 'armed';
+	}
+
+	const alarmEntity = $derived($entityStore.entities.find((entity) => entity.entityId === (entityId ?? '')));
 	const state = $derived((alarmEntity?.state ?? '').toLowerCase());
-	const defaultIcon = $derived(
-		state === 'armed_home'
-			? 'mdi:shield-home-outline'
-			: state === 'armed_away'
-				? 'mdi:shield-lock-outline'
-				: state === 'armed_night'
-					? 'mdi:shield-moon-outline'
-					: state === 'pending' || state.includes('pending') || state.includes('arming')
-						? 'mdi:shield-half-full'
-						: state === 'disarmed' || state.includes('disarmed')
-							? 'mdi:shield-off-outline'
-							: state === 'triggered' || state.includes('triggered')
-								? 'mdi:shield-alert-outline'
-								: 'mdi:shield-lock-outline'
-	);
+	const isMissing = $derived(!entityId || !alarmEntity);
+	const isUnavailable = $derived(isMissing || state === '' || state === 'unknown' || state === 'unavailable');
+	const defaultIcon = $derived(icon?.trim() || alarmIconForState(state, isUnavailable));
 	const label = $derived(
-		state.includes('disarmed')
-			? translate('Uitgeschakeld', $selectedLanguageStore)
-			: state.includes('arming')
-				? translate('Wordt ingeschakeld…', $selectedLanguageStore)
-				: state.includes('pending')
-					? translate('In afwachting', $selectedLanguageStore)
-					: state.includes('triggered')
-						? 'ALARM!'
-						: translate('Ingeschakeld', $selectedLanguageStore)
+		alarmLabelForState(state, Boolean(entityId), Boolean(alarmEntity), $selectedLanguageStore)
 	);
-	const tone = $derived(
-		state.includes('disarmed')
-			? 'safe'
-			: state.includes('arming') || state.includes('pending')
-				? 'pending'
-				: state.includes('triggered')
-					? 'triggered'
-					: 'armed'
-	);
+	const tone = $derived(alarmToneForState(state, isUnavailable));
 </script>
 
 <div class={`alarm-card tone-${tone}`}>
@@ -57,7 +64,9 @@
 		<StatusIcon icon={defaultIcon} size={26} />
 	</div>
 	<div class="alarm-body">
-		<div class="alarm-name">{alarmEntity?.friendlyName ?? translate('cardTypeAlarmPanel', $selectedLanguageStore)}</div>
+		<div class="alarm-name">
+			{alarmEntity?.friendlyName ?? translate('cardTypeAlarmPanel', $selectedLanguageStore)}
+		</div>
 		<div class="alarm-state">{label}</div>
 	</div>
 </div>
@@ -84,20 +93,86 @@
 		border: 2px solid currentColor;
 		opacity: 0.25;
 	}
-	.tone-safe .alarm-icon-wrap, .tone-safe .alarm-ring { color: #4ade80; }
-	.tone-safe .alarm-icon-wrap :global(.mdi-mask) { --mask-color: #4ade80; }
-	.tone-armed .alarm-icon-wrap, .tone-armed .alarm-ring { color: #e15241; }
-	.tone-armed .alarm-icon-wrap :global(.mdi-mask) { --mask-color: #e15241; }
-	.tone-pending .alarm-icon-wrap, .tone-pending .alarm-ring { color: #f5a623; animation: pulse 1.2s ease-in-out infinite; }
-	.tone-pending .alarm-icon-wrap :global(.mdi-mask) { --mask-color: #f5a623; }
-	.tone-triggered .alarm-icon-wrap, .tone-triggered .alarm-ring { color: #ff4444; animation: pulse 0.5s ease-in-out infinite; }
-	.tone-triggered .alarm-icon-wrap :global(.mdi-mask) { --mask-color: #ff4444; }
-	@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-	.alarm-body { min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
-	.alarm-name { font-size: 0.88rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #f5f5f5; opacity: 0.9; }
-	.alarm-state { font-size: 0.78rem; font-weight: 600; white-space: nowrap; letter-spacing: 0.02em; }
-	.tone-safe .alarm-state { color: #4ade80; }
-	.tone-armed .alarm-state { color: #e15241; }
-	.tone-pending .alarm-state { color: #f5a623; }
-	.tone-triggered .alarm-state { color: #ff4444; }
+	.tone-safe .alarm-icon-wrap,
+	.tone-safe .alarm-ring {
+		color: #4ade80;
+	}
+	.tone-safe .alarm-icon-wrap :global(.mdi-mask) {
+		--mask-color: #4ade80;
+	}
+	.tone-armed .alarm-icon-wrap,
+	.tone-armed .alarm-ring {
+		color: #e15241;
+	}
+	.tone-armed .alarm-icon-wrap :global(.mdi-mask) {
+		--mask-color: #e15241;
+	}
+	.tone-unavailable .alarm-icon-wrap,
+	.tone-unavailable .alarm-ring {
+		color: #94a3b8;
+	}
+	.tone-unavailable .alarm-icon-wrap :global(.mdi-mask) {
+		--mask-color: #94a3b8;
+	}
+	.tone-pending .alarm-icon-wrap,
+	.tone-pending .alarm-ring {
+		color: #f5a623;
+		animation: pulse 1.2s ease-in-out infinite;
+	}
+	.tone-pending .alarm-icon-wrap :global(.mdi-mask) {
+		--mask-color: #f5a623;
+	}
+	.tone-triggered .alarm-icon-wrap,
+	.tone-triggered .alarm-ring {
+		color: #ff4444;
+		animation: pulse 0.5s ease-in-out infinite;
+	}
+	.tone-triggered .alarm-icon-wrap :global(.mdi-mask) {
+		--mask-color: #ff4444;
+	}
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.3;
+		}
+	}
+	.alarm-body {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+	.alarm-name {
+		font-size: 0.88rem;
+		font-weight: 500;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: #f5f5f5;
+		opacity: 0.9;
+	}
+	.alarm-state {
+		font-size: 0.78rem;
+		font-weight: 600;
+		white-space: nowrap;
+		letter-spacing: 0.02em;
+	}
+	.tone-safe .alarm-state {
+		color: #4ade80;
+	}
+	.tone-armed .alarm-state {
+		color: #e15241;
+	}
+	.tone-unavailable .alarm-state {
+		color: #94a3b8;
+	}
+	.tone-pending .alarm-state {
+		color: #f5a623;
+	}
+	.tone-triggered .alarm-state {
+		color: #ff4444;
+	}
 </style>
