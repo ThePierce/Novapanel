@@ -7,7 +7,7 @@ Nova Panel is a Home Assistant kiosk dashboard built with Svelte 5 and SvelteKit
 - [Install As A Home Assistant Add-on](#install-as-a-home-assistant-add-on)
 - [Add-on Configuration](#add-on-configuration)
 - [Optional Integrations](#optional-integrations)
-- [1.0.5 Update Summary](#105-update-summary)
+- [Releases](#releases)
 - [Dashboard Model](#dashboard-model)
 - [Using Edit Mode](#using-edit-mode)
 - [Card Reference](#card-reference)
@@ -54,15 +54,12 @@ The token is required for entity data, service calls, cameras, calendars, media 
 - Advanced Camera Card if you enable the Advanced Camera Card option for camera tiles.
 - Spotify developer credentials if you want Spotify controls in the media hub.
 
-## 1.0.5 Update Summary
+## Releases
 
-- Bumped Nova Panel release management to `1.0.5` across the add-on config, npm package metadata, documentation, and Git tag.
-- Fixed entity selection and name propagation across sidebar and main-area cards, including locks, light groups, device classes, aliases, and custom names.
-- Improved card sizing and layouts for content-height cards, doors and windows, room popups, alarm controls, media players, and per-device energy usage.
-- Fixed media player off controls, whole-card dragging, camera title/audio behavior, and the clock second hand.
-- Improved energy cost handling, tariff options, usage charts, and anchor point alignment between editor and popup views.
-- Added theme support, a brighter Apple Home-inspired daylight theme, test entities for development, icon presets with manual icon entry, and more modern status icons.
-- Expanded robot vacuum detail views with better map/image detection.
+- [All GitHub releases](https://github.com/ThePierce/Novapanel/releases)
+- [Latest release](https://github.com/ThePierce/Novapanel/releases/latest)
+- [Release v1.1.0](https://github.com/ThePierce/Novapanel/releases/tag/v1.1.0)
+- [Full changelog](novapanel/CHANGELOG.md)
 
 ## Dashboard Model
 
