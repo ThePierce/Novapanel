@@ -8,6 +8,7 @@ Nova Panel is a Home Assistant kiosk dashboard built with Svelte 5 and SvelteKit
 - [Add-on Configuration](#add-on-configuration)
 - [Optional Integrations](#optional-integrations)
 - [Releases](#releases)
+- [Updating In Home Assistant](#updating-in-home-assistant)
 - [Dashboard Model](#dashboard-model)
 - [Using Edit Mode](#using-edit-mode)
 - [Card Reference](#card-reference)
@@ -58,8 +59,25 @@ The token is required for entity data, service calls, cameras, calendars, media 
 
 - [All GitHub releases](https://github.com/ThePierce/Novapanel/releases)
 - [Latest release](https://github.com/ThePierce/Novapanel/releases/latest)
-- [Release v1.1.0](https://github.com/ThePierce/Novapanel/releases/tag/v1.1.0)
+- [Release v1.1.4](https://github.com/ThePierce/Novapanel/releases/tag/v1.1.4)
 - [Full changelog](novapanel/CHANGELOG.md)
+
+## Updating In Home Assistant
+
+Home Assistant Supervisor caches add-on repository metadata. If Home Assistant reports that an update exists but the add-on page still shows an older latest version, reload the add-on store instead of restarting Home Assistant:
+
+1. Go to **Settings → Add-ons → Add-on Store**.
+2. Open the three-dot menu.
+3. Select **Reload**.
+4. Open the Nova Panel add-on again and install the update.
+
+From the Home Assistant SSH/terminal CLI, the equivalent lightweight refresh is:
+
+```sh
+ha supervisor reload
+```
+
+If the repository still appears stale after a reload, remove and re-add the repository URL in the add-on store. This does not uninstall the Nova Panel add-on or delete its configuration.
 
 ## Dashboard Model
 
