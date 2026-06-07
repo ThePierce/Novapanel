@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4
+
+- Bumped the add-on, npm package, Git tag, GitHub Release, and documentation release links to `1.1.4`.
+- Hardened Spotify playback routing with a server-side fallback for stale or unusual ingress base paths ending in `/api/spotify/play`.
+- Improved Spotify/Onkyo playback diagnostics by returning Spotify upstream details to the UI and stopping early when an Onkyo bridge is not visible as a Spotify Connect device.
+
 ## 1.1.3
 
 - Bumped the add-on, npm package, Git tag, GitHub Release, and documentation release links to `1.1.3`.

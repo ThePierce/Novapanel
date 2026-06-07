@@ -640,7 +640,7 @@
 			const outer = JSON.parse(raw);
 			if (outer?.details) {
 				try {
-					const inner = JSON.parse(outer.details);
+					const inner = typeof outer.details === 'string' ? JSON.parse(outer.details) : outer.details;
 					reason = inner?.error?.reason ?? '';
 					status = Number(inner?.error?.status ?? 0);
 					message = inner?.error?.message ?? '';
@@ -652,6 +652,9 @@
 				status = Number(outer.error.status ?? 0);
 				message = outer.error.message ?? '';
 			}
+			reason ||= typeof outer?.reason === 'string' ? outer.reason : '';
+			status ||= Number(outer?.status ?? 0);
+			message ||= typeof outer?.message === 'string' ? outer.message : '';
 		} catch {
 			// raw is geen JSON
 		}
@@ -690,7 +693,7 @@
 		if (status === 429) {
 			return _t('Te veel verzoeken naar Spotify. Wacht een paar tellen en probeer opnieuw.');
 		}
-		if (status === 404 && /No active device/i.test(message)) {
+		if (status === 404 && /No active device|Device not found/i.test(message)) {
 			return _t('Geen actief Spotify-apparaat. Kies eerst een apparaat in de lijst hierboven.');
 		}
 
@@ -910,10 +913,16 @@
 					const activated = await activateBridge(bridge);
 					if (activated) onkyoDevice = { id: activated.id, name: 'Onkyo', type: '', isActive: true };
 				}
+				if (!onkyoDevice?.id) {
+					spotifyError = _t(
+						'Onkyo niet zichtbaar in Spotify Connect — speel eerst iets af om de bridge te activeren.'
+					);
+					return;
+				}
 				await spJson('/api/spotify/control', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ action, deviceId: onkyoDevice?.id || undefined, ...extra })
+					body: JSON.stringify({ action, deviceId: onkyoDevice.id, ...extra })
 				});
 				void loadSpotifyPlayerState();
 			} catch (e) {
@@ -1117,10 +1126,16 @@
 					return;
 				}
 				const onkyo = await activateBridge(bridge);
+				if (!onkyo?.id) {
+					spotifyError = _t(
+						'Onkyo niet zichtbaar in Spotify Connect — speel eerst iets af om de bridge te activeren.'
+					);
+					return;
+				}
 				await spJson('/api/spotify/play', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({ uri, deviceId: onkyo?.id || undefined })
+					body: JSON.stringify({ uri, deviceId: onkyo.id })
 				});
 				setActivePlayer(bridge.zoneEntityId);
 				setTimeout(() => void loadSpotifyPlayerState(), 1000);

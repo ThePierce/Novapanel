@@ -441,6 +441,8 @@ function spotifyPaths(pathname) {
 	];
 }
 
+const SPOTIFY_PLAY_FALLBACK_PATH = /\/api\/spotify\/play\/?$/;
+
 function normalizeSpotifyRedirectUri(raw) {
 	const value = asTrimmedString(raw);
 	if (!value) return '';
@@ -629,7 +631,30 @@ async function spotifyApi(accessToken, endpoint, init = {}) {
 async function sendSpotifyUpstreamError(res, response, errorCode) {
 	const errorText = await response.text().catch(() => '');
 	if (errorText) log(`${errorCode}: upstream ${response.status}: ${errorText.slice(0, 500)}`);
-	res.status(response.status).json({ error: errorCode });
+	let details = null;
+	if (errorText) {
+		try {
+			details = JSON.parse(errorText);
+		} catch {
+			details = errorText;
+		}
+	}
+	const spotifyError =
+		details && typeof details === 'object' && !Array.isArray(details) ? details.error : null;
+	const reason = spotifyError && typeof spotifyError === 'object' ? asTrimmedString(spotifyError.reason) : '';
+	const message =
+		spotifyError && typeof spotifyError === 'object'
+			? asTrimmedString(spotifyError.message)
+			: typeof details === 'string'
+				? details
+				: '';
+	res.status(response.status).json({
+		error: errorCode,
+		status: response.status,
+		reason,
+		message,
+		details
+	});
 }
 
 const handleHaConnection = async (req, res) => {
@@ -1622,6 +1647,8 @@ async function handleSpotifyPlay(req, res) {
 
 app.post(spotifyPaths('/play'), handleSpotifyPlay);
 app.get(spotifyPaths('/play'), handleSpotifyPlay);
+app.post(SPOTIFY_PLAY_FALLBACK_PATH, handleSpotifyPlay);
+app.get(SPOTIFY_PLAY_FALLBACK_PATH, handleSpotifyPlay);
 
 // ====================================================================
 // Extra Spotify endpoints: control, queue, devices, player-state
