@@ -417,12 +417,7 @@
 
 	async function togglePower(entity: HomeAssistantEntity) {
 		if (isOn(entity) && isGoogleCastPlayer(entity)) {
-			const turnedOff = await callService('media_player', 'turn_off', entity.entityId);
-			if (turnedOff === false) {
-				await callService('media_player', 'media_stop', entity.entityId);
-			} else {
-				await callService('media_player', 'media_stop', entity.entityId, {}, { silent: true });
-			}
+			await callService('media_player', 'media_stop', entity.entityId);
 			return;
 		}
 		await callService('media_player', isOn(entity) ? 'turn_off' : 'turn_on', entity.entityId);
@@ -1586,15 +1581,17 @@
 								<StatusIcon icon={maRepeatMode === 'one' ? 'mdi:repeat-once' : 'mdi:repeat'} size={16} />
 							</button>
 						{/if}
-						<button
-							type="button"
-							class={`now-btn ${on ? 'now-btn-on' : ''}`}
-							disabled={actionBusyEntityId === activeEntity.entityId}
-							onclick={() => void togglePower(activeEntity)}
-							aria-label="Aan/uit"
-						>
-							<StatusIcon icon="mdi:power" size={22} />
-						</button>
+						{#if !(on && isGoogleCastPlayer(activeEntity))}
+							<button
+								type="button"
+								class={`now-btn ${on ? 'now-btn-on' : ''}`}
+								disabled={actionBusyEntityId === activeEntity.entityId}
+								onclick={() => void togglePower(activeEntity)}
+								aria-label="Aan/uit"
+							>
+								<StatusIcon icon="mdi:power" size={22} />
+							</button>
+						{/if}
 					</div>
 					{#if useBridge && spotifyQueueOpen}
 						<div class="sp-queue">
@@ -2324,16 +2321,18 @@
 								}}
 								aria-label={_t('Volgende')}><StatusIcon icon="mdi:skip-next" size={18} /></button
 							>
-							<button
-								type="button"
-								class={`ptile-btn small ${on ? 'on' : ''}`}
-								disabled={actionBusyEntityId === entity.entityId}
-								onclick={(event) => {
-									event.stopPropagation();
-									void togglePower(entity);
-								}}
-								aria-label={_t('Aan/uit')}><StatusIcon icon="mdi:power" size={14} /></button
-							>
+							{#if !(on && isGoogleCastPlayer(entity))}
+								<button
+									type="button"
+									class={`ptile-btn small ${on ? 'on' : ''}`}
+									disabled={actionBusyEntityId === entity.entityId}
+									onclick={(event) => {
+										event.stopPropagation();
+										void togglePower(entity);
+									}}
+									aria-label={_t('Aan/uit')}><StatusIcon icon="mdi:power" size={14} /></button
+								>
+							{/if}
 						</div>
 					</div>
 				{/each}

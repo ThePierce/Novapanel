@@ -36,7 +36,7 @@ async function fetchCalendarEvents(entityId: string, start: Date, end: Date): Pr
 					cache: 'no-store',
 					headers: { accept: 'application/json' }
 				},
-				16000
+				30000
 			);
 			if (!response.ok) throw new Error(`ha_calendar_events_http_${response.status}`);
 			return await response.json();

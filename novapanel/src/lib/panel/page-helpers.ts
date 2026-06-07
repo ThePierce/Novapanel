@@ -54,18 +54,30 @@ function getCurrentAppPathBase(
 
 function loadPreferredPanelStateUrls(): string[] {
 	if (typeof window === 'undefined') return [];
+	const normalizeStoredUrl = (value: string) => {
+		const trimmed = value.trim();
+		if (!trimmed) return '';
+		try {
+			return canonicalizePanelStateUrl(new URL(trimmed, window.location.origin)).href;
+		} catch {
+			return trimmed;
+		}
+	};
 	try {
 		const raw = localStorage.getItem(PREFERRED_PANEL_STATE_URL_KEY);
 		if (!raw) return [];
 		const parsed = JSON.parse(raw) as unknown;
-		if (typeof parsed === 'string' && parsed.trim()) return [parsed.trim()];
+		if (typeof parsed === 'string') {
+			const u = normalizeStoredUrl(parsed);
+			return u ? [u] : [];
+		}
 		if (
 			parsed &&
 			typeof parsed === 'object' &&
 			'url' in parsed &&
 			typeof (parsed as { url: unknown }).url === 'string'
 		) {
-			const u = (parsed as { url: string }).url.trim();
+			const u = normalizeStoredUrl((parsed as { url: string }).url);
 			return u ? [u] : [];
 		}
 		return [];
@@ -79,7 +91,7 @@ function rememberPreferredPanelStateUrl(successUrl: string) {
 	const t = successUrl.trim();
 	if (!t) return;
 	try {
-		const abs = new URL(t, window.location.origin).href;
+		const abs = canonicalizePanelStateUrl(new URL(t, window.location.origin)).href;
 		localStorage.setItem(PREFERRED_PANEL_STATE_URL_KEY, JSON.stringify({ url: abs, ts: Date.now() }));
 	} catch {}
 }
@@ -452,12 +464,19 @@ export function getPanelStateApiCandidates(panelStateApiPath: string): string[] 
 function normalizePanelStateCandidateUrl(url: string): string {
 	if (typeof window === 'undefined') return url;
 	try {
-		const u = new URL(url, window.location.origin);
-		u.hash = '';
-		return u.href;
+		return canonicalizePanelStateUrl(new URL(url, window.location.origin)).href;
 	} catch {
 		return url;
 	}
+}
+
+function canonicalizePanelStateUrl(url: URL): URL {
+	url.hash = '';
+	url.pathname = url.pathname.replace(
+		/(?:\/local_novapanel){2,}(?=\/api\/(?:panel-state|panel-sync-config)(?:\/|$))/,
+		'/local_novapanel'
+	);
+	return url;
 }
 
 export async function readAddonPanelState(candidates: string[]): Promise<PanelStatePayload | null> {

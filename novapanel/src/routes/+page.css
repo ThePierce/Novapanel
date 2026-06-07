@@ -667,6 +667,16 @@
 	gap: 0.75rem;
 	width: 100%;
 	max-width: 100%;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: default;
+}
+
+.view-section-head.interactive {
 	cursor: pointer;
 }
 
@@ -680,11 +690,11 @@
 	text-overflow: ellipsis;
 }
 
-.view-section-head:hover h3 {
+.view-section-head.interactive:hover h3 {
 	color: var(--np-text);
 }
 
-.view-section.camera-strip-section:not(.editable) .view-section-head {
+.view-section.inline-only-section:not(.editable) .view-section-head {
 	cursor: default;
 }
 
@@ -1154,6 +1164,13 @@
 	align-content: stretch;
 }
 
+.card-item.light-button-card-item > .light-button-card,
+.card-item.light-button-card-item > .entity-button-card {
+	min-height: 4.1rem;
+	height: 100%;
+	align-self: stretch;
+}
+
 .card-item > * {
 	min-width: 0;
 	max-width: 100%;
@@ -1574,6 +1591,23 @@
 	}
 }
 
+.light-detail-modal.np-detail,
+.entity-detail-modal.np-detail {
+	box-sizing: border-box !important;
+	width: max-content !important;
+	min-width: min(22rem, var(--np-popup-max-width)) !important;
+	max-width: min(var(--popup-width, 850px), var(--np-popup-max-width)) !important;
+	height: auto !important;
+	min-height: 0 !important;
+	max-height: var(--np-popup-max-height) !important;
+	grid-template-rows: auto minmax(0, auto) !important;
+}
+
+.light-detail-modal.np-detail .light-detail-body,
+.entity-detail-modal.np-detail .entity-detail-body {
+	max-height: calc(var(--np-popup-max-height) - 4.75rem) !important;
+}
+
 .np-detail-head,
 .camera-detail-modal .np-detail-head,
 .energy-modal .np-detail-head,
@@ -1974,8 +2008,22 @@
 	border-radius: clamp(2rem, 5vw, 3rem) !important;
 }
 
-.light-detail-modal.np-detail .homekit-brightness-icon {
-	bottom: clamp(1.5rem, 4vh, 2.35rem) !important;
+.light-detail-modal.np-detail .homekit-brightness:not(.homekit-toggle) .homekit-brightness-icon {
+	top: 50% !important;
+	bottom: auto !important;
+	transform: translate(-50%, -50%) !important;
+}
+
+.light-detail-modal.np-detail .homekit-toggle .homekit-brightness-icon {
+	top: 75% !important;
+	bottom: auto !important;
+	transform: translate(-50%, -50%) !important;
+}
+
+.light-detail-modal.np-detail .homekit-toggle.is-on .homekit-brightness-icon {
+	top: 25% !important;
+	bottom: auto !important;
+	transform: translate(-50%, -50%) !important;
 }
 
 .light-detail-modal.np-detail .color-dot {

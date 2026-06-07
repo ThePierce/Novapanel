@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2
+
+- Bumped the add-on, npm package, Git tag, GitHub Release, and documentation release links to `1.1.2`.
+- Improved dev-tested calendar reliability with safer event loading, calendar metadata cleanup, and normalization for duplicated local add-on API paths.
+- Refined dashboard interaction polish: closed top drawers no longer block section clicks, calendar-only sections stay inline, and person location popups now match the camera detail modal size.
+- Improved light and entity detail popups with content-sized layouts, better centered light icons, equal-sized light/entity button cards, and cleaner device controls.
+- Replaced technical device popup metadata such as `Status` and `Domein` with a compact pill-style toggle for locks and switch-like devices.
+- Hid unsupported power-off controls for Google Cast/Home Hub media players while keeping supported media actions available.
+
 ## 1.1.1
 
 - Restored `host_network: true` for Home Assistant add-on compatibility after reports that calendar and service proxy calls could return 502 in an installed add-on.

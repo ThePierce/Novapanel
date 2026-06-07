@@ -58,7 +58,7 @@ The token is required for entity data, service calls, cameras, calendars, media 
 
 - [All GitHub releases](https://github.com/ThePierce/Novapanel/releases)
 - [Latest release](https://github.com/ThePierce/Novapanel/releases/latest)
-- [Release v1.1.0](https://github.com/ThePierce/Novapanel/releases/tag/v1.1.0)
+- [Release v1.1.2](https://github.com/ThePierce/Novapanel/releases/tag/v1.1.2)
 - [Full changelog](CHANGELOG.md)
 
 ## Dashboard Model

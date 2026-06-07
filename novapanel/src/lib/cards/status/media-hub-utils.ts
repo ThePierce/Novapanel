@@ -199,7 +199,9 @@ export function isGoogleCastPlayer(entity: HomeAssistantEntity): boolean {
 	const appName = String(entity.attributes?.app_name ?? '').toLowerCase();
 	const manufacturer = String(entity.attributes?.manufacturer ?? '').toLowerCase();
 	const haystack = `${id} ${name} ${appName} ${manufacturer}`;
-	return /google|nest|home hub|chromecast|\bcast\b|youtube/.test(haystack);
+	return /google|nest|home hub|chromecast|\bcast\b|youtube|(?:^|[._\s-])gh[_\s-]?hub(?:[._\s-]|$)/.test(
+		haystack
+	);
 }
 
 export function deviceFingerprint(name: string): string {

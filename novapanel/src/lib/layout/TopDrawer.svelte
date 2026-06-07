@@ -119,6 +119,7 @@
 		left: 0;
 		right: 0;
 		z-index: 35;
+		pointer-events: none;
 	}
 	.drawer-shell::before,
 	.drawer-shell::after {
@@ -267,6 +268,7 @@
 		right: 2rem;
 		width: 2.7rem;
 		opacity: 0;
+		pointer-events: auto;
 	}
 	.drawer-toggle:hover,
 	.drawer-toggle:focus-visible {

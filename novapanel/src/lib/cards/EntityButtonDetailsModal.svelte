@@ -1,5 +1,6 @@
 <script lang="ts">
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
+	import { isGoogleCastPlayer } from '$lib/cards/status/media-hub-utils';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import { entityStore } from '$lib/ha/entities-store';
 	import { callHaService } from '$lib/ha/service-call';
@@ -69,6 +70,9 @@
 	const currentSource = $derived(stringAttribute(entity, 'source'));
 	const mediaTitle = $derived(stringAttribute(entity, 'media_title'));
 	const mediaArtist = $derived(stringAttribute(entity, 'media_artist'));
+	const showMediaPowerButton = $derived(
+		kind === 'media_player' && (!entity || !isGoogleCastPlayer(entity) || entityState === 'off')
+	);
 	const stateLabel = $derived(summaryLabel());
 	const vacuumArea = $derived(
 		numericAttribute(entity, 'cleaned_area') ?? numericAttribute(entity, 'cleaning_area')
@@ -304,6 +308,32 @@
 		return targetUnlocked ? 'unlock' : 'lock';
 	}
 
+	function isDeviceToggleActive() {
+		if (serviceDomain === 'lock') {
+			return entityState === 'unlocked' || entityState === 'unlocking';
+		}
+		return entityState === 'on' || entityState === 'open' || entityState === 'opening';
+	}
+
+	function deviceToggleActionLabel() {
+		if (serviceDomain === 'lock') {
+			return isDeviceToggleActive()
+				? translate('Vergrendelen', $selectedLanguageStore)
+				: translate('Ontgrendelen', $selectedLanguageStore);
+		}
+		return isDeviceToggleActive()
+			? translate('Uit', $selectedLanguageStore)
+			: translate('Aan', $selectedLanguageStore);
+	}
+
+	async function toggleDevice() {
+		if (serviceDomain === 'lock') {
+			await callService('lock', lockServiceForState(!isDeviceToggleActive()));
+			return;
+		}
+		await callService(serviceDomain || 'switch', isDeviceToggleActive() ? 'turn_off' : 'turn_on');
+	}
+
 	function scheduleTemperature(value: number, delay = 140) {
 		if (temperatureTimer) clearTimeout(temperatureTimer);
 		temperatureTimer = setTimeout(() => {
@@ -408,44 +438,25 @@
 				<span>{translate('Geen entiteit gekoppeld', $selectedLanguageStore)}</span>
 			</div>
 		{:else if kind === 'device'}
-			<div class="vacuum-status">
-				<div>
-					<span>{translate('Status', $selectedLanguageStore)}</span>
-					<strong>{readableState(entityState)}</strong>
-				</div>
-				<div>
-					<span>{translate('Domein', $selectedLanguageStore)}</span>
-					<strong>{serviceDomain || '--'}</strong>
-				</div>
-			</div>
-			<div class="action-row">
-				{#if serviceDomain === 'lock'}
-					<button
-						type="button"
-						class="np-btn ghost"
-						onclick={() => void callService('lock', lockServiceForState(false))}
-						disabled={busy || isUnavailable}>{translate('Vergrendelen', $selectedLanguageStore)}</button
-					>
-					<button
-						type="button"
-						class="np-btn primary"
-						onclick={() => void callService('lock', lockServiceForState(true))}
-						disabled={busy || isUnavailable}>{translate('Ontgrendelen', $selectedLanguageStore)}</button
-					>
-				{:else}
-					<button
-						type="button"
-						class="np-btn ghost"
-						onclick={() => void callService(serviceDomain || 'switch', 'turn_off')}
-						disabled={busy || isUnavailable}>{translate('Uit', $selectedLanguageStore)}</button
-					>
-					<button
-						type="button"
-						class="np-btn primary"
-						onclick={() => void callService(serviceDomain || 'switch', 'turn_on')}
-						disabled={busy || isUnavailable}>{translate('Aan', $selectedLanguageStore)}</button
-					>
-				{/if}
+			<div class="device-toggle-wrap">
+				<button
+					type="button"
+					class="device-toggle-pill"
+					class:is-on={isDeviceToggleActive()}
+					aria-pressed={isDeviceToggleActive()}
+					aria-label={`${displayName} ${deviceToggleActionLabel()}`}
+					onclick={() => void toggleDevice()}
+					disabled={busy || isUnavailable}
+				>
+					<span class="device-toggle-fill" aria-hidden="true"></span>
+					<span class="device-toggle-icon" aria-hidden="true">
+						<StatusIcon icon={cardIcon} size={30} />
+					</span>
+					<span class="device-toggle-copy">
+						<strong>{readableState(entityState)}</strong>
+						<span>{deviceToggleActionLabel()}</span>
+					</span>
+				</button>
 			</div>
 		{:else if kind === 'climate'}
 			<div class="climate-temp-readout">
@@ -610,10 +621,6 @@
 			</div>
 			<div class="vacuum-status">
 				<div>
-					<span>{translate('Status', $selectedLanguageStore)}</span>
-					<strong>{readableState(entityState)}</strong>
-				</div>
-				<div>
 					<span>{translate('Batterij', $selectedLanguageStore)}</span>
 					<strong>{batteryLevel !== null ? `${Math.round(batteryLevel)}%` : '--'}</strong>
 				</div>
@@ -748,16 +755,18 @@
 				>
 					{isMuted ? 'Unmute' : 'Mute'}
 				</button>
-				<button
-					type="button"
-					class="np-btn ghost"
-					onclick={() => void callService('media_player', entityState === 'off' ? 'turn_on' : 'turn_off')}
-					disabled={busy || isUnavailable}
-				>
-					{entityState === 'off'
-						? translate('Aan', $selectedLanguageStore)
-						: translate('Uit', $selectedLanguageStore)}
-				</button>
+				{#if showMediaPowerButton}
+					<button
+						type="button"
+						class="np-btn ghost"
+						onclick={() => void callService('media_player', entityState === 'off' ? 'turn_on' : 'turn_off')}
+						disabled={busy || isUnavailable}
+					>
+						{entityState === 'off'
+							? translate('Aan', $selectedLanguageStore)
+							: translate('Uit', $selectedLanguageStore)}
+					</button>
+				{/if}
 			</div>
 			{#if sources.length > 0}
 				<label class="entity-control">
@@ -799,11 +808,13 @@
 		--popup-height: var(--np-detail-popup-height, min(1140px, calc(100vh - 1.5rem)));
 		z-index: 50;
 		padding: 0 !important;
-		width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
-		height: min(var(--popup-height, 1140px), calc(100vh - 1.5rem));
+		width: max-content;
+		min-width: min(22rem, calc(100vw - 1.5rem));
+		max-width: min(var(--popup-width, 850px), calc(100vw - 1.5rem));
+		height: auto;
 		max-height: calc(100vh - 1.5rem);
 		display: grid;
-		grid-template-rows: auto minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, auto);
 		border: 0.5px solid rgba(255, 255, 255, 0.08);
 		border-radius: 18px;
 		background:
@@ -826,6 +837,7 @@
 	}
 	.entity-detail-body {
 		min-height: 0;
+		max-height: calc(100vh - 7rem);
 		overflow: auto;
 		padding: 1rem;
 		display: grid;
@@ -842,6 +854,124 @@
 		place-items: center;
 		gap: 0.55rem;
 		color: rgba(255, 255, 255, 0.48);
+	}
+	.device-toggle-wrap {
+		display: grid;
+		justify-items: center;
+		width: 100%;
+	}
+	.device-toggle-pill {
+		position: relative;
+		width: min(100%, 22rem);
+		min-height: 4.65rem;
+		display: grid;
+		grid-template-columns: 3.25rem minmax(0, 1fr);
+		align-items: center;
+		gap: 0.78rem;
+		padding: 0.68rem 0.9rem;
+		border: 0;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.085);
+		color: rgba(255, 255, 255, 0.9);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.075),
+			0 14px 34px rgba(0, 0, 0, 0.2);
+		overflow: hidden;
+		cursor: pointer;
+		text-align: left;
+		transition:
+			transform 150ms ease,
+			background 180ms ease,
+			box-shadow 180ms ease;
+	}
+	.device-toggle-pill:hover {
+		transform: translateY(-1px);
+		background: rgba(255, 255, 255, 0.11);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.11),
+			0 18px 40px rgba(0, 0, 0, 0.24);
+	}
+	.device-toggle-pill:active {
+		transform: scale(0.985);
+	}
+	.device-toggle-pill:disabled {
+		cursor: not-allowed;
+		opacity: 0.58;
+	}
+	.device-toggle-pill.is-on {
+		background: color-mix(in srgb, var(--entity-accent) 22%, rgba(255, 255, 255, 0.08));
+		box-shadow:
+			inset 0 0 0 1px color-mix(in srgb, var(--entity-accent) 34%, rgba(255, 255, 255, 0.12)),
+			0 18px 42px color-mix(in srgb, var(--entity-accent) 18%, rgba(0, 0, 0, 0.22));
+	}
+	.device-toggle-fill {
+		position: absolute;
+		inset: 0.45rem auto 0.45rem 0.45rem;
+		width: 3.75rem;
+		border-radius: inherit;
+		background: rgba(0, 0, 0, 0.3);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+			inset 0 -12px 30px rgba(0, 0, 0, 0.18);
+		transition:
+			width 180ms ease,
+			background 180ms ease,
+			box-shadow 180ms ease;
+	}
+	.device-toggle-pill.is-on .device-toggle-fill {
+		width: calc(100% - 0.9rem);
+		background: var(--entity-accent);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+			0 12px 30px color-mix(in srgb, var(--entity-accent) 24%, transparent);
+	}
+	.device-toggle-icon {
+		position: relative;
+		z-index: 1;
+		width: 3.25rem;
+		height: 3.25rem;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: rgba(15, 20, 36, 0.86);
+		color: var(--entity-accent);
+		box-shadow:
+			inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+			0 8px 18px rgba(0, 0, 0, 0.22);
+	}
+	.device-toggle-pill.is-on .device-toggle-icon {
+		background: rgba(255, 255, 255, 0.92);
+		color: #0f1424;
+	}
+	.device-toggle-copy {
+		position: relative;
+		z-index: 1;
+		min-width: 0;
+	}
+	.device-toggle-copy strong,
+	.device-toggle-copy span {
+		display: block;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.device-toggle-copy strong {
+		color: rgba(255, 255, 255, 0.94);
+		font-size: 1rem;
+		line-height: 1.1;
+	}
+	.device-toggle-copy span {
+		margin-top: 0.16rem;
+		color: rgba(255, 255, 255, 0.62);
+		font-size: 0.75rem;
+		font-weight: 800;
+	}
+	.device-toggle-pill.is-on .device-toggle-copy strong {
+		color: #ffffff;
+	}
+	.device-toggle-pill.is-on .device-toggle-copy span {
+		color: rgba(255, 255, 255, 0.78);
 	}
 	.climate-temp-readout {
 		display: grid;
@@ -1121,6 +1251,13 @@
 		margin-top: 0.18rem;
 		color: rgba(255, 255, 255, 0.92);
 		font-size: 1rem;
+	}
+	.media-now strong,
+	.media-now span {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.media-now {
 		display: grid;

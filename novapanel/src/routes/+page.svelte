@@ -2430,6 +2430,20 @@
 		);
 	}
 
+	function isInlineOnlySection(section: ViewSectionDraft): boolean {
+		const visibleCards = Array.isArray(section.cards)
+			? section.cards.filter((card) => shouldRenderViewCard(card))
+			: [];
+		return (
+			visibleCards.length > 0 &&
+			visibleCards.every((card) => card.cardType === 'cameras_strip' || card.cardType === 'week_calendar')
+		);
+	}
+
+	function isSectionHeaderInteractive(section: ViewSectionDraft): boolean {
+		return editMode || !isInlineOnlySection(section);
+	}
+
 	function sectionMetricEntity(entityId: string | undefined) {
 		const normalized = entityId?.trim();
 		if (!normalized) return null;
@@ -2586,7 +2600,7 @@
 	}
 
 	function openSectionCards(section: ViewSectionDraft) {
-		if (!editMode && isCameraStripSection(section)) {
+		if (!editMode && isInlineOnlySection(section)) {
 			return;
 		}
 		if (editMode) {
@@ -2740,6 +2754,7 @@
 							class="view-section"
 							class:editable={editMode}
 							class:camera-strip-section={isCameraStripSection(section)}
+							class:inline-only-section={isInlineOnlySection(section)}
 							class:week-calendar-expanded-section={sectionHasVisibleWeekCalendarCard(
 								section,
 								expandedWeekCalendarCardId
@@ -2784,39 +2799,58 @@
 							}}
 						>
 							{#if sectionHasHeader(section)}
+								{@const sectionHeaderInteractive = isSectionHeaderInteractive(section)}
 								{@const metrics = sectionHeaderMetrics(section)}
-								<div
-									class="view-section-head"
-									class:editable={editMode}
-									role="button"
-									tabindex="0"
-									onclick={() => openSectionCards(section)}
-									onkeydown={(event) => {
-										if (event.key !== 'Enter' && event.key !== ' ') return;
-										event.preventDefault();
-										openSectionCards(section);
-									}}
-								>
-									{#if section.title && section.title.trim().length > 0}
-										<h3>{section.title.trim()}</h3>
-									{/if}
-									{#if metrics.length > 0}
-										<div
-											class="view-section-metrics"
-											aria-label={translate('Sectie waarden', selectedLanguage)}
-										>
-											{#each metrics as metric (metric.label)}
-												<span
-													class="view-section-metric"
-													title={`${metric.label}: ${formatSectionMetricState(metric.entity)}`}
-												>
-													<TablerIcon name={metric.icon} size={14} />
-													<span>{formatSectionMetricState(metric.entity)}</span>
-												</span>
-											{/each}
-										</div>
-									{/if}
-								</div>
+								{#if sectionHeaderInteractive}
+									<button
+										type="button"
+										class="view-section-head interactive"
+										class:editable={editMode}
+										onclick={() => openSectionCards(section)}
+									>
+										{#if section.title && section.title.trim().length > 0}
+											<h3>{section.title.trim()}</h3>
+										{/if}
+										{#if metrics.length > 0}
+											<div
+												class="view-section-metrics"
+												aria-label={translate('Sectie waarden', selectedLanguage)}
+											>
+												{#each metrics as metric (metric.label)}
+													<span
+														class="view-section-metric"
+														title={`${metric.label}: ${formatSectionMetricState(metric.entity)}`}
+													>
+														<TablerIcon name={metric.icon} size={14} />
+														<span>{formatSectionMetricState(metric.entity)}</span>
+													</span>
+												{/each}
+											</div>
+										{/if}
+									</button>
+								{:else}
+									<div class="view-section-head" class:editable={editMode}>
+										{#if section.title && section.title.trim().length > 0}
+											<h3>{section.title.trim()}</h3>
+										{/if}
+										{#if metrics.length > 0}
+											<div
+												class="view-section-metrics"
+												aria-label={translate('Sectie waarden', selectedLanguage)}
+											>
+												{#each metrics as metric (metric.label)}
+													<span
+														class="view-section-metric"
+														title={`${metric.label}: ${formatSectionMetricState(metric.entity)}`}
+													>
+														<TablerIcon name={metric.icon} size={14} />
+														<span>{formatSectionMetricState(metric.entity)}</span>
+													</span>
+												{/each}
+											</div>
+										{/if}
+									</div>
+								{/if}
 							{/if}
 							<div
 								class={`cards-grid ${section.cardColumns === 2 ? 'two' : 'one'}`}

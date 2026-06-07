@@ -37,6 +37,8 @@ const HA_CAMERA_FETCH_TIMEOUT_MS = 20000;
 const SPOTIFY_FETCH_TIMEOUT_MS = 12000;
 const EXTERNAL_METADATA_FETCH_TIMEOUT_MS = 10000;
 const TUNEIN_FETCH_TIMEOUT_MS = 12000;
+const HA_CALENDAR_FETCH_TIMEOUT_MS = 8000;
+const HA_CALENDAR_WS_TIMEOUT_MS = 8000;
 const HA_WS_MAX_CONNECTIONS = 8;
 const HA_WS_MAX_QUEUED_MESSAGES = 50;
 const HA_WS_MAX_QUEUED_BYTES = 1024 * 1024;
@@ -909,7 +911,7 @@ async function fetchHaCalendarRest(req, entityId, start, end) {
 				authorization: `Bearer ${token}`
 			}
 		},
-		HA_PROXY_FETCH_TIMEOUT_MS
+		HA_CALENDAR_FETCH_TIMEOUT_MS
 	);
 	if (!upstream.ok) throw new Error(`ha_calendar_rest_http_${upstream.status}`);
 	return await upstream.json();
@@ -917,9 +919,19 @@ async function fetchHaCalendarRest(req, entityId, start, end) {
 
 async function loadHaCalendarEvents(req, entityId, start, end) {
 	const attempts = [
-		() => callHaWebSocket(req, { type: 'calendar/list_events', entity_id: entityId, start, end }, 20000),
-		() => callHaWebSocket(req, { type: 'calendar/event/subscribe', entity_id: entityId, start, end }, 20000),
-		() => fetchHaCalendarRest(req, entityId, start, end)
+		() => fetchHaCalendarRest(req, entityId, start, end),
+		() =>
+			callHaWebSocket(
+				req,
+				{ type: 'calendar/list_events', entity_id: entityId, start, end },
+				HA_CALENDAR_WS_TIMEOUT_MS
+			),
+		() =>
+			callHaWebSocket(
+				req,
+				{ type: 'calendar/event/subscribe', entity_id: entityId, start, end },
+				HA_CALENDAR_WS_TIMEOUT_MS
+			)
 	];
 	let lastError = null;
 	for (const attempt of attempts) {

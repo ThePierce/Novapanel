@@ -559,7 +559,7 @@
 		loading = true;
 		error = '';
 		try {
-			const batches = await Promise.all(
+			const batches = await Promise.allSettled(
 				visibleSources.map(async (source, index) => {
 					const rawEvents = await listCalendarEvents(source.entityId, start, end);
 					return rawEvents
@@ -584,7 +584,15 @@
 				})
 			);
 			if (token !== loadToken) return;
-			events = batches.flat().sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+			const loadedEvents = batches
+				.filter((batch): batch is PromiseFulfilledResult<PositionedEvent[]> => batch.status === 'fulfilled')
+				.flatMap((batch) => batch.value)
+				.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+			events = loadedEvents;
+			const failedCount = batches.filter((batch) => batch.status === 'rejected').length;
+			if (failedCount > 0 && loadedEvents.length === 0) {
+				error = translate('Kalender laden mislukt', $selectedLanguageStore);
+			}
 		} catch (err) {
 			if (token !== loadToken) return;
 			error =
@@ -837,7 +845,7 @@
 		}
 		if (typeof value === 'object') {
 			const record = value as Record<string, unknown>;
-			const common = ['displayName', 'name', 'email', 'value', 'status']
+			const common = ['displayName', 'name', 'email', 'value']
 				.map((key) => compactDetailValue(record[key]))
 				.filter(Boolean);
 			if (common.length > 0) return common.join(' · ');
@@ -905,7 +913,8 @@
 			'color',
 			'startDate',
 			'endDate',
-			'allDay'
+			'allDay',
+			'status'
 		]);
 		return Object.entries(event)
 			.filter(([key]) => !ignored.has(key))
@@ -1022,7 +1031,7 @@
 				{/if}
 
 				<div class="wc-hours">
-					{#each hourLabels as hour (hour)}
+					{#each hourLabels as hour, hourIndex (hourIndex)}
 						<div>{formatHour(hour)}</div>
 					{/each}
 				</div>
@@ -1903,56 +1912,81 @@
 		padding: 1.25rem;
 		border: 0;
 		margin: 0;
-		background: rgba(0, 0, 0, 0.38);
-		backdrop-filter: blur(14px);
+		background: rgba(0, 0, 0, 0.65);
+		backdrop-filter: blur(3px);
 	}
 	.wc-person-modal {
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		z-index: 81;
+		z-index: 90;
 		transform: translate(-50%, -50%);
-		width: min(40rem, calc(100vw - 2rem));
-		max-height: min(42rem, calc(100vh - 2rem));
-		display: grid;
-		grid-template-rows: auto minmax(16rem, 1fr) auto;
-		gap: 0.85rem;
-		padding: 1rem;
-		border-radius: 22px;
-		background:
-			radial-gradient(
-				circle at 18% 10%,
-				color-mix(in srgb, var(--person-color) 20%, transparent),
-				transparent 42%
-			),
-			rgba(20, 28, 44, 0.96);
+		width: min(1120px, calc(100vw - 1.5rem));
+		height: auto;
+		max-height: calc(100vh - 1.5rem);
+		display: flex;
+		flex-direction: column;
+		background: linear-gradient(180deg, #1a2238 0%, #0f1424 100%);
+		border: 0.5px solid rgba(255, 255, 255, 0.08);
+		border-radius: 18px;
 		color: #f8fafc;
-		box-shadow:
-			inset 0 0 0 1px rgba(255, 255, 255, 0.09),
-			0 26px 80px rgba(0, 0, 0, 0.42);
 		overflow: hidden;
 	}
+	.wc-person-modal::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		z-index: 5;
+		width: 60%;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+		transform: translateX(-50%);
+		pointer-events: none;
+	}
 	.wc-person-modal-head {
+		position: relative;
+		flex-shrink: 0;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 1rem;
 		min-width: 0;
+		padding: 16px 20px 12px;
+		border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+		overflow: hidden;
+	}
+	.wc-person-modal-head::before {
+		content: '';
+		position: absolute;
+		top: -100px;
+		left: -40px;
+		width: 220px;
+		height: 220px;
+		background: radial-gradient(
+			circle,
+			color-mix(in srgb, var(--person-color) 18%, transparent),
+			transparent 70%
+		);
+		filter: blur(20px);
+		pointer-events: none;
 	}
 	.wc-person-modal-title {
+		position: relative;
+		z-index: 1;
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
 		min-width: 0;
 	}
 	.wc-person-modal-icon {
-		width: 3rem;
-		height: 3rem;
+		width: 38px;
+		height: 38px;
 		display: grid;
 		place-items: center;
-		border-radius: 1rem;
+		border-radius: 10px;
 		background: color-mix(in srgb, var(--person-color) 24%, rgba(255, 255, 255, 0.08));
-		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--person-color) 32%, rgba(255, 255, 255, 0.08));
+		border: 0.5px solid rgba(255, 255, 255, 0.1);
 		overflow: hidden;
 		flex: 0 0 auto;
 	}
@@ -1975,8 +2009,9 @@
 		text-overflow: ellipsis;
 	}
 	.wc-person-modal-title strong {
-		font-size: 1.05rem;
-		line-height: 1.05;
+		font-size: 15px;
+		font-weight: 500;
+		line-height: 1.2;
 	}
 	.wc-person-modal-title span {
 		margin-top: 0.16rem;
@@ -1985,6 +2020,8 @@
 		font-weight: 750;
 	}
 	.wc-person-close {
+		position: relative;
+		z-index: 1;
 		width: 2.35rem;
 		height: 2.35rem;
 		border: 0;
@@ -1997,13 +2034,15 @@
 	}
 	.wc-location-map {
 		position: relative;
-		min-height: 18rem;
-		border-radius: 1.1rem;
+		flex: 0 1 auto;
+		min-height: 0;
+		max-height: calc(100vh - 1.5rem - 4.75rem);
+		aspect-ratio: 4 / 3;
+		border-radius: 0;
 		overflow: hidden;
 		background:
 			linear-gradient(135deg, rgba(56, 189, 248, 0.16), transparent 38%),
 			linear-gradient(315deg, rgba(34, 197, 94, 0.15), transparent 40%), rgba(255, 255, 255, 0.045);
-		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.075);
 	}
 	.wc-map-surface {
 		position: absolute;
@@ -2142,6 +2181,11 @@
 		font-size: 0.82rem;
 	}
 	.wc-travel-grid {
+		position: absolute;
+		right: 16px;
+		bottom: 16px;
+		left: 16px;
+		z-index: 6;
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.65rem;
@@ -2197,8 +2241,7 @@
 			padding: 0.75rem;
 		}
 		.wc-person-modal {
-			grid-template-rows: auto minmax(15rem, 1fr) auto;
-			padding: 0.85rem;
+			width: min(1120px, calc(100vw - 1.5rem));
 		}
 		.wc-travel-grid {
 			grid-template-columns: 1fr;

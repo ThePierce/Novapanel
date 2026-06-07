@@ -403,10 +403,15 @@
 	.light-detail-modal {
 		--popup-width: min(850px, calc(100vw - 1.5rem));
 		--popup-height: min(1140px, calc(100vh - 1.5rem));
+		width: max-content;
+		min-width: min(22rem, calc(100vw - 1.5rem));
+		max-width: min(850px, calc(100vw - 1.5rem));
+		height: auto;
+		max-height: calc(100vh - 1.5rem);
 		padding: 0 !important;
 		border-radius: 18px;
 		border: 0.5px solid rgba(255, 255, 255, 0.08);
-		grid-template-rows: auto minmax(0, 1fr);
+		grid-template-rows: auto minmax(0, auto);
 		box-sizing: border-box;
 		background: radial-gradient(circle at 50% 8%, var(--light-glow), transparent 42%), #121722;
 	}
@@ -416,6 +421,7 @@
 		align-content: start;
 		gap: 1rem;
 		padding: var(--np-popup-body-pad-y, 1rem) var(--np-popup-body-pad-x, 1.25rem) 1.1rem;
+		max-height: calc(100vh - 7rem);
 		overflow: auto;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
@@ -467,12 +473,12 @@
 	.homekit-brightness-icon {
 		position: absolute;
 		left: 50%;
-		bottom: clamp(2rem, 5vh, 3.2rem);
+		top: 50%;
 		z-index: 2;
 		display: grid;
 		place-items: center;
 		color: #ffffff;
-		transform: translateX(-50%);
+		transform: translate(-50%, -50%);
 		filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.18));
 		pointer-events: none;
 	}
@@ -509,9 +515,10 @@
 			0 10px 28px rgba(255, 211, 56, 0.24);
 	}
 	.homekit-toggle .homekit-brightness-icon {
-		bottom: 25%;
+		top: 75%;
+		bottom: auto;
 		color: #ffd400;
-		transform: translate(-50%, 50%);
+		transform: translate(-50%, -50%);
 		transition:
 			top 180ms ease,
 			bottom 180ms ease,
