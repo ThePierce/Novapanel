@@ -248,6 +248,23 @@ export function spotifyUriToMaMediaType(uri: string): string {
 	return match?.[1] ?? 'track';
 }
 
+export function isLikelyMissingNovaRouteResponse(status: number, bodyText: string): boolean {
+	if (status !== 404) return false;
+	const text = bodyText.trim();
+	if (!text) return true;
+	try {
+		const payload = JSON.parse(text) as { error?: unknown };
+		const error = typeof payload?.error === 'string' ? payload.error : '';
+		return !(
+			error.startsWith('spotify_') ||
+			error === 'missing_or_invalid_uri' ||
+			error === 'spotify_not_connected'
+		);
+	} catch {
+		return !/spotify_|missing_or_invalid_uri|spotify_not_connected/i.test(text);
+	}
+}
+
 function spotifyArtists(value: unknown): string {
 	return Array.isArray(value)
 		? value

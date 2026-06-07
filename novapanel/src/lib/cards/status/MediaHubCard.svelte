@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { TranslationKey } from '$lib/i18n';
-	import { getNovaApiUrl, type HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
+	import {
+		getNovaApiCandidates,
+		getNovaApiUrl,
+		type HomeAssistantEntity
+	} from '$lib/ha/entities-service-helpers';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
 	import { readStoredValue, writeStoredValue } from '$lib/persistence/storage';
 	import { modalBehavior } from '$lib/modal/modal-behavior';
@@ -9,6 +13,7 @@
 		findMaEntityForBase,
 		formatMs,
 		isGoogleCastPlayer,
+		isLikelyMissingNovaRouteResponse,
 		isOn,
 		isPlaying,
 		mapSpotifyAlbum,
@@ -220,10 +225,42 @@
 	// Volume slider feedback
 	let volumeDraft = $state<number | null>(null);
 	let volumeTimer: ReturnType<typeof setTimeout> | null = null;
+	let spotifyResolvedApiBase = '';
 
 	// ----- Helpers ----------------------------------------------------------
 	function ingressPath(p: string) {
 		return getNovaApiUrl(p);
+	}
+
+	function toAbsoluteNovaUrl(value: string): string {
+		try {
+			return new URL(value, window.location.origin || 'http://localhost').href;
+		} catch {
+			return value;
+		}
+	}
+
+	function rememberSpotifyApiBase(url: string, path: string) {
+		try {
+			const parsed = new URL(url, window.location.origin || 'http://localhost');
+			const endpointPath = (path.startsWith('/') ? path : `/${path}`).split('?')[0] ?? '';
+			const index = parsed.pathname.lastIndexOf(endpointPath);
+			if (index < 0) return;
+			spotifyResolvedApiBase = `${parsed.origin}${parsed.pathname.slice(0, index)}`;
+		} catch {
+			spotifyResolvedApiBase = '';
+		}
+	}
+
+	function spotifyApiCandidateUrls(path: string): string[] {
+		const endpoint = path.startsWith('/') ? path : `/${path}`;
+		const urls = new Set<string>();
+		if (spotifyResolvedApiBase) urls.add(`${spotifyResolvedApiBase}${endpoint}`);
+		for (const candidate of getNovaApiCandidates(endpoint)) {
+			urls.add(toAbsoluteNovaUrl(candidate));
+		}
+		urls.add(toAbsoluteNovaUrl(getNovaApiUrl(endpoint)));
+		return [...urls].filter((url) => url.length > 0);
 	}
 
 	function markDisplayImageFailed(raw: string) {
@@ -549,22 +586,44 @@
 		if (spotifyRateLimitedUntil > now) {
 			throw new Error(`{"error":{"status":429,"reason":"RATE_LIMITED"}}`);
 		}
-		const resp = await fetchWithTimeout(ingressPath(path), init ?? {}, 15000);
-		if (resp.status === 401) {
-			spotifyConnected = false;
-			throw new Error('not_connected');
+
+		let lastError: unknown = null;
+		const candidates = spotifyApiCandidateUrls(path);
+		for (const [index, url] of candidates.entries()) {
+			let resp: Response;
+			try {
+				resp = await fetchWithTimeout(url, init ?? {}, 15000);
+			} catch (error) {
+				lastError = error;
+				continue;
+			}
+
+			if (resp.status === 401) {
+				spotifyConnected = false;
+				throw new Error('not_connected');
+			}
+			if (resp.status === 429) {
+				// Probeer Retry-After header te lezen, default 60s om Spotify te laten kalmeren
+				const retryAfterRaw = resp.headers.get('retry-after');
+				const retryAfter =
+					retryAfterRaw && Number.isFinite(Number(retryAfterRaw)) ? Math.max(30, Number(retryAfterRaw)) : 60;
+				spotifyRateLimitedUntil = Date.now() + retryAfter * 1000;
+				throw new Error(`{"error":{"status":429,"reason":"RATE_LIMITED","retryAfter":${retryAfter}}}`);
+			}
+
+			const text = await resp.text();
+			if (index < candidates.length - 1 && isLikelyMissingNovaRouteResponse(resp.status, text)) {
+				lastError = new Error(text || `http_${resp.status}`);
+				continue;
+			}
+
+			if (!resp.ok) throw new Error(text || `http_${resp.status}`);
+			rememberSpotifyApiBase(url, path);
+			return text ? JSON.parse(text) : {};
 		}
-		if (resp.status === 429) {
-			// Probeer Retry-After header te lezen, default 60s om Spotify te laten kalmeren
-			const retryAfterRaw = resp.headers.get('retry-after');
-			const retryAfter =
-				retryAfterRaw && Number.isFinite(Number(retryAfterRaw)) ? Math.max(30, Number(retryAfterRaw)) : 60;
-			spotifyRateLimitedUntil = Date.now() + retryAfter * 1000;
-			throw new Error(`{"error":{"status":429,"reason":"RATE_LIMITED","retryAfter":${retryAfter}}}`);
-		}
-		const text = await resp.text();
-		if (!resp.ok) throw new Error(text || `http_${resp.status}`);
-		return text ? JSON.parse(text) : {};
+
+		if (lastError instanceof Error) throw lastError;
+		throw new Error('spotify_route_unavailable');
 	}
 
 	/**
@@ -687,17 +746,13 @@
 	async function spotifyConnectStart() {
 		spotifyError = '';
 		try {
-			const resp = await fetchWithTimeout(ingressPath('/api/spotify/auth/start'), {}, 10000);
-			if (!resp.ok) {
-				spotifyError = `${_t('Spotify-auth start mislukte')} (${resp.status}).`;
-				return;
-			}
-			const data = await resp.json();
-			if (!data?.url) {
+			const data = await spJson('/api/spotify/auth/start');
+			const authUrl = typeof data?.url === 'string' ? data.url : '';
+			if (!authUrl) {
 				spotifyError = _t('Geen auth-URL ontvangen.');
 				return;
 			}
-			spotifyAuthWindow = window.open(data.url, '_blank');
+			spotifyAuthWindow = window.open(authUrl, '_blank');
 			if (!spotifyAuthWindow) {
 				spotifyError = 'Pop-up geblokkeerd door de browser. Sta pop-ups toe en probeer opnieuw.';
 				return;

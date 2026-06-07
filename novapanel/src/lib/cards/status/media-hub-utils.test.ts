@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isGoogleCastPlayer } from './media-hub-utils';
+import { isGoogleCastPlayer, isLikelyMissingNovaRouteResponse } from './media-hub-utils';
 import type { HomeAssistantEntity } from '$lib/ha/entities-service-helpers';
 
 function mediaPlayer(partial: Partial<HomeAssistantEntity>): HomeAssistantEntity {
@@ -42,5 +42,11 @@ describe('media hub utils', () => {
 				})
 			)
 		).toBe(false);
+	});
+
+	it('distinguishes missing Nova route 404s from Spotify 404 responses', () => {
+		expect(isLikelyMissingNovaRouteResponse(404, '<html>404 Not Found</html>')).toBe(true);
+		expect(isLikelyMissingNovaRouteResponse(404, '{"error":"spotify_play_failed"}')).toBe(false);
+		expect(isLikelyMissingNovaRouteResponse(401, '{"error":"spotify_not_connected"}')).toBe(false);
 	});
 });

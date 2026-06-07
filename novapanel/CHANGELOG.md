@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3
+
+- Bumped the add-on, npm package, Git tag, GitHub Release, and documentation release links to `1.1.3`.
+- Fixed Spotify playback from the media hub when Home Assistant ingress returned a stale or wrong Nova API route with `404 Not Found`.
+- Reused the same resilient Spotify route discovery for Spotify authentication and added regression coverage for route-level 404 handling.
+
 ## 1.1.2
 
 - Bumped the add-on, npm package, Git tag, GitHub Release, and documentation release links to `1.1.2`.
