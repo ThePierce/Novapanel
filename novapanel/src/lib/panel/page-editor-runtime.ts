@@ -101,8 +101,14 @@ export function saveCardEditorRuntime(input: {
 	exportTodayEntityId?: string;
 	solarTodayEntityId?: string;
 	homeTodayEntityId?: string;
+	costCurrentEntityId?: string;
+	compensationCurrentEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	costMonthEntityId?: string;
+	compensationMonthEntityId?: string;
+	costYearEntityId?: string;
+	compensationYearEntityId?: string;
 	energyCostMode?: CardDraft['energyCostMode'];
 	importPeakTodayEntityId?: string;
 	importOffPeakTodayEntityId?: string;
@@ -115,6 +121,12 @@ export function saveCardEditorRuntime(input: {
 	exportPeakTariff?: string;
 	exportOffPeakTariff?: string;
 	exportTariff?: string;
+	energyPriceEntityId?: string;
+	emsBatteryTargetEntityId?: string;
+	emsEvTargetEntityId?: string;
+	emsOptimStatusEntityId?: string;
+	emsPlanAvailableEntityId?: string;
+	emsModeEntityId?: string;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
 	carCableEntityId?: string;
@@ -171,8 +183,14 @@ export function saveCardEditorRuntime(input: {
 				input.exportTodayEntityId,
 				input.solarTodayEntityId,
 				input.homeTodayEntityId,
+				input.costCurrentEntityId,
+				input.compensationCurrentEntityId,
 				input.costTodayEntityId,
 				input.compensationTodayEntityId,
+				input.costMonthEntityId,
+				input.compensationMonthEntityId,
+				input.costYearEntityId,
+				input.compensationYearEntityId,
 				input.energyCostMode,
 				input.importPeakTodayEntityId,
 				input.importOffPeakTodayEntityId,
@@ -185,6 +203,12 @@ export function saveCardEditorRuntime(input: {
 				input.exportPeakTariff,
 				input.exportOffPeakTariff,
 				input.exportTariff,
+				input.energyPriceEntityId,
+				input.emsBatteryTargetEntityId,
+				input.emsEvTargetEntityId,
+				input.emsOptimStatusEntityId,
+				input.emsPlanAvailableEntityId,
+				input.emsModeEntityId,
 				input.selfSufficiencyEntityId,
 				input.carChargingEntityId,
 				input.carCableEntityId,
@@ -244,8 +268,14 @@ export function saveCardEditorRuntime(input: {
 			input.exportTodayEntityId,
 			input.solarTodayEntityId,
 			input.homeTodayEntityId,
+			input.costCurrentEntityId,
+			input.compensationCurrentEntityId,
 			input.costTodayEntityId,
 			input.compensationTodayEntityId,
+			input.costMonthEntityId,
+			input.compensationMonthEntityId,
+			input.costYearEntityId,
+			input.compensationYearEntityId,
 			input.energyCostMode,
 			input.importPeakTodayEntityId,
 			input.importOffPeakTodayEntityId,
@@ -258,6 +288,12 @@ export function saveCardEditorRuntime(input: {
 			input.exportPeakTariff,
 			input.exportOffPeakTariff,
 			input.exportTariff,
+			input.energyPriceEntityId,
+			input.emsBatteryTargetEntityId,
+			input.emsEvTargetEntityId,
+			input.emsOptimStatusEntityId,
+			input.emsPlanAvailableEntityId,
+			input.emsModeEntityId,
 			input.selfSufficiencyEntityId,
 			input.carChargingEntityId,
 			input.carCableEntityId,

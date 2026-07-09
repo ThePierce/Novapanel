@@ -81,6 +81,10 @@ function cleanTariff(value: unknown): number | undefined {
 	return Number.isFinite(n) && n >= 0 ? n : undefined;
 }
 
+function cleanEntityId(value: unknown): string | undefined {
+	return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
 export function addCatalogCardToSidebar(
 	cards: CardDraft[],
 	selected: CardDefinition,
@@ -266,8 +270,14 @@ export function saveCardEdits(
 	exportTodayEntityId?: string,
 	solarTodayEntityId?: string,
 	homeTodayEntityId?: string,
+	costCurrentEntityId?: string,
+	compensationCurrentEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	costMonthEntityId?: string,
+	compensationMonthEntityId?: string,
+	costYearEntityId?: string,
+	compensationYearEntityId?: string,
 	energyCostMode?: CardDraft['energyCostMode'],
 	importPeakTodayEntityId?: string,
 	importOffPeakTodayEntityId?: string,
@@ -280,6 +290,12 @@ export function saveCardEdits(
 	exportPeakTariff?: string,
 	exportOffPeakTariff?: string,
 	exportTariff?: string,
+	energyPriceEntityId?: string,
+	emsBatteryTargetEntityId?: string,
+	emsEvTargetEntityId?: string,
+	emsOptimStatusEntityId?: string,
+	emsPlanAvailableEntityId?: string,
+	emsModeEntityId?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
 	carCableEntityId?: string,
@@ -419,16 +435,16 @@ export function saveCardEdits(
 			cardType === 'energy' && typeof homeTodayEntityId === 'string' && homeTodayEntityId.trim().length > 0
 				? homeTodayEntityId.trim()
 				: undefined,
-		costTodayEntityId:
-			cardType === 'energy' && typeof costTodayEntityId === 'string' && costTodayEntityId.trim().length > 0
-				? costTodayEntityId.trim()
-				: undefined,
-		compensationTodayEntityId:
-			cardType === 'energy' &&
-			typeof compensationTodayEntityId === 'string' &&
-			compensationTodayEntityId.trim().length > 0
-				? compensationTodayEntityId.trim()
-				: undefined,
+		costCurrentEntityId: cardType === 'energy' ? cleanEntityId(costCurrentEntityId) : undefined,
+		compensationCurrentEntityId:
+			cardType === 'energy' ? cleanEntityId(compensationCurrentEntityId) : undefined,
+		costTodayEntityId: cardType === 'energy' ? cleanEntityId(costTodayEntityId) : undefined,
+		compensationTodayEntityId: cardType === 'energy' ? cleanEntityId(compensationTodayEntityId) : undefined,
+		costMonthEntityId: cardType === 'energy' ? cleanEntityId(costMonthEntityId) : undefined,
+		compensationMonthEntityId:
+			cardType === 'energy' ? cleanEntityId(compensationMonthEntityId) : undefined,
+		costYearEntityId: cardType === 'energy' ? cleanEntityId(costYearEntityId) : undefined,
+		compensationYearEntityId: cardType === 'energy' ? cleanEntityId(compensationYearEntityId) : undefined,
 		energyCostMode: cardType === 'energy' ? (energyCostMode ?? 'peak_offpeak') : undefined,
 		importPeakTodayEntityId:
 			cardType === 'energy' &&
@@ -471,6 +487,14 @@ export function saveCardEdits(
 		exportPeakTariff: cardType === 'energy' ? cleanTariff(exportPeakTariff) : undefined,
 		exportOffPeakTariff: cardType === 'energy' ? cleanTariff(exportOffPeakTariff) : undefined,
 		exportTariff: cardType === 'energy' ? cleanTariff(exportTariff) : undefined,
+		energyPriceEntityId: cardType === 'energy' ? cleanEntityId(energyPriceEntityId) : undefined,
+		emsBatteryTargetEntityId:
+			cardType === 'energy' ? cleanEntityId(emsBatteryTargetEntityId) : undefined,
+		emsEvTargetEntityId: cardType === 'energy' ? cleanEntityId(emsEvTargetEntityId) : undefined,
+		emsOptimStatusEntityId: cardType === 'energy' ? cleanEntityId(emsOptimStatusEntityId) : undefined,
+		emsPlanAvailableEntityId:
+			cardType === 'energy' ? cleanEntityId(emsPlanAvailableEntityId) : undefined,
+		emsModeEntityId: cardType === 'energy' ? cleanEntityId(emsModeEntityId) : undefined,
 		selfSufficiencyEntityId:
 			cardType === 'energy' &&
 			typeof selfSufficiencyEntityId === 'string' &&
@@ -558,8 +582,14 @@ export function saveCardInSidebar(
 	exportTodayEntityId?: string,
 	solarTodayEntityId?: string,
 	homeTodayEntityId?: string,
+	costCurrentEntityId?: string,
+	compensationCurrentEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	costMonthEntityId?: string,
+	compensationMonthEntityId?: string,
+	costYearEntityId?: string,
+	compensationYearEntityId?: string,
 	energyCostMode?: CardDraft['energyCostMode'],
 	importPeakTodayEntityId?: string,
 	importOffPeakTodayEntityId?: string,
@@ -572,6 +602,12 @@ export function saveCardInSidebar(
 	exportPeakTariff?: string,
 	exportOffPeakTariff?: string,
 	exportTariff?: string,
+	energyPriceEntityId?: string,
+	emsBatteryTargetEntityId?: string,
+	emsEvTargetEntityId?: string,
+	emsOptimStatusEntityId?: string,
+	emsPlanAvailableEntityId?: string,
+	emsModeEntityId?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
 	carCableEntityId?: string,
@@ -627,8 +663,14 @@ export function saveCardInSidebar(
 					exportTodayEntityId,
 					solarTodayEntityId,
 					homeTodayEntityId,
+					costCurrentEntityId,
+					compensationCurrentEntityId,
 					costTodayEntityId,
 					compensationTodayEntityId,
+					costMonthEntityId,
+					compensationMonthEntityId,
+					costYearEntityId,
+					compensationYearEntityId,
 					energyCostMode,
 					importPeakTodayEntityId,
 					importOffPeakTodayEntityId,
@@ -641,6 +683,12 @@ export function saveCardInSidebar(
 					exportPeakTariff,
 					exportOffPeakTariff,
 					exportTariff,
+					energyPriceEntityId,
+					emsBatteryTargetEntityId,
+					emsEvTargetEntityId,
+					emsOptimStatusEntityId,
+					emsPlanAvailableEntityId,
+					emsModeEntityId,
 					selfSufficiencyEntityId,
 					carChargingEntityId,
 					carCableEntityId,
@@ -699,8 +747,14 @@ export function saveCardInSections(
 	exportTodayEntityId?: string,
 	solarTodayEntityId?: string,
 	homeTodayEntityId?: string,
+	costCurrentEntityId?: string,
+	compensationCurrentEntityId?: string,
 	costTodayEntityId?: string,
 	compensationTodayEntityId?: string,
+	costMonthEntityId?: string,
+	compensationMonthEntityId?: string,
+	costYearEntityId?: string,
+	compensationYearEntityId?: string,
 	energyCostMode?: CardDraft['energyCostMode'],
 	importPeakTodayEntityId?: string,
 	importOffPeakTodayEntityId?: string,
@@ -713,6 +767,12 @@ export function saveCardInSections(
 	exportPeakTariff?: string,
 	exportOffPeakTariff?: string,
 	exportTariff?: string,
+	energyPriceEntityId?: string,
+	emsBatteryTargetEntityId?: string,
+	emsEvTargetEntityId?: string,
+	emsOptimStatusEntityId?: string,
+	emsPlanAvailableEntityId?: string,
+	emsModeEntityId?: string,
 	selfSufficiencyEntityId?: string,
 	carChargingEntityId?: string,
 	carCableEntityId?: string,
@@ -770,8 +830,14 @@ export function saveCardInSections(
 						exportTodayEntityId,
 						solarTodayEntityId,
 						homeTodayEntityId,
+						costCurrentEntityId,
+						compensationCurrentEntityId,
 						costTodayEntityId,
 						compensationTodayEntityId,
+						costMonthEntityId,
+						compensationMonthEntityId,
+						costYearEntityId,
+						compensationYearEntityId,
 						energyCostMode,
 						importPeakTodayEntityId,
 						importOffPeakTodayEntityId,
@@ -784,6 +850,12 @@ export function saveCardInSections(
 						exportPeakTariff,
 						exportOffPeakTariff,
 						exportTariff,
+						energyPriceEntityId,
+						emsBatteryTargetEntityId,
+						emsEvTargetEntityId,
+						emsOptimStatusEntityId,
+						emsPlanAvailableEntityId,
+						emsModeEntityId,
 						selfSufficiencyEntityId,
 						carChargingEntityId,
 						carCableEntityId,

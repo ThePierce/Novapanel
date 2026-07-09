@@ -207,8 +207,14 @@
 		exportTodayEntityId?: string;
 		solarTodayEntityId?: string;
 		homeTodayEntityId?: string;
+		costCurrentEntityId?: string;
+		compensationCurrentEntityId?: string;
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		costMonthEntityId?: string;
+		compensationMonthEntityId?: string;
+		costYearEntityId?: string;
+		compensationYearEntityId?: string;
 		energyCostMode?: EnergyCostMode;
 		importPeakTodayEntityId?: string;
 		importOffPeakTodayEntityId?: string;
@@ -221,6 +227,12 @@
 		exportPeakTariff?: number;
 		exportOffPeakTariff?: number;
 		exportTariff?: number;
+		energyPriceEntityId?: string;
+		emsBatteryTargetEntityId?: string;
+		emsEvTargetEntityId?: string;
+		emsOptimStatusEntityId?: string;
+		emsPlanAvailableEntityId?: string;
+		emsModeEntityId?: string;
 		selfSufficiencyEntityId?: string;
 		carChargingEntityId?: string;
 		carCableEntityId?: string;
@@ -366,8 +378,14 @@
 	let cardEditorExportTodayEntityId = $state('');
 	let cardEditorSolarTodayEntityId = $state('');
 	let cardEditorHomeTodayEntityId = $state('');
+	let cardEditorCostCurrentEntityId = $state('');
+	let cardEditorCompensationCurrentEntityId = $state('');
 	let cardEditorCostTodayEntityId = $state('');
 	let cardEditorCompensationTodayEntityId = $state('');
+	let cardEditorCostMonthEntityId = $state('');
+	let cardEditorCompensationMonthEntityId = $state('');
+	let cardEditorCostYearEntityId = $state('');
+	let cardEditorCompensationYearEntityId = $state('');
 	let cardEditorEnergyCostMode = $state<EnergyCostMode>('peak_offpeak');
 	let cardEditorImportPeakTodayEntityId = $state('');
 	let cardEditorImportOffPeakTodayEntityId = $state('');
@@ -380,6 +398,12 @@
 	let cardEditorExportPeakTariff = $state('');
 	let cardEditorExportOffPeakTariff = $state('');
 	let cardEditorExportTariff = $state('');
+	let cardEditorEnergyPriceEntityId = $state('');
+	let cardEditorEmsBatteryTargetEntityId = $state('');
+	let cardEditorEmsEvTargetEntityId = $state('');
+	let cardEditorEmsOptimStatusEntityId = $state('');
+	let cardEditorEmsPlanAvailableEntityId = $state('');
+	let cardEditorEmsModeEntityId = $state('');
 	let cardEditorSelfSufficiencyEntityId = $state('');
 	let cardEditorCarChargingEntityId = $state('');
 	let cardEditorCarCableEntityId = $state('');
@@ -438,8 +462,14 @@
 	let cardEditorInitialExportTodayEntityId = $state('');
 	let cardEditorInitialSolarTodayEntityId = $state('');
 	let cardEditorInitialHomeTodayEntityId = $state('');
+	let cardEditorInitialCostCurrentEntityId = $state('');
+	let cardEditorInitialCompensationCurrentEntityId = $state('');
 	let cardEditorInitialCostTodayEntityId = $state('');
 	let cardEditorInitialCompensationTodayEntityId = $state('');
+	let cardEditorInitialCostMonthEntityId = $state('');
+	let cardEditorInitialCompensationMonthEntityId = $state('');
+	let cardEditorInitialCostYearEntityId = $state('');
+	let cardEditorInitialCompensationYearEntityId = $state('');
 	let cardEditorInitialEnergyCostMode = $state<EnergyCostMode>('peak_offpeak');
 	let cardEditorInitialImportPeakTodayEntityId = $state('');
 	let cardEditorInitialImportOffPeakTodayEntityId = $state('');
@@ -452,6 +482,12 @@
 	let cardEditorInitialExportPeakTariff = $state('');
 	let cardEditorInitialExportOffPeakTariff = $state('');
 	let cardEditorInitialExportTariff = $state('');
+	let cardEditorInitialEnergyPriceEntityId = $state('');
+	let cardEditorInitialEmsBatteryTargetEntityId = $state('');
+	let cardEditorInitialEmsEvTargetEntityId = $state('');
+	let cardEditorInitialEmsOptimStatusEntityId = $state('');
+	let cardEditorInitialEmsPlanAvailableEntityId = $state('');
+	let cardEditorInitialEmsModeEntityId = $state('');
 	let cardEditorInitialSelfSufficiencyEntityId = $state('');
 	let cardEditorInitialCarChargingEntityId = $state('');
 	let cardEditorInitialCarCableEntityId = $state('');
@@ -697,8 +733,14 @@
 		exportTodayEntityId?: string;
 		solarTodayEntityId?: string;
 		homeTodayEntityId?: string;
+		costCurrentEntityId?: string;
+		compensationCurrentEntityId?: string;
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		costMonthEntityId?: string;
+		compensationMonthEntityId?: string;
+		costYearEntityId?: string;
+		compensationYearEntityId?: string;
 		energyCostMode?: EnergyCostMode;
 		importPeakTodayEntityId?: string;
 		importOffPeakTodayEntityId?: string;
@@ -711,6 +753,12 @@
 		exportPeakTariff?: number;
 		exportOffPeakTariff?: number;
 		exportTariff?: number;
+		energyPriceEntityId?: string;
+		emsBatteryTargetEntityId?: string;
+		emsEvTargetEntityId?: string;
+		emsOptimStatusEntityId?: string;
+		emsPlanAvailableEntityId?: string;
+		emsModeEntityId?: string;
 		selfSufficiencyEntityId?: string;
 		carChargingEntityId?: string;
 		carCableEntityId?: string;
@@ -770,8 +818,14 @@
 				exportTodayEntityId: item.exportTodayEntityId ?? '',
 				solarTodayEntityId: item.solarTodayEntityId ?? '',
 				homeTodayEntityId: item.homeTodayEntityId ?? '',
+				costCurrentEntityId: item.costCurrentEntityId ?? '',
+				compensationCurrentEntityId: item.compensationCurrentEntityId ?? '',
 				costTodayEntityId: item.costTodayEntityId ?? '',
 				compensationTodayEntityId: item.compensationTodayEntityId ?? '',
+				costMonthEntityId: item.costMonthEntityId ?? '',
+				compensationMonthEntityId: item.compensationMonthEntityId ?? '',
+				costYearEntityId: item.costYearEntityId ?? '',
+				compensationYearEntityId: item.compensationYearEntityId ?? '',
 				energyCostMode: item.energyCostMode ?? 'peak_offpeak',
 				importPeakTodayEntityId: item.importPeakTodayEntityId ?? '',
 				importOffPeakTodayEntityId: item.importOffPeakTodayEntityId ?? '',
@@ -784,6 +838,12 @@
 				exportPeakTariff: item.exportPeakTariff,
 				exportOffPeakTariff: item.exportOffPeakTariff,
 				exportTariff: item.exportTariff,
+				energyPriceEntityId: item.energyPriceEntityId ?? '',
+				emsBatteryTargetEntityId: item.emsBatteryTargetEntityId ?? '',
+				emsEvTargetEntityId: item.emsEvTargetEntityId ?? '',
+				emsOptimStatusEntityId: item.emsOptimStatusEntityId ?? '',
+				emsPlanAvailableEntityId: item.emsPlanAvailableEntityId ?? '',
+				emsModeEntityId: item.emsModeEntityId ?? '',
 				selfSufficiencyEntityId: item.selfSufficiencyEntityId ?? '',
 				carChargingEntityId: item.carChargingEntityId ?? '',
 				carCableEntityId: item.carCableEntityId ?? '',
@@ -1031,8 +1091,14 @@
 			cardEditorExportTodayEntityId,
 			cardEditorSolarTodayEntityId,
 			cardEditorHomeTodayEntityId,
+			cardEditorCostCurrentEntityId,
+			cardEditorCompensationCurrentEntityId,
 			cardEditorCostTodayEntityId,
 			cardEditorCompensationTodayEntityId,
+			cardEditorCostMonthEntityId,
+			cardEditorCompensationMonthEntityId,
+			cardEditorCostYearEntityId,
+			cardEditorCompensationYearEntityId,
 			cardEditorEnergyCostMode,
 			cardEditorImportPeakTodayEntityId,
 			cardEditorImportOffPeakTodayEntityId,
@@ -1045,6 +1111,12 @@
 			cardEditorExportPeakTariff,
 			cardEditorExportOffPeakTariff,
 			cardEditorExportTariff,
+			cardEditorEnergyPriceEntityId,
+			cardEditorEmsBatteryTargetEntityId,
+			cardEditorEmsEvTargetEntityId,
+			cardEditorEmsOptimStatusEntityId,
+			cardEditorEmsPlanAvailableEntityId,
+			cardEditorEmsModeEntityId,
 			cardEditorSelfSufficiencyEntityId,
 			cardEditorCarChargingEntityId,
 			cardEditorCarCableEntityId,
@@ -1070,8 +1142,14 @@
 			cardEditorInitialExportTodayEntityId,
 			cardEditorInitialSolarTodayEntityId,
 			cardEditorInitialHomeTodayEntityId,
+			cardEditorInitialCostCurrentEntityId,
+			cardEditorInitialCompensationCurrentEntityId,
 			cardEditorInitialCostTodayEntityId,
 			cardEditorInitialCompensationTodayEntityId,
+			cardEditorInitialCostMonthEntityId,
+			cardEditorInitialCompensationMonthEntityId,
+			cardEditorInitialCostYearEntityId,
+			cardEditorInitialCompensationYearEntityId,
 			cardEditorInitialEnergyCostMode,
 			cardEditorInitialImportPeakTodayEntityId,
 			cardEditorInitialImportOffPeakTodayEntityId,
@@ -1084,6 +1162,12 @@
 			cardEditorInitialExportPeakTariff,
 			cardEditorInitialExportOffPeakTariff,
 			cardEditorInitialExportTariff,
+			cardEditorInitialEnergyPriceEntityId,
+			cardEditorInitialEmsBatteryTargetEntityId,
+			cardEditorInitialEmsEvTargetEntityId,
+			cardEditorInitialEmsOptimStatusEntityId,
+			cardEditorInitialEmsPlanAvailableEntityId,
+			cardEditorInitialEmsModeEntityId,
 			cardEditorInitialSelfSufficiencyEntityId,
 			cardEditorInitialCarChargingEntityId,
 			cardEditorInitialCarCableEntityId,
@@ -1205,10 +1289,22 @@
 			cardEditorSolarTodayEntityId = patch.cardEditorSolarTodayEntityId;
 		if (patch.cardEditorHomeTodayEntityId !== undefined)
 			cardEditorHomeTodayEntityId = patch.cardEditorHomeTodayEntityId;
+		if (patch.cardEditorCostCurrentEntityId !== undefined)
+			cardEditorCostCurrentEntityId = patch.cardEditorCostCurrentEntityId;
+		if (patch.cardEditorCompensationCurrentEntityId !== undefined)
+			cardEditorCompensationCurrentEntityId = patch.cardEditorCompensationCurrentEntityId;
 		if (patch.cardEditorCostTodayEntityId !== undefined)
 			cardEditorCostTodayEntityId = patch.cardEditorCostTodayEntityId;
 		if (patch.cardEditorCompensationTodayEntityId !== undefined)
 			cardEditorCompensationTodayEntityId = patch.cardEditorCompensationTodayEntityId;
+		if (patch.cardEditorCostMonthEntityId !== undefined)
+			cardEditorCostMonthEntityId = patch.cardEditorCostMonthEntityId;
+		if (patch.cardEditorCompensationMonthEntityId !== undefined)
+			cardEditorCompensationMonthEntityId = patch.cardEditorCompensationMonthEntityId;
+		if (patch.cardEditorCostYearEntityId !== undefined)
+			cardEditorCostYearEntityId = patch.cardEditorCostYearEntityId;
+		if (patch.cardEditorCompensationYearEntityId !== undefined)
+			cardEditorCompensationYearEntityId = patch.cardEditorCompensationYearEntityId;
 		if (patch.cardEditorEnergyCostMode !== undefined)
 			cardEditorEnergyCostMode = patch.cardEditorEnergyCostMode;
 		if (patch.cardEditorImportPeakTodayEntityId !== undefined)
@@ -1232,6 +1328,18 @@
 		if (patch.cardEditorExportOffPeakTariff !== undefined)
 			cardEditorExportOffPeakTariff = patch.cardEditorExportOffPeakTariff;
 		if (patch.cardEditorExportTariff !== undefined) cardEditorExportTariff = patch.cardEditorExportTariff;
+		if (patch.cardEditorEnergyPriceEntityId !== undefined)
+			cardEditorEnergyPriceEntityId = patch.cardEditorEnergyPriceEntityId;
+		if (patch.cardEditorEmsBatteryTargetEntityId !== undefined)
+			cardEditorEmsBatteryTargetEntityId = patch.cardEditorEmsBatteryTargetEntityId;
+		if (patch.cardEditorEmsEvTargetEntityId !== undefined)
+			cardEditorEmsEvTargetEntityId = patch.cardEditorEmsEvTargetEntityId;
+		if (patch.cardEditorEmsOptimStatusEntityId !== undefined)
+			cardEditorEmsOptimStatusEntityId = patch.cardEditorEmsOptimStatusEntityId;
+		if (patch.cardEditorEmsPlanAvailableEntityId !== undefined)
+			cardEditorEmsPlanAvailableEntityId = patch.cardEditorEmsPlanAvailableEntityId;
+		if (patch.cardEditorEmsModeEntityId !== undefined)
+			cardEditorEmsModeEntityId = patch.cardEditorEmsModeEntityId;
 		if (patch.cardEditorSelfSufficiencyEntityId !== undefined)
 			cardEditorSelfSufficiencyEntityId = patch.cardEditorSelfSufficiencyEntityId;
 		if (patch.cardEditorCarChargingEntityId !== undefined)
@@ -1327,10 +1435,22 @@
 			cardEditorInitialSolarTodayEntityId = patch.cardEditorInitialSolarTodayEntityId;
 		if (patch.cardEditorInitialHomeTodayEntityId !== undefined)
 			cardEditorInitialHomeTodayEntityId = patch.cardEditorInitialHomeTodayEntityId;
+		if (patch.cardEditorInitialCostCurrentEntityId !== undefined)
+			cardEditorInitialCostCurrentEntityId = patch.cardEditorInitialCostCurrentEntityId;
+		if (patch.cardEditorInitialCompensationCurrentEntityId !== undefined)
+			cardEditorInitialCompensationCurrentEntityId = patch.cardEditorInitialCompensationCurrentEntityId;
 		if (patch.cardEditorInitialCostTodayEntityId !== undefined)
 			cardEditorInitialCostTodayEntityId = patch.cardEditorInitialCostTodayEntityId;
 		if (patch.cardEditorInitialCompensationTodayEntityId !== undefined)
 			cardEditorInitialCompensationTodayEntityId = patch.cardEditorInitialCompensationTodayEntityId;
+		if (patch.cardEditorInitialCostMonthEntityId !== undefined)
+			cardEditorInitialCostMonthEntityId = patch.cardEditorInitialCostMonthEntityId;
+		if (patch.cardEditorInitialCompensationMonthEntityId !== undefined)
+			cardEditorInitialCompensationMonthEntityId = patch.cardEditorInitialCompensationMonthEntityId;
+		if (patch.cardEditorInitialCostYearEntityId !== undefined)
+			cardEditorInitialCostYearEntityId = patch.cardEditorInitialCostYearEntityId;
+		if (patch.cardEditorInitialCompensationYearEntityId !== undefined)
+			cardEditorInitialCompensationYearEntityId = patch.cardEditorInitialCompensationYearEntityId;
 		if (patch.cardEditorInitialEnergyCostMode !== undefined)
 			cardEditorInitialEnergyCostMode = patch.cardEditorInitialEnergyCostMode;
 		if (patch.cardEditorInitialImportPeakTodayEntityId !== undefined)
@@ -1355,6 +1475,18 @@
 			cardEditorInitialExportOffPeakTariff = patch.cardEditorInitialExportOffPeakTariff;
 		if (patch.cardEditorInitialExportTariff !== undefined)
 			cardEditorInitialExportTariff = patch.cardEditorInitialExportTariff;
+		if (patch.cardEditorInitialEnergyPriceEntityId !== undefined)
+			cardEditorInitialEnergyPriceEntityId = patch.cardEditorInitialEnergyPriceEntityId;
+		if (patch.cardEditorInitialEmsBatteryTargetEntityId !== undefined)
+			cardEditorInitialEmsBatteryTargetEntityId = patch.cardEditorInitialEmsBatteryTargetEntityId;
+		if (patch.cardEditorInitialEmsEvTargetEntityId !== undefined)
+			cardEditorInitialEmsEvTargetEntityId = patch.cardEditorInitialEmsEvTargetEntityId;
+		if (patch.cardEditorInitialEmsOptimStatusEntityId !== undefined)
+			cardEditorInitialEmsOptimStatusEntityId = patch.cardEditorInitialEmsOptimStatusEntityId;
+		if (patch.cardEditorInitialEmsPlanAvailableEntityId !== undefined)
+			cardEditorInitialEmsPlanAvailableEntityId = patch.cardEditorInitialEmsPlanAvailableEntityId;
+		if (patch.cardEditorInitialEmsModeEntityId !== undefined)
+			cardEditorInitialEmsModeEntityId = patch.cardEditorInitialEmsModeEntityId;
 		if (patch.cardEditorInitialSelfSufficiencyEntityId !== undefined)
 			cardEditorInitialSelfSufficiencyEntityId = patch.cardEditorInitialSelfSufficiencyEntityId;
 		if (patch.cardEditorInitialCarChargingEntityId !== undefined)
@@ -2334,8 +2466,14 @@
 				cardEditorExportTodayEntityId !== (cardEditorInitialExportTodayEntityId ?? '') ||
 				cardEditorSolarTodayEntityId !== (cardEditorInitialSolarTodayEntityId ?? '') ||
 				cardEditorHomeTodayEntityId !== (cardEditorInitialHomeTodayEntityId ?? '') ||
+				cardEditorCostCurrentEntityId !== (cardEditorInitialCostCurrentEntityId ?? '') ||
+				cardEditorCompensationCurrentEntityId !== (cardEditorInitialCompensationCurrentEntityId ?? '') ||
 				cardEditorCostTodayEntityId !== (cardEditorInitialCostTodayEntityId ?? '') ||
 				cardEditorCompensationTodayEntityId !== (cardEditorInitialCompensationTodayEntityId ?? '') ||
+				cardEditorCostMonthEntityId !== (cardEditorInitialCostMonthEntityId ?? '') ||
+				cardEditorCompensationMonthEntityId !== (cardEditorInitialCompensationMonthEntityId ?? '') ||
+				cardEditorCostYearEntityId !== (cardEditorInitialCostYearEntityId ?? '') ||
+				cardEditorCompensationYearEntityId !== (cardEditorInitialCompensationYearEntityId ?? '') ||
 				cardEditorEnergyCostMode !== (cardEditorInitialEnergyCostMode ?? 'peak_offpeak') ||
 				cardEditorImportPeakTodayEntityId !== (cardEditorInitialImportPeakTodayEntityId ?? '') ||
 				cardEditorImportOffPeakTodayEntityId !== (cardEditorInitialImportOffPeakTodayEntityId ?? '') ||
@@ -2348,6 +2486,12 @@
 				cardEditorExportPeakTariff !== (cardEditorInitialExportPeakTariff ?? '') ||
 				cardEditorExportOffPeakTariff !== (cardEditorInitialExportOffPeakTariff ?? '') ||
 				cardEditorExportTariff !== (cardEditorInitialExportTariff ?? '') ||
+				cardEditorEnergyPriceEntityId !== (cardEditorInitialEnergyPriceEntityId ?? '') ||
+				cardEditorEmsBatteryTargetEntityId !== (cardEditorInitialEmsBatteryTargetEntityId ?? '') ||
+				cardEditorEmsEvTargetEntityId !== (cardEditorInitialEmsEvTargetEntityId ?? '') ||
+				cardEditorEmsOptimStatusEntityId !== (cardEditorInitialEmsOptimStatusEntityId ?? '') ||
+				cardEditorEmsPlanAvailableEntityId !== (cardEditorInitialEmsPlanAvailableEntityId ?? '') ||
+				cardEditorEmsModeEntityId !== (cardEditorInitialEmsModeEntityId ?? '') ||
 				cardEditorSelfSufficiencyEntityId !== (cardEditorInitialSelfSufficiencyEntityId ?? '') ||
 				cardEditorCarChargingEntityId !== (cardEditorInitialCarChargingEntityId ?? '') ||
 				cardEditorCarCableEntityId !== (cardEditorInitialCarCableEntityId ?? '') ||
@@ -3108,8 +3252,14 @@
 					{cardEditorExportTodayEntityId}
 					{cardEditorSolarTodayEntityId}
 					{cardEditorHomeTodayEntityId}
+					{cardEditorCostCurrentEntityId}
+					{cardEditorCompensationCurrentEntityId}
 					{cardEditorCostTodayEntityId}
 					{cardEditorCompensationTodayEntityId}
+					{cardEditorCostMonthEntityId}
+					{cardEditorCompensationMonthEntityId}
+					{cardEditorCostYearEntityId}
+					{cardEditorCompensationYearEntityId}
 					currencyCode={selectedCurrencyCode}
 					{cardEditorEnergyCostMode}
 					{cardEditorImportPeakTodayEntityId}
@@ -3123,6 +3273,12 @@
 					{cardEditorExportPeakTariff}
 					{cardEditorExportOffPeakTariff}
 					{cardEditorExportTariff}
+					{cardEditorEnergyPriceEntityId}
+					{cardEditorEmsBatteryTargetEntityId}
+					{cardEditorEmsEvTargetEntityId}
+					{cardEditorEmsOptimStatusEntityId}
+					{cardEditorEmsPlanAvailableEntityId}
+					{cardEditorEmsModeEntityId}
 					{cardEditorSelfSufficiencyEntityId}
 					{cardEditorCarChargingEntityId}
 					{cardEditorCarCableEntityId}
@@ -3147,8 +3303,14 @@
 					onExportTodayEntityIdChange={(value) => (cardEditorExportTodayEntityId = value)}
 					onSolarTodayEntityIdChange={(value) => (cardEditorSolarTodayEntityId = value)}
 					onHomeTodayEntityIdChange={(value) => (cardEditorHomeTodayEntityId = value)}
+					onCostCurrentEntityIdChange={(value) => (cardEditorCostCurrentEntityId = value)}
+					onCompensationCurrentEntityIdChange={(value) => (cardEditorCompensationCurrentEntityId = value)}
 					onCostTodayEntityIdChange={(value) => (cardEditorCostTodayEntityId = value)}
 					onCompensationTodayEntityIdChange={(value) => (cardEditorCompensationTodayEntityId = value)}
+					onCostMonthEntityIdChange={(value) => (cardEditorCostMonthEntityId = value)}
+					onCompensationMonthEntityIdChange={(value) => (cardEditorCompensationMonthEntityId = value)}
+					onCostYearEntityIdChange={(value) => (cardEditorCostYearEntityId = value)}
+					onCompensationYearEntityIdChange={(value) => (cardEditorCompensationYearEntityId = value)}
 					onEnergyCostModeChange={(value) => (cardEditorEnergyCostMode = value)}
 					onImportPeakTodayEntityIdChange={(value) => (cardEditorImportPeakTodayEntityId = value)}
 					onImportOffPeakTodayEntityIdChange={(value) => (cardEditorImportOffPeakTodayEntityId = value)}
@@ -3161,6 +3323,12 @@
 					onExportPeakTariffChange={(value) => (cardEditorExportPeakTariff = value)}
 					onExportOffPeakTariffChange={(value) => (cardEditorExportOffPeakTariff = value)}
 					onExportTariffChange={(value) => (cardEditorExportTariff = value)}
+					onEnergyPriceEntityIdChange={(value) => (cardEditorEnergyPriceEntityId = value)}
+					onEmsBatteryTargetEntityIdChange={(value) => (cardEditorEmsBatteryTargetEntityId = value)}
+					onEmsEvTargetEntityIdChange={(value) => (cardEditorEmsEvTargetEntityId = value)}
+					onEmsOptimStatusEntityIdChange={(value) => (cardEditorEmsOptimStatusEntityId = value)}
+					onEmsPlanAvailableEntityIdChange={(value) => (cardEditorEmsPlanAvailableEntityId = value)}
+					onEmsModeEntityIdChange={(value) => (cardEditorEmsModeEntityId = value)}
 					onSelfSufficiencyEntityIdChange={(value) => (cardEditorSelfSufficiencyEntityId = value)}
 					onCarChargingEntityIdChange={(value) => (cardEditorCarChargingEntityId = value)}
 					onCarCableEntityIdChange={(value) => (cardEditorCarCableEntityId = value)}
@@ -3271,8 +3439,14 @@
 					exportTodayEntityId={energyDetailCard.exportTodayEntityId}
 					solarTodayEntityId={energyDetailCard.solarTodayEntityId}
 					homeTodayEntityId={energyDetailCard.homeTodayEntityId}
+					costCurrentEntityId={energyDetailCard.costCurrentEntityId}
+					compensationCurrentEntityId={energyDetailCard.compensationCurrentEntityId}
 					costTodayEntityId={energyDetailCard.costTodayEntityId}
 					compensationTodayEntityId={energyDetailCard.compensationTodayEntityId}
+					costMonthEntityId={energyDetailCard.costMonthEntityId}
+					compensationMonthEntityId={energyDetailCard.compensationMonthEntityId}
+					costYearEntityId={energyDetailCard.costYearEntityId}
+					compensationYearEntityId={energyDetailCard.compensationYearEntityId}
 					energyCostMode={energyDetailCard.energyCostMode}
 					importPeakTodayEntityId={energyDetailCard.importPeakTodayEntityId}
 					importOffPeakTodayEntityId={energyDetailCard.importOffPeakTodayEntityId}
@@ -3285,6 +3459,12 @@
 					exportPeakTariff={energyDetailCard.exportPeakTariff}
 					exportOffPeakTariff={energyDetailCard.exportOffPeakTariff}
 					exportTariff={energyDetailCard.exportTariff}
+					energyPriceEntityId={energyDetailCard.energyPriceEntityId}
+					emsBatteryTargetEntityId={energyDetailCard.emsBatteryTargetEntityId}
+					emsEvTargetEntityId={energyDetailCard.emsEvTargetEntityId}
+					emsOptimStatusEntityId={energyDetailCard.emsOptimStatusEntityId}
+					emsPlanAvailableEntityId={energyDetailCard.emsPlanAvailableEntityId}
+					emsModeEntityId={energyDetailCard.emsModeEntityId}
 					selfSufficiencyEntityId={energyDetailCard.selfSufficiencyEntityId}
 					carChargingEntityId={energyDetailCard.carChargingEntityId}
 					carCableEntityId={energyDetailCard.carCableEntityId}

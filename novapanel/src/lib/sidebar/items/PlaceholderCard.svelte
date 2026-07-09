@@ -162,6 +162,15 @@
 			batteryEntityId={item.batteryEntityId}
 			gridEntityId={item.gridEntityId}
 			batteryChargeEntityId={item.batteryChargeEntityId}
+			costCurrentEntityId={item.costCurrentEntityId}
+			compensationCurrentEntityId={item.compensationCurrentEntityId}
+			costTodayEntityId={item.costTodayEntityId}
+			compensationTodayEntityId={item.compensationTodayEntityId}
+			costMonthEntityId={item.costMonthEntityId}
+			compensationMonthEntityId={item.compensationMonthEntityId}
+			energyPriceEntityId={item.energyPriceEntityId}
+			importTariffEntityId={item.importTariffEntityId}
+			exportTariffEntityId={item.exportTariffEntityId}
 		/>
 	{:else if item.type === 'cameras_strip'}
 		<LazyComponent

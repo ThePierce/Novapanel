@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { calculateEnergyCosts } from '$lib/energy-costs';
+	import { calculateEnergyCosts, calculateLiveEnergyCost } from '$lib/energy-costs';
 	import { entityStore } from '$lib/ha/entities-store';
 	import TablerIcon from '$lib/icons/TablerIcon.svelte';
 	import type { EnergyAnchorPoint, EnergyAnchors, EnergyCostMode } from '$lib/persistence/panel-state-types';
@@ -22,9 +22,15 @@
 		exportTodayEntityId?: string;
 		solarTodayEntityId?: string;
 		homeTodayEntityId?: string;
-		// Kosten vandaag
+		// Kosten
+		costCurrentEntityId?: string;
+		compensationCurrentEntityId?: string;
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		costMonthEntityId?: string;
+		compensationMonthEntityId?: string;
+		costYearEntityId?: string;
+		compensationYearEntityId?: string;
 		energyCostMode?: EnergyCostMode;
 		importPeakTodayEntityId?: string;
 		importOffPeakTodayEntityId?: string;
@@ -37,6 +43,13 @@
 		exportPeakTariff?: number;
 		exportOffPeakTariff?: number;
 		exportTariff?: number;
+		// EMS / prijzen
+		energyPriceEntityId?: string;
+		emsBatteryTargetEntityId?: string;
+		emsEvTargetEntityId?: string;
+		emsOptimStatusEntityId?: string;
+		emsPlanAvailableEntityId?: string;
+		emsModeEntityId?: string;
 		// Optioneel: zelfvoorzienend %
 		selfSufficiencyEntityId?: string;
 		// Auto aan de lader (optioneel)
@@ -76,8 +89,14 @@
 		exportTodayEntityId = '',
 		solarTodayEntityId = '',
 		homeTodayEntityId = '',
+		costCurrentEntityId = '',
+		compensationCurrentEntityId = '',
 		costTodayEntityId = '',
 		compensationTodayEntityId = '',
+		costMonthEntityId = '',
+		compensationMonthEntityId = '',
+		costYearEntityId = '',
+		compensationYearEntityId = '',
 		energyCostMode = 'peak_offpeak',
 		importPeakTodayEntityId = '',
 		importOffPeakTodayEntityId = '',
@@ -90,6 +109,12 @@
 		exportPeakTariff,
 		exportOffPeakTariff,
 		exportTariff,
+		energyPriceEntityId = '',
+		emsBatteryTargetEntityId = '',
+		emsEvTargetEntityId = '',
+		emsOptimStatusEntityId = '',
+		emsPlanAvailableEntityId = '',
+		emsModeEntityId = '',
 		selfSufficiencyEntityId = '',
 		carChargingEntityId = '',
 		carCableEntityId = '',
@@ -134,6 +159,10 @@
 			.toLowerCase()
 			.trim();
 	}
+	function getDisplayState(id: string): string {
+		const e = getEntity(id);
+		return String(e?.state ?? '').trim();
+	}
 
 	function powerW(id: string): number | null {
 		const v = getNumeric(id);
@@ -153,7 +182,7 @@
 	}
 	function tariffEntityValue(id: string): number | null {
 		const value = getNumeric(id);
-		return value !== null && value >= 0 ? value : null;
+		return value !== null && Number.isFinite(value) ? value : null;
 	}
 
 	// Live waardes
@@ -169,15 +198,29 @@
 	const exportToday = $derived(kwhToday(exportTodayEntityId));
 	const solarToday = $derived(kwhToday(solarTodayEntityId));
 	const homeTodayKwh = $derived(kwhToday(homeTodayEntityId));
+	const costCurrent = $derived(getNumeric(costCurrentEntityId));
+	const compensationCurrent = $derived(getNumeric(compensationCurrentEntityId));
 	const costToday = $derived(getNumeric(costTodayEntityId));
 	const compensationToday = $derived(getNumeric(compensationTodayEntityId));
+	const costMonth = $derived(getNumeric(costMonthEntityId));
+	const compensationMonth = $derived(getNumeric(compensationMonthEntityId));
+	const costYear = $derived(getNumeric(costYearEntityId));
+	const compensationYear = $derived(getNumeric(compensationYearEntityId));
 	const importPeakToday = $derived(kwhToday(importPeakTodayEntityId));
 	const importOffPeakToday = $derived(kwhToday(importOffPeakTodayEntityId));
 	const exportPeakToday = $derived(kwhToday(exportPeakTodayEntityId));
 	const exportOffPeakToday = $derived(kwhToday(exportOffPeakTodayEntityId));
 	const importTariffLive = $derived(tariffEntityValue(importTariffEntityId));
 	const exportTariffLive = $derived(tariffEntityValue(exportTariffEntityId));
+	const energyPriceLive = $derived(tariffEntityValue(energyPriceEntityId));
+	const priceNow = $derived(energyPriceLive ?? importTariffLive);
+	const exportPriceNow = $derived(exportTariffLive ?? priceNow);
 	const selfSufficiency = $derived(getNumeric(selfSufficiencyEntityId));
+	const emsBatteryTargetW = $derived(powerW(emsBatteryTargetEntityId));
+	const emsEvTargetW = $derived(powerW(emsEvTargetEntityId));
+	const emsOptimStatus = $derived(getDisplayState(emsOptimStatusEntityId));
+	const emsPlanAvailable = $derived(getDisplayState(emsPlanAvailableEntityId));
+	const emsMode = $derived(getDisplayState(emsModeEntityId));
 
 	const selfSufficiencyComputed = $derived(
 		(() => {
@@ -211,6 +254,35 @@
 		})
 	);
 	const netCostToday = $derived(costResult.netCost);
+	const liveCostResult = $derived(
+		calculateLiveEnergyCost({
+			netPowerW: netW,
+			importTariff: priceNow,
+			exportTariff: exportPriceNow,
+			costCurrent,
+			compensationCurrent
+		})
+	);
+	function netCostPeriod(cost: number | null, compensation: number | null): number | null {
+		if (cost === null && compensation === null) return null;
+		return (cost ?? 0) - (compensation ?? 0);
+	}
+	const netCostMonth = $derived(netCostPeriod(costMonth, compensationMonth));
+	const netCostYear = $derived(netCostPeriod(costYear, compensationYear));
+	const hasCostOverview = $derived(
+		liveCostResult.netCostPerHour !== null ||
+			netCostToday !== null ||
+			netCostMonth !== null ||
+			netCostYear !== null ||
+			priceNow !== null
+	);
+	const hasEmsOverview = $derived(
+		emsBatteryTargetW !== null ||
+			emsEvTargetW !== null ||
+			emsOptimStatus.length > 0 ||
+			emsPlanAvailable.length > 0 ||
+			emsMode.length > 0
+	);
 	const activeLocale = $derived(localeFor($selectedLanguageStore));
 
 	function fmtDecimal(value: number, fractionDigits = 1): string {
@@ -233,6 +305,30 @@
 	function fmtEuro(v: number | null): string {
 		if (v === null) return '–';
 		return formatCurrency(v, activeLocale, currencyCode);
+	}
+	function fmtTariff(v: number | null): string {
+		if (v === null) return '–';
+		return `${v.toLocaleString(activeLocale, {
+			minimumFractionDigits: 3,
+			maximumFractionDigits: 5
+		})} ${currencyCode}/kWh`;
+	}
+	function fmtSignedPower(w: number | null): string {
+		if (w === null) return '–';
+		const sign = w > 0 ? '+' : w < 0 ? '-' : '';
+		return `${sign}${fmtPowerW(w)}`;
+	}
+	function fmtTargetLabel(w: number | null, negativeLabel: string, positiveLabel: string): string {
+		if (w === null) return '–';
+		if (Math.abs(w) < 50) return translate('rust', $selectedLanguageStore);
+		return w < 0 ? translate(negativeLabel, $selectedLanguageStore) : translate(positiveLabel, $selectedLanguageStore);
+	}
+	function fmtPlanState(value: string): string {
+		const normalized = value.toLowerCase();
+		if (!normalized) return '–';
+		if (normalized === 'on' || normalized === 'true') return translate('beschikbaar', $selectedLanguageStore);
+		if (normalized === 'off' || normalized === 'false') return translate('niet beschikbaar', $selectedLanguageStore);
+		return value;
 	}
 
 	// Tijd-detectie (dag/nacht) via sun.sun
@@ -952,6 +1048,74 @@
 			</div>
 		</div>
 
+		{#if hasCostOverview}
+			<div class="insight-grid money-grid">
+				<div class="insight-card accent">
+					<div class="insight-label">{translate('Nu', $selectedLanguageStore)}</div>
+					<div class="insight-value">
+						{liveCostResult.netCostPerHour !== null ? fmtEuro(liveCostResult.netCostPerHour) : '–'}
+					</div>
+					<div class="insight-foot">
+						{liveCostResult.netCostPerHour !== null
+							? liveCostResult.isEstimate
+								? translate('per uur geschat', $selectedLanguageStore)
+								: translate('sensorwaarde', $selectedLanguageStore)
+							: fmtTariff(priceNow)}
+					</div>
+				</div>
+				<div class="insight-card">
+					<div class="insight-label">{translate('Vandaag', $selectedLanguageStore)}</div>
+					<div class="insight-value">{netCostToday !== null ? fmtEuro(netCostToday) : '–'}</div>
+					<div class="insight-foot">
+						{costResult.isEstimate && netCostToday !== null
+							? translate('schatting', $selectedLanguageStore)
+							: translate('netto', $selectedLanguageStore)}
+					</div>
+				</div>
+				<div class="insight-card">
+					<div class="insight-label">{translate('Maand', $selectedLanguageStore)}</div>
+					<div class="insight-value">{netCostMonth !== null ? fmtEuro(netCostMonth) : '–'}</div>
+					<div class="insight-foot">{translate('netto', $selectedLanguageStore)}</div>
+				</div>
+				<div class="insight-card">
+					<div class="insight-label">{translate('Jaar', $selectedLanguageStore)}</div>
+					<div class="insight-value">{netCostYear !== null ? fmtEuro(netCostYear) : '–'}</div>
+					<div class="insight-foot">{translate('netto', $selectedLanguageStore)}</div>
+				</div>
+			</div>
+		{/if}
+
+		{#if hasEmsOverview}
+			<div class="insight-grid ems-grid">
+				<div class="insight-card">
+					<div class="insight-label">{translate('Stroomprijs', $selectedLanguageStore)}</div>
+					<div class="insight-value small">{fmtTariff(priceNow)}</div>
+					<div class="insight-foot">
+						{energyPriceEntityId
+							? translate('dynamisch', $selectedLanguageStore)
+							: translate('tariefsensor', $selectedLanguageStore)}
+					</div>
+				</div>
+				<div class="insight-card">
+					<div class="insight-label">{translate('Accu target', $selectedLanguageStore)}</div>
+					<div class="insight-value">{fmtSignedPower(emsBatteryTargetW)}</div>
+					<div class="insight-foot">
+						{fmtTargetLabel(emsBatteryTargetW, 'laden', 'ontladen')}
+					</div>
+				</div>
+				<div class="insight-card">
+					<div class="insight-label">{translate('Laadpaal target', $selectedLanguageStore)}</div>
+					<div class="insight-value">{fmtSignedPower(emsEvTargetW)}</div>
+					<div class="insight-foot">{fmtTargetLabel(emsEvTargetW, 'stop', 'laden')}</div>
+				</div>
+				<div class="insight-card">
+					<div class="insight-label">{translate('Plan', $selectedLanguageStore)}</div>
+					<div class="insight-value small">{fmtPlanState(emsPlanAvailable)}</div>
+					<div class="insight-foot">{emsOptimStatus || emsMode || '–'}</div>
+				</div>
+			</div>
+		{/if}
+
 		{#if canOpenDevices}
 			<button
 				type="button"
@@ -1298,6 +1462,61 @@
 		font-size: 12.5px;
 		color: rgba(255, 255, 255, 0.5);
 		font-weight: 500;
+	}
+
+	.insight-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.insight-card {
+		min-width: 0;
+		min-height: 82px;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		gap: 6px;
+		padding: 11px 12px;
+		background: rgba(255, 255, 255, 0.025);
+		border: 0.5px solid rgba(255, 255, 255, 0.07);
+		border-radius: 13px;
+	}
+	.insight-card.accent {
+		background: rgba(34, 197, 94, 0.07);
+		border-color: rgba(34, 197, 94, 0.16);
+	}
+	.insight-label,
+	.insight-foot {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.insight-label {
+		font-size: 10px;
+		color: rgba(255, 255, 255, 0.52);
+		font-weight: 650;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+	.insight-value {
+		min-width: 0;
+		color: #fff;
+		font-size: 1.05rem;
+		line-height: 1.1;
+		font-weight: 650;
+		font-variant-numeric: tabular-nums;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.insight-value.small {
+		font-size: 0.9rem;
+	}
+	.insight-foot {
+		color: rgba(255, 255, 255, 0.48);
+		font-size: 10.5px;
+		line-height: 1.2;
 	}
 
 	.hero-frame {
@@ -1680,6 +1899,9 @@
 		padding-top: 1px;
 	}
 	@media (max-width: 560px) {
+		.insight-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 		.chart-legend {
 			grid-template-columns: 1fr;
 		}
@@ -1717,6 +1939,9 @@
 			font-size: 14px;
 		}
 		.devices-summary {
+			grid-template-columns: 1fr;
+		}
+		.insight-grid {
 			grid-template-columns: 1fr;
 		}
 		.chart-legend {

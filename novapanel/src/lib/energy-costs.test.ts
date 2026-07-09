@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateEnergyCosts, deriveEnergyCostMode } from './energy-costs';
+import { calculateEnergyCosts, calculateLiveEnergyCost, deriveEnergyCostMode } from './energy-costs';
 
 describe('energy cost calculation', () => {
 	it('calculates fixed peak/off-peak import and export separately', () => {
@@ -55,8 +55,33 @@ describe('energy cost calculation', () => {
 
 	it('derives a backward-compatible mode from existing card fields', () => {
 		expect(deriveEnergyCostMode({ costTodayEntityId: 'sensor.cost' })).toBe('sensor');
+		expect(deriveEnergyCostMode({ costMonthEntityId: 'sensor.month_cost' })).toBe('sensor');
 		expect(deriveEnergyCostMode({ importPeakTariff: 0.42 })).toBe('peak_offpeak');
 		expect(deriveEnergyCostMode({ importTariffEntityId: 'sensor.live_tariff' })).toBe('dynamic');
 		expect(deriveEnergyCostMode({})).toBe('peak_offpeak');
+	});
+
+	it('calculates live import cost per hour from net power and tariff', () => {
+		const result = calculateLiveEnergyCost({
+			netPowerW: 6116,
+			importTariff: 0.03754,
+			exportTariff: 0.02
+		});
+
+		expect(result.netCostPerHour).toBeCloseTo(0.2296);
+		expect(result.importCostPerHour).toBeCloseTo(0.2296);
+		expect(result.exportCompensationPerHour).toBeNull();
+		expect(result.isEstimate).toBe(true);
+	});
+
+	it('keeps negative dynamic prices in live cost estimates', () => {
+		const result = calculateLiveEnergyCost({
+			netPowerW: 5000,
+			importTariff: -0.08,
+			exportTariff: -0.08
+		});
+
+		expect(result.netCostPerHour).toBeCloseTo(-0.4);
+		expect(result.isEstimate).toBe(true);
 	});
 });

@@ -75,7 +75,10 @@ export function mergeAddonDashboardState(input: MergeInput): MergeOutput {
 	const localHasDashboardContent =
 		countViewCards(input.currentViewSections) > 0 || input.currentSidebarCards.length > 0;
 	const serverIsNewer =
-		addonUpdatedAt > 0 ? addonUpdatedAt >= localUpdatedAt : localUpdatedAt === 0 && !localHasDashboardContent;
+		addonUpdatedAt > 0
+			? addonUpdatedAt > localUpdatedAt ||
+				(!localHasDashboardContent && addonUpdatedAt >= localUpdatedAt)
+			: localUpdatedAt === 0 && !localHasDashboardContent;
 
 	let viewSections = input.currentViewSections;
 	if (hasExplicitSections && serverIsNewer) {

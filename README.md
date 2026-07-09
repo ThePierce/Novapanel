@@ -59,25 +59,27 @@ The token is required for entity data, service calls, cameras, calendars, media 
 
 - [All GitHub releases](https://github.com/ThePierce/Novapanel/releases)
 - [Latest release](https://github.com/ThePierce/Novapanel/releases/latest)
-- [Release v1.1.4](https://github.com/ThePierce/Novapanel/releases/tag/v1.1.4)
+- [Release v1.1.5](https://github.com/ThePierce/Novapanel/releases/tag/v1.1.5)
 - [Full changelog](novapanel/CHANGELOG.md)
 
 ## Updating In Home Assistant
 
-Home Assistant Supervisor caches add-on repository metadata. If Home Assistant reports that an update exists but the add-on page still shows an older latest version, reload the add-on store instead of restarting Home Assistant:
+Home Assistant keeps separate caches for repository metadata, installed add-on metadata, and update entities. If Home Assistant reports that an update exists but the Nova Panel add-on page still shows an older latest version, refresh the update data before restarting Home Assistant:
 
-1. Go to **Settings → Add-ons → Add-on Store**.
+1. Go to **Settings → System → Updates**.
 2. Open the three-dot menu.
-3. Select **Reload**.
-4. Open the Nova Panel add-on again and install the update.
+3. Select **Check for updates**.
+4. Go to **Settings → Add-ons → Add-on Store**, open the three-dot menu, and select **Reload**.
+5. Open the Nova Panel add-on again and install the update.
 
-From the Home Assistant SSH/terminal CLI, the equivalent lightweight refresh is:
+From the Home Assistant SSH/terminal CLI, use the lighter update refresh commands instead of a full Home Assistant restart:
 
 ```sh
+ha refresh-updates
 ha supervisor reload
 ```
 
-If the repository still appears stale after a reload, remove and re-add the repository URL in the add-on store. This does not uninstall the Nova Panel add-on or delete its configuration.
+If the add-on page still stays stale but a Home Assistant restart fixes it, the stale layer is Home Assistant's update/add-on cache, not the Nova Panel release repository. The repository URL should remain `https://github.com/ThePierce/Novapanel`.
 
 ## Dashboard Model
 
@@ -296,10 +298,13 @@ What to fill in:
 
 - Select power sensors for live values such as net power, solar power, grid power, battery power, and car charging power.
 - Select energy sensors for daily totals such as import today, export today, solar today, home usage today, cost today, and compensation today.
+- Choose a cost mode: fixed peak/off-peak tariffs, dynamic tariff sensors, or exact cost sensors from Home Assistant.
+- Optionally select live, today, month, and year cost/compensation sensors to show the current cost picture.
+- Optionally select EMS sensors such as battery target, EV target, optimization status, plan availability, and inverter mode.
 - Optionally select device power sensors and matching kWh sensors to show appliance-level usage.
 - Optionally upload custom images for day/night and car/no-car states.
 
-Use Home Assistant sensors with clear units. Power values should usually be W or kW. Energy totals should usually be Wh or kWh.
+Use Home Assistant sensors with clear units. Power values should usually be W or kW. Energy totals should usually be Wh or kWh. Dynamic tariff sensors should usually be in EUR/kWh and may be negative when your energy contract supports negative prices.
 
 </details>
 

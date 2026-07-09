@@ -317,6 +317,8 @@ export function coerceCardDraft(value: unknown, index: number): CardDraft | null
 			typeof item.homeTodayEntityId === 'string' && item.homeTodayEntityId.length > 0
 				? item.homeTodayEntityId
 				: undefined,
+		costCurrentEntityId: coerceEntityIdFromUnknown(item.costCurrentEntityId),
+		compensationCurrentEntityId: coerceEntityIdFromUnknown(item.compensationCurrentEntityId),
 		costTodayEntityId:
 			typeof item.costTodayEntityId === 'string' && item.costTodayEntityId.length > 0
 				? item.costTodayEntityId
@@ -325,10 +327,20 @@ export function coerceCardDraft(value: unknown, index: number): CardDraft | null
 			typeof item.compensationTodayEntityId === 'string' && item.compensationTodayEntityId.length > 0
 				? item.compensationTodayEntityId
 				: undefined,
+		costMonthEntityId: coerceEntityIdFromUnknown(item.costMonthEntityId),
+		compensationMonthEntityId: coerceEntityIdFromUnknown(item.compensationMonthEntityId),
+		costYearEntityId: coerceEntityIdFromUnknown(item.costYearEntityId),
+		compensationYearEntityId: coerceEntityIdFromUnknown(item.compensationYearEntityId),
 		energyCostMode: deriveEnergyCostMode({
 			energyCostMode: item.energyCostMode as CardDraft['energyCostMode'],
+			costCurrentEntityId: coerceEntityIdFromUnknown(item.costCurrentEntityId),
+			compensationCurrentEntityId: coerceEntityIdFromUnknown(item.compensationCurrentEntityId),
 			costTodayEntityId: coerceEntityIdFromUnknown(item.costTodayEntityId),
 			compensationTodayEntityId: coerceEntityIdFromUnknown(item.compensationTodayEntityId),
+			costMonthEntityId: coerceEntityIdFromUnknown(item.costMonthEntityId),
+			compensationMonthEntityId: coerceEntityIdFromUnknown(item.compensationMonthEntityId),
+			costYearEntityId: coerceEntityIdFromUnknown(item.costYearEntityId),
+			compensationYearEntityId: coerceEntityIdFromUnknown(item.compensationYearEntityId),
 			importPeakTodayEntityId: coerceEntityIdFromUnknown(item.importPeakTodayEntityId),
 			importOffPeakTodayEntityId: coerceEntityIdFromUnknown(item.importOffPeakTodayEntityId),
 			exportPeakTodayEntityId: coerceEntityIdFromUnknown(item.exportPeakTodayEntityId),
@@ -352,6 +364,12 @@ export function coerceCardDraft(value: unknown, index: number): CardDraft | null
 		exportPeakTariff: coerceTariffFromUnknown(item.exportPeakTariff),
 		exportOffPeakTariff: coerceTariffFromUnknown(item.exportOffPeakTariff),
 		exportTariff: coerceTariffFromUnknown(item.exportTariff),
+		energyPriceEntityId: coerceEntityIdFromUnknown(item.energyPriceEntityId),
+		emsBatteryTargetEntityId: coerceEntityIdFromUnknown(item.emsBatteryTargetEntityId),
+		emsEvTargetEntityId: coerceEntityIdFromUnknown(item.emsEvTargetEntityId),
+		emsOptimStatusEntityId: coerceEntityIdFromUnknown(item.emsOptimStatusEntityId),
+		emsPlanAvailableEntityId: coerceEntityIdFromUnknown(item.emsPlanAvailableEntityId),
+		emsModeEntityId: coerceEntityIdFromUnknown(item.emsModeEntityId),
 		selfSufficiencyEntityId:
 			typeof item.selfSufficiencyEntityId === 'string' && item.selfSufficiencyEntityId.length > 0
 				? item.selfSufficiencyEntityId

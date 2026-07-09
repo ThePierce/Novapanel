@@ -18,8 +18,14 @@
 		exportTodayEntityId?: string;
 		solarTodayEntityId?: string;
 		homeTodayEntityId?: string;
+		costCurrentEntityId?: string;
+		compensationCurrentEntityId?: string;
 		costTodayEntityId?: string;
 		compensationTodayEntityId?: string;
+		costMonthEntityId?: string;
+		compensationMonthEntityId?: string;
+		costYearEntityId?: string;
+		compensationYearEntityId?: string;
 		currencyCode?: string;
 		energyCostMode?: EnergyCostMode;
 		importPeakTodayEntityId?: string;
@@ -33,6 +39,12 @@
 		exportPeakTariff?: string | number;
 		exportOffPeakTariff?: string | number;
 		exportTariff?: string | number;
+		energyPriceEntityId?: string;
+		emsBatteryTargetEntityId?: string;
+		emsEvTargetEntityId?: string;
+		emsOptimStatusEntityId?: string;
+		emsPlanAvailableEntityId?: string;
+		emsModeEntityId?: string;
 		selfSufficiencyEntityId?: string;
 		carChargingEntityId?: string;
 		carCableEntityId?: string;
@@ -68,8 +80,14 @@
 		onExportTodayEntityIdChange: (value: string) => void;
 		onSolarTodayEntityIdChange: (value: string) => void;
 		onHomeTodayEntityIdChange: (value: string) => void;
+		onCostCurrentEntityIdChange: (value: string) => void;
+		onCompensationCurrentEntityIdChange: (value: string) => void;
 		onCostTodayEntityIdChange: (value: string) => void;
 		onCompensationTodayEntityIdChange: (value: string) => void;
+		onCostMonthEntityIdChange: (value: string) => void;
+		onCompensationMonthEntityIdChange: (value: string) => void;
+		onCostYearEntityIdChange: (value: string) => void;
+		onCompensationYearEntityIdChange: (value: string) => void;
 		onEnergyCostModeChange: (value: EnergyCostMode) => void;
 		onImportPeakTodayEntityIdChange: (value: string) => void;
 		onImportOffPeakTodayEntityIdChange: (value: string) => void;
@@ -82,6 +100,12 @@
 		onExportPeakTariffChange: (value: string) => void;
 		onExportOffPeakTariffChange: (value: string) => void;
 		onExportTariffChange: (value: string) => void;
+		onEnergyPriceEntityIdChange: (value: string) => void;
+		onEmsBatteryTargetEntityIdChange: (value: string) => void;
+		onEmsEvTargetEntityIdChange: (value: string) => void;
+		onEmsOptimStatusEntityIdChange: (value: string) => void;
+		onEmsPlanAvailableEntityIdChange: (value: string) => void;
+		onEmsModeEntityIdChange: (value: string) => void;
 		onSelfSufficiencyEntityIdChange: (value: string) => void;
 		onCarChargingEntityIdChange: (value: string) => void;
 		onCarCableEntityIdChange: (value: string) => void;
@@ -156,13 +180,25 @@
 	const costsStatus = $derived(
 		(() => {
 			if (activeCostMode === 'sensor') {
-				const filled = [p.costTodayEntityId, p.compensationTodayEntityId].filter(nonEmpty).length;
+				const filled = [
+					p.costCurrentEntityId,
+					p.compensationCurrentEntityId,
+					p.costTodayEntityId,
+					p.compensationTodayEntityId,
+					p.costMonthEntityId,
+					p.compensationMonthEntityId,
+					p.costYearEntityId,
+					p.compensationYearEntityId
+				].filter(nonEmpty).length;
 				return filled > 0
 					? { status: 'filled' as const, label: translate('kostensensor', $selectedLanguageStore) }
 					: { status: 'empty' as const, label: translate('leeg', $selectedLanguageStore) };
 			}
 			if (activeCostMode === 'dynamic') {
-				const hasTariffSensor = nonEmpty(p.importTariffEntityId) || nonEmpty(p.exportTariffEntityId);
+				const hasTariffSensor =
+					nonEmpty(p.energyPriceEntityId) ||
+					nonEmpty(p.importTariffEntityId) ||
+					nonEmpty(p.exportTariffEntityId);
 				if (hasTariffSensor)
 					return { status: 'partial' as const, label: translate('schatting', $selectedLanguageStore) };
 				return { status: 'empty' as const, label: translate('leeg', $selectedLanguageStore) };
@@ -176,6 +212,19 @@
 			if (completedLanes > 0)
 				return { status: 'filled' as const, label: translate('piek/dal ingesteld', $selectedLanguageStore) };
 			return { status: 'empty' as const, label: translate('leeg', $selectedLanguageStore) };
+		})()
+	);
+	const emsStatus = $derived(
+		(() => {
+			const fields = [
+				p.energyPriceEntityId,
+				p.emsBatteryTargetEntityId,
+				p.emsEvTargetEntityId,
+				p.emsOptimStatusEntityId,
+				p.emsPlanAvailableEntityId,
+				p.emsModeEntityId
+			];
+			return fillStatus(fields.filter(nonEmpty).length, fields.length);
 		})()
 	);
 	const carStatus = $derived(
@@ -468,6 +517,27 @@
 		</div>
 		<div class="np-grid-2">
 			<div class="np-field">
+				<span class="np-label">{translate('Kosten', $selectedLanguageStore)} nu</span>
+				<input
+					type="text"
+					class="np-input mono"
+					value={p.costCurrentEntityId ?? ''}
+					placeholder="sensor.kosten_import_nu"
+					oninput={(e) => p.onCostCurrentEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+				/>
+			</div>
+			<div class="np-field">
+				<span class="np-label">{translate('Compensatie', $selectedLanguageStore)} nu</span>
+				<input
+					type="text"
+					class="np-input mono"
+					value={p.compensationCurrentEntityId ?? ''}
+					placeholder="sensor.compensatie_export_nu"
+					oninput={(e) =>
+						p.onCompensationCurrentEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+				/>
+			</div>
+			<div class="np-field">
 				<span class="np-label">{translate('Kosten', $selectedLanguageStore)} import</span>
 				<input
 					type="text"
@@ -485,6 +555,46 @@
 					value={p.compensationTodayEntityId ?? ''}
 					placeholder="sensor.compensatie_export_vandaag"
 					oninput={(e) => p.onCompensationTodayEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+				/>
+			</div>
+			<div class="np-field">
+				<span class="np-label">{translate('Kosten', $selectedLanguageStore)} maand</span>
+				<input
+					type="text"
+					class="np-input mono"
+					value={p.costMonthEntityId ?? ''}
+					placeholder="sensor.kosten_import_maand"
+					oninput={(e) => p.onCostMonthEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+				/>
+			</div>
+			<div class="np-field">
+				<span class="np-label">{translate('Compensatie', $selectedLanguageStore)} maand</span>
+				<input
+					type="text"
+					class="np-input mono"
+					value={p.compensationMonthEntityId ?? ''}
+					placeholder="sensor.compensatie_export_maand"
+					oninput={(e) => p.onCompensationMonthEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+				/>
+			</div>
+			<div class="np-field">
+				<span class="np-label">{translate('Kosten', $selectedLanguageStore)} jaar</span>
+				<input
+					type="text"
+					class="np-input mono"
+					value={p.costYearEntityId ?? ''}
+					placeholder="sensor.kosten_import_jaar"
+					oninput={(e) => p.onCostYearEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+				/>
+			</div>
+			<div class="np-field">
+				<span class="np-label">{translate('Compensatie', $selectedLanguageStore)} jaar</span>
+				<input
+					type="text"
+					class="np-input mono"
+					value={p.compensationYearEntityId ?? ''}
+					placeholder="sensor.compensatie_export_jaar"
+					oninput={(e) => p.onCompensationYearEntityIdChange((e.currentTarget as HTMLInputElement).value)}
 				/>
 			</div>
 		</div>
@@ -625,6 +735,16 @@
 		</div>
 		<div class="np-grid-2">
 			<div class="np-field">
+				<span class="np-label">{translate('Actuele stroomprijs', $selectedLanguageStore)}</span>
+				<input
+					type="text"
+					class="np-input mono"
+					value={p.energyPriceEntityId ?? ''}
+					placeholder="sensor.nord_pool_nl_huidige_prijs"
+					oninput={(e) => p.onEnergyPriceEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+				/>
+			</div>
+			<div class="np-field">
 				<span class="np-label">{translate('Import tarief sensor', $selectedLanguageStore)}</span>
 				<input
 					type="text"
@@ -646,6 +766,83 @@
 			</div>
 		</div>
 	{/if}
+</EditorSection>
+
+<EditorSection
+	title="EMS"
+	icon="activity"
+	tone="green"
+	status={emsStatus.status}
+	statusLabel={emsStatus.label}
+>
+	<div class="np-help">
+		{translate(
+			'Koppel hier EMHASS/omvormer entiteiten zodat de energiekaart laat zien waarom de accu of laadpaal wordt aangestuurd.',
+			$selectedLanguageStore
+		)}
+	</div>
+	<div class="np-grid-2">
+		<div class="np-field">
+			<span class="np-label">{translate('Actuele stroomprijs', $selectedLanguageStore)}</span>
+			<input
+				type="text"
+				class="np-input mono"
+				value={p.energyPriceEntityId ?? ''}
+				placeholder="sensor.nord_pool_nl_huidige_prijs"
+				oninput={(e) => p.onEnergyPriceEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+			/>
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Accu target', $selectedLanguageStore)}</span>
+			<input
+				type="text"
+				class="np-input mono"
+				value={p.emsBatteryTargetEntityId ?? ''}
+				placeholder="sensor.ems_emhass_battery_target"
+				oninput={(e) => p.onEmsBatteryTargetEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+			/>
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Laadpaal target', $selectedLanguageStore)}</span>
+			<input
+				type="text"
+				class="np-input mono"
+				value={p.emsEvTargetEntityId ?? ''}
+				placeholder="sensor.ems_emhass_ev_target"
+				oninput={(e) => p.onEmsEvTargetEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+			/>
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Optimalisatie status', $selectedLanguageStore)}</span>
+			<input
+				type="text"
+				class="np-input mono"
+				value={p.emsOptimStatusEntityId ?? ''}
+				placeholder="sensor.optim_status"
+				oninput={(e) => p.onEmsOptimStatusEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+			/>
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Plan beschikbaar', $selectedLanguageStore)}</span>
+			<input
+				type="text"
+				class="np-input mono"
+				value={p.emsPlanAvailableEntityId ?? ''}
+				placeholder="binary_sensor.ems_emhass_plan_available"
+				oninput={(e) => p.onEmsPlanAvailableEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+			/>
+		</div>
+		<div class="np-field">
+			<span class="np-label">{translate('Omvormer modus', $selectedLanguageStore)}</span>
+			<input
+				type="text"
+				class="np-input mono"
+				value={p.emsModeEntityId ?? ''}
+				placeholder="select.zolder_goodwe_inverter_ems_mode"
+				oninput={(e) => p.onEmsModeEntityIdChange((e.currentTarget as HTMLInputElement).value)}
+			/>
+		</div>
+	</div>
 </EditorSection>
 
 <EditorSection

@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { calculateLiveEnergyCost } from '$lib/energy-costs';
 	import { entityStore } from '$lib/ha/entities-store';
 	import StatusIcon from '$lib/cards/status/StatusIcon.svelte';
 	import { localeFor, selectedLanguageStore, translate } from '$lib/i18n';
+	import { DEFAULT_CURRENCY_CODE, formatCurrency } from '$lib/currency';
 
 	type Props = {
 		netEntityId?: string;
@@ -9,6 +11,15 @@
 		batteryEntityId?: string;
 		gridEntityId?: string;
 		batteryChargeEntityId?: string;
+		costCurrentEntityId?: string;
+		compensationCurrentEntityId?: string;
+		costTodayEntityId?: string;
+		compensationTodayEntityId?: string;
+		costMonthEntityId?: string;
+		compensationMonthEntityId?: string;
+		energyPriceEntityId?: string;
+		importTariffEntityId?: string;
+		exportTariffEntityId?: string;
 	};
 
 	let {
@@ -16,7 +27,16 @@
 		solarEntityId = '',
 		batteryEntityId = '',
 		gridEntityId = '',
-		batteryChargeEntityId = ''
+		batteryChargeEntityId = '',
+		costCurrentEntityId = '',
+		compensationCurrentEntityId = '',
+		costTodayEntityId = '',
+		compensationTodayEntityId = '',
+		costMonthEntityId = '',
+		compensationMonthEntityId = '',
+		energyPriceEntityId = '',
+		importTariffEntityId = '',
+		exportTariffEntityId = ''
 	}: Props = $props();
 
 	const entities = $derived($entityStore.entities);
@@ -36,12 +56,46 @@
 		const e = entities.find((e) => e.entityId === normalizedId);
 		return (e?.attributes as any)?.unit_of_measurement ?? '';
 	}
+	function powerW(id: string): number | null {
+		const value = getNumeric(id);
+		if (value === null) return null;
+		const unit = getUnit(id).toLowerCase();
+		return unit.includes('kw') ? value * 1000 : value;
+	}
 
 	const net = $derived(getNumeric(netEntityId));
+	const netW = $derived(powerW(netEntityId));
 	const solar = $derived(getNumeric(solarEntityId));
 	const battery = $derived(getNumeric(batteryEntityId));
 	const grid = $derived(getNumeric(gridEntityId));
 	const batteryCharge = $derived(getNumeric(batteryChargeEntityId));
+	const costCurrent = $derived(getNumeric(costCurrentEntityId));
+	const compensationCurrent = $derived(getNumeric(compensationCurrentEntityId));
+	const costToday = $derived(getNumeric(costTodayEntityId));
+	const compensationToday = $derived(getNumeric(compensationTodayEntityId));
+	const costMonth = $derived(getNumeric(costMonthEntityId));
+	const compensationMonth = $derived(getNumeric(compensationMonthEntityId));
+	const importTariffLive = $derived(getNumeric(energyPriceEntityId) ?? getNumeric(importTariffEntityId));
+	const exportTariffLive = $derived(getNumeric(exportTariffEntityId) ?? importTariffLive);
+	const liveCost = $derived(
+		calculateLiveEnergyCost({
+			netPowerW: netW,
+			importTariff: importTariffLive,
+			exportTariff: exportTariffLive,
+			costCurrent,
+			compensationCurrent
+		})
+	);
+
+	function netCost(cost: number | null, compensation: number | null): number | null {
+		if (cost === null && compensation === null) return null;
+		return (cost ?? 0) - (compensation ?? 0);
+	}
+
+	function fmtEuro(value: number | null): string {
+		if (value === null) return '–';
+		return formatCurrency(value, localeFor($selectedLanguageStore), DEFAULT_CURRENCY_CODE);
+	}
 
 	function fmtW(w: number | null, unit?: string): string {
 		if (w === null) return '–';
@@ -104,6 +158,20 @@
 			return parts.join(' · ');
 		})()
 	);
+
+	const costDetailLabel = $derived(
+		(() => {
+			const parts: string[] = [];
+			if (liveCost.netCostPerHour !== null)
+				parts.push(`${translate('Nu', $selectedLanguageStore)} ${fmtEuro(liveCost.netCostPerHour)}/u`);
+			const today = netCost(costToday, compensationToday);
+			if (today !== null)
+				parts.push(`${translate('Vandaag', $selectedLanguageStore)} ${fmtEuro(today)}`);
+			const month = netCost(costMonth, compensationMonth);
+			if (month !== null) parts.push(`${translate('Maand', $selectedLanguageStore)} ${fmtEuro(month)}`);
+			return parts.join(' · ');
+		})()
+	);
 </script>
 
 <div class="status-card tile">
@@ -117,6 +185,9 @@
 		<div class="summary" style="color:{netColor}">{netLabel}</div>
 		{#if detailLabel}
 			<div class="details">{detailLabel}</div>
+		{/if}
+		{#if costDetailLabel}
+			<div class="details money">{costDetailLabel}</div>
 		{/if}
 	</div>
 </div>
@@ -176,6 +247,9 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+	.details.money {
+		color: rgba(255, 255, 255, 0.72);
 	}
 	.summary {
 		font-size: 0.82rem;

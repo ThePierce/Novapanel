@@ -35,8 +35,14 @@ export type CardEditorOpenState = {
 	exportTodayEntityId?: string;
 	solarTodayEntityId?: string;
 	homeTodayEntityId?: string;
+	costCurrentEntityId?: string;
+	compensationCurrentEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	costMonthEntityId?: string;
+	compensationMonthEntityId?: string;
+	costYearEntityId?: string;
+	compensationYearEntityId?: string;
 	energyCostMode?: CardDraft['energyCostMode'];
 	importPeakTodayEntityId?: string;
 	importOffPeakTodayEntityId?: string;
@@ -49,6 +55,12 @@ export type CardEditorOpenState = {
 	exportPeakTariff?: number;
 	exportOffPeakTariff?: number;
 	exportTariff?: number;
+	energyPriceEntityId?: string;
+	emsBatteryTargetEntityId?: string;
+	emsEvTargetEntityId?: string;
+	emsOptimStatusEntityId?: string;
+	emsPlanAvailableEntityId?: string;
+	emsModeEntityId?: string;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
 	carCableEntityId?: string;
@@ -75,8 +87,14 @@ export type CardEditorOpenState = {
 	initialExportTodayEntityId?: string;
 	initialSolarTodayEntityId?: string;
 	initialHomeTodayEntityId?: string;
+	initialCostCurrentEntityId?: string;
+	initialCompensationCurrentEntityId?: string;
 	initialCostTodayEntityId?: string;
 	initialCompensationTodayEntityId?: string;
+	initialCostMonthEntityId?: string;
+	initialCompensationMonthEntityId?: string;
+	initialCostYearEntityId?: string;
+	initialCompensationYearEntityId?: string;
 	initialEnergyCostMode?: CardDraft['energyCostMode'];
 	initialImportPeakTodayEntityId?: string;
 	initialImportOffPeakTodayEntityId?: string;
@@ -89,6 +107,12 @@ export type CardEditorOpenState = {
 	initialExportPeakTariff?: number;
 	initialExportOffPeakTariff?: number;
 	initialExportTariff?: number;
+	initialEnergyPriceEntityId?: string;
+	initialEmsBatteryTargetEntityId?: string;
+	initialEmsEvTargetEntityId?: string;
+	initialEmsOptimStatusEntityId?: string;
+	initialEmsPlanAvailableEntityId?: string;
+	initialEmsModeEntityId?: string;
 	initialSelfSufficiencyEntityId?: string;
 	initialCarChargingEntityId?: string;
 	initialCarCableEntityId?: string;
@@ -194,8 +218,14 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		exportTodayEntityId: card.exportTodayEntityId,
 		solarTodayEntityId: card.solarTodayEntityId,
 		homeTodayEntityId: card.homeTodayEntityId,
+		costCurrentEntityId: card.costCurrentEntityId,
+		compensationCurrentEntityId: card.compensationCurrentEntityId,
 		costTodayEntityId: card.costTodayEntityId,
 		compensationTodayEntityId: card.compensationTodayEntityId,
+		costMonthEntityId: card.costMonthEntityId,
+		compensationMonthEntityId: card.compensationMonthEntityId,
+		costYearEntityId: card.costYearEntityId,
+		compensationYearEntityId: card.compensationYearEntityId,
 		energyCostMode: card.energyCostMode,
 		importPeakTodayEntityId: card.importPeakTodayEntityId,
 		importOffPeakTodayEntityId: card.importOffPeakTodayEntityId,
@@ -208,6 +238,12 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		exportPeakTariff: card.exportPeakTariff,
 		exportOffPeakTariff: card.exportOffPeakTariff,
 		exportTariff: card.exportTariff,
+		energyPriceEntityId: card.energyPriceEntityId,
+		emsBatteryTargetEntityId: card.emsBatteryTargetEntityId,
+		emsEvTargetEntityId: card.emsEvTargetEntityId,
+		emsOptimStatusEntityId: card.emsOptimStatusEntityId,
+		emsPlanAvailableEntityId: card.emsPlanAvailableEntityId,
+		emsModeEntityId: card.emsModeEntityId,
 		selfSufficiencyEntityId: card.selfSufficiencyEntityId,
 		carChargingEntityId: card.carChargingEntityId,
 		carCableEntityId: card.carCableEntityId,
@@ -257,8 +293,14 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		initialExportTodayEntityId: card.exportTodayEntityId,
 		initialSolarTodayEntityId: card.solarTodayEntityId,
 		initialHomeTodayEntityId: card.homeTodayEntityId,
+		initialCostCurrentEntityId: card.costCurrentEntityId,
+		initialCompensationCurrentEntityId: card.compensationCurrentEntityId,
 		initialCostTodayEntityId: card.costTodayEntityId,
 		initialCompensationTodayEntityId: card.compensationTodayEntityId,
+		initialCostMonthEntityId: card.costMonthEntityId,
+		initialCompensationMonthEntityId: card.compensationMonthEntityId,
+		initialCostYearEntityId: card.costYearEntityId,
+		initialCompensationYearEntityId: card.compensationYearEntityId,
 		initialEnergyCostMode: card.energyCostMode,
 		initialImportPeakTodayEntityId: card.importPeakTodayEntityId,
 		initialImportOffPeakTodayEntityId: card.importOffPeakTodayEntityId,
@@ -271,6 +313,12 @@ export function buildCardEditorOpenState(card: CardDraft): CardEditorOpenState {
 		initialExportPeakTariff: card.exportPeakTariff,
 		initialExportOffPeakTariff: card.exportOffPeakTariff,
 		initialExportTariff: card.exportTariff,
+		initialEnergyPriceEntityId: card.energyPriceEntityId,
+		initialEmsBatteryTargetEntityId: card.emsBatteryTargetEntityId,
+		initialEmsEvTargetEntityId: card.emsEvTargetEntityId,
+		initialEmsOptimStatusEntityId: card.emsOptimStatusEntityId,
+		initialEmsPlanAvailableEntityId: card.emsPlanAvailableEntityId,
+		initialEmsModeEntityId: card.emsModeEntityId,
 		initialSelfSufficiencyEntityId: card.selfSufficiencyEntityId,
 		initialCarChargingEntityId: card.carChargingEntityId,
 		initialCarCableEntityId: card.carCableEntityId,

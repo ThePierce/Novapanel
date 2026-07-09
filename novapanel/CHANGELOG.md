@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.5
+
+- Bumped the add-on, npm package, Git tag, GitHub Release, and documentation release links to `1.1.5`.
+- Expanded the Energy Overview Card with live cost per hour, today/month/year cost fields, dynamic tariff sensors, and EMS target/status details.
+- Added support for negative dynamic tariff sensors in live energy cost estimates.
+- Reduced dashboard flicker by avoiding equal-timestamp add-on state reapplication, preventing sidebar/card remounts and repeated calendar loading.
+
 ## 1.1.4
 
 - Bumped the add-on, npm package, Git tag, GitHub Release, and documentation release links to `1.1.4`.

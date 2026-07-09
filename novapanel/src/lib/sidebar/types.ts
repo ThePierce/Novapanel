@@ -27,9 +27,15 @@ export type SidebarItemBase = {
 	exportTodayEntityId?: string;
 	solarTodayEntityId?: string;
 	homeTodayEntityId?: string;
-	// Kosten vandaag (EUR, Utility Meter helpers)
+	// Kosten (EUR, Utility Meter helpers)
+	costCurrentEntityId?: string;
+	compensationCurrentEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	costMonthEntityId?: string;
+	compensationMonthEntityId?: string;
+	costYearEntityId?: string;
+	compensationYearEntityId?: string;
 	energyCostMode?: import('$lib/persistence/panel-state-types').EnergyCostMode;
 	// Kosten fallback: piek/dal dagtellers en tarieven
 	importPeakTodayEntityId?: string;
@@ -43,6 +49,12 @@ export type SidebarItemBase = {
 	exportPeakTariff?: number;
 	exportOffPeakTariff?: number;
 	exportTariff?: number;
+	energyPriceEntityId?: string;
+	emsBatteryTargetEntityId?: string;
+	emsEvTargetEntityId?: string;
+	emsOptimStatusEntityId?: string;
+	emsPlanAvailableEntityId?: string;
+	emsModeEntityId?: string;
 	// Optioneel: zelfvoorzienend % als template-sensor bestaat
 	selfSufficiencyEntityId?: string;
 	// Auto aan de lader (binary_sensor of soortgelijk) en laadvermogen

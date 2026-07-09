@@ -44,9 +44,12 @@ describe('panel state coercion', () => {
 			statusIcon: 'mdi:play-network',
 			clockStyle: 'aurora',
 			energyCostMode: 'dynamic',
+			costMonthEntityId: ' sensor.cost_month ',
 			importPeakTariff: '0,42',
 			exportPeakTodayEntityId: ' sensor.export_peak ',
 			exportOffPeakTariff: '0,08',
+			energyPriceEntityId: ' sensor.nord_pool_current ',
+			emsBatteryTargetEntityId: ' sensor.ems_battery_target ',
 			energyDeviceEntityIds: [' sensor.washer ', ''],
 			cameras: [{ entityId: ' camera.front ', alias: 'Front' }]
 		};
@@ -58,9 +61,12 @@ describe('panel state coercion', () => {
 			statusIcon: 'mdi:audio-video',
 			clockStyle: 'aurora',
 			energyCostMode: 'dynamic',
+			costMonthEntityId: 'sensor.cost_month',
 			importPeakTariff: 0.42,
 			exportPeakTodayEntityId: 'sensor.export_peak',
 			exportOffPeakTariff: 0.08,
+			energyPriceEntityId: 'sensor.nord_pool_current',
+			emsBatteryTargetEntityId: 'sensor.ems_battery_target',
 			energyDeviceEntityIds: ['sensor.washer'],
 			cameras: [{ entityId: 'camera.front', alias: 'Front' }]
 		});

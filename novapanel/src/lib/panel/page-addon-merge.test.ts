@@ -89,4 +89,28 @@ describe('mergeAddonDashboardState', () => {
 		expect(result.debug.serverIsNewer).toBe(false);
 		expect(result.layout).toEqual({ columns: 2, popupWidth: 900, popupHeight: 1200 });
 	});
+
+	it('does not reapply equal-timestamp server state over populated local state', () => {
+		const localSections = [section('local', [card('local-card')])];
+		const localSidebar = [card('local-sidebar')];
+		const serverSections = [section('local', [card('local-card')])];
+		const serverSidebar = [card('local-sidebar')];
+
+		const result = merge({
+			addonDashboard: {
+				layout: { columns: 3, popupWidth: 700, popupHeight: 900 },
+				viewSections: serverSections,
+				sidebarCards: serverSidebar,
+				updatedAt: 42
+			},
+			currentViewSections: localSections,
+			currentSidebarCards: localSidebar,
+			currentUpdatedAt: 42
+		});
+
+		expect(result.debug.serverIsNewer).toBe(false);
+		expect(result.viewSections).toBe(localSections);
+		expect(result.sidebarCards).toBe(localSidebar);
+		expect(result.layout).toEqual({ columns: 2, popupWidth: 850, popupHeight: 1140 });
+	});
 });

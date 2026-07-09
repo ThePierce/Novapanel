@@ -59,8 +59,14 @@ type EditorUiState = {
 	cardEditorExportTodayEntityId?: string;
 	cardEditorSolarTodayEntityId?: string;
 	cardEditorHomeTodayEntityId?: string;
+	cardEditorCostCurrentEntityId?: string;
+	cardEditorCompensationCurrentEntityId?: string;
 	cardEditorCostTodayEntityId?: string;
 	cardEditorCompensationTodayEntityId?: string;
+	cardEditorCostMonthEntityId?: string;
+	cardEditorCompensationMonthEntityId?: string;
+	cardEditorCostYearEntityId?: string;
+	cardEditorCompensationYearEntityId?: string;
 	cardEditorEnergyCostMode?: CardDraft['energyCostMode'];
 	cardEditorImportPeakTodayEntityId?: string;
 	cardEditorImportOffPeakTodayEntityId?: string;
@@ -73,6 +79,12 @@ type EditorUiState = {
 	cardEditorExportPeakTariff?: string;
 	cardEditorExportOffPeakTariff?: string;
 	cardEditorExportTariff?: string;
+	cardEditorEnergyPriceEntityId?: string;
+	cardEditorEmsBatteryTargetEntityId?: string;
+	cardEditorEmsEvTargetEntityId?: string;
+	cardEditorEmsOptimStatusEntityId?: string;
+	cardEditorEmsPlanAvailableEntityId?: string;
+	cardEditorEmsModeEntityId?: string;
 	cardEditorSelfSufficiencyEntityId?: string;
 	cardEditorCarChargingEntityId?: string;
 	cardEditorCarCableEntityId?: string;
@@ -98,8 +110,14 @@ type EditorUiState = {
 	cardEditorInitialExportTodayEntityId?: string;
 	cardEditorInitialSolarTodayEntityId?: string;
 	cardEditorInitialHomeTodayEntityId?: string;
+	cardEditorInitialCostCurrentEntityId?: string;
+	cardEditorInitialCompensationCurrentEntityId?: string;
 	cardEditorInitialCostTodayEntityId?: string;
 	cardEditorInitialCompensationTodayEntityId?: string;
+	cardEditorInitialCostMonthEntityId?: string;
+	cardEditorInitialCompensationMonthEntityId?: string;
+	cardEditorInitialCostYearEntityId?: string;
+	cardEditorInitialCompensationYearEntityId?: string;
 	cardEditorInitialEnergyCostMode?: CardDraft['energyCostMode'];
 	cardEditorInitialImportPeakTodayEntityId?: string;
 	cardEditorInitialImportOffPeakTodayEntityId?: string;
@@ -112,6 +130,12 @@ type EditorUiState = {
 	cardEditorInitialExportPeakTariff?: string;
 	cardEditorInitialExportOffPeakTariff?: string;
 	cardEditorInitialExportTariff?: string;
+	cardEditorInitialEnergyPriceEntityId?: string;
+	cardEditorInitialEmsBatteryTargetEntityId?: string;
+	cardEditorInitialEmsEvTargetEntityId?: string;
+	cardEditorInitialEmsOptimStatusEntityId?: string;
+	cardEditorInitialEmsPlanAvailableEntityId?: string;
+	cardEditorInitialEmsModeEntityId?: string;
 	cardEditorInitialSelfSufficiencyEntityId?: string;
 	cardEditorInitialCarChargingEntityId?: string;
 	cardEditorInitialCarCableEntityId?: string;
@@ -268,8 +292,14 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorExportTodayEntityId: next.exportTodayEntityId ?? '',
 			cardEditorSolarTodayEntityId: next.solarTodayEntityId ?? '',
 			cardEditorHomeTodayEntityId: next.homeTodayEntityId ?? '',
+			cardEditorCostCurrentEntityId: next.costCurrentEntityId ?? '',
+			cardEditorCompensationCurrentEntityId: next.compensationCurrentEntityId ?? '',
 			cardEditorCostTodayEntityId: next.costTodayEntityId ?? '',
 			cardEditorCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
+			cardEditorCostMonthEntityId: next.costMonthEntityId ?? '',
+			cardEditorCompensationMonthEntityId: next.compensationMonthEntityId ?? '',
+			cardEditorCostYearEntityId: next.costYearEntityId ?? '',
+			cardEditorCompensationYearEntityId: next.compensationYearEntityId ?? '',
 			cardEditorEnergyCostMode: next.energyCostMode ?? 'peak_offpeak',
 			cardEditorImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
 			cardEditorImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
@@ -282,6 +312,12 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorExportPeakTariff: tariffInputValue(next.exportPeakTariff),
 			cardEditorExportOffPeakTariff: tariffInputValue(next.exportOffPeakTariff),
 			cardEditorExportTariff: tariffInputValue(next.exportTariff),
+			cardEditorEnergyPriceEntityId: next.energyPriceEntityId ?? '',
+			cardEditorEmsBatteryTargetEntityId: next.emsBatteryTargetEntityId ?? '',
+			cardEditorEmsEvTargetEntityId: next.emsEvTargetEntityId ?? '',
+			cardEditorEmsOptimStatusEntityId: next.emsOptimStatusEntityId ?? '',
+			cardEditorEmsPlanAvailableEntityId: next.emsPlanAvailableEntityId ?? '',
+			cardEditorEmsModeEntityId: next.emsModeEntityId ?? '',
 			cardEditorSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
 			cardEditorCarChargingEntityId: next.carChargingEntityId ?? '',
 			cardEditorCarCableEntityId: next.carCableEntityId ?? '',
@@ -306,8 +342,14 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorInitialExportTodayEntityId: next.exportTodayEntityId ?? '',
 			cardEditorInitialSolarTodayEntityId: next.solarTodayEntityId ?? '',
 			cardEditorInitialHomeTodayEntityId: next.homeTodayEntityId ?? '',
+			cardEditorInitialCostCurrentEntityId: next.costCurrentEntityId ?? '',
+			cardEditorInitialCompensationCurrentEntityId: next.compensationCurrentEntityId ?? '',
 			cardEditorInitialCostTodayEntityId: next.costTodayEntityId ?? '',
 			cardEditorInitialCompensationTodayEntityId: next.compensationTodayEntityId ?? '',
+			cardEditorInitialCostMonthEntityId: next.costMonthEntityId ?? '',
+			cardEditorInitialCompensationMonthEntityId: next.compensationMonthEntityId ?? '',
+			cardEditorInitialCostYearEntityId: next.costYearEntityId ?? '',
+			cardEditorInitialCompensationYearEntityId: next.compensationYearEntityId ?? '',
 			cardEditorInitialEnergyCostMode: next.energyCostMode ?? 'peak_offpeak',
 			cardEditorInitialImportPeakTodayEntityId: next.importPeakTodayEntityId ?? '',
 			cardEditorInitialImportOffPeakTodayEntityId: next.importOffPeakTodayEntityId ?? '',
@@ -320,6 +362,12 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			cardEditorInitialExportPeakTariff: tariffInputValue(next.exportPeakTariff),
 			cardEditorInitialExportOffPeakTariff: tariffInputValue(next.exportOffPeakTariff),
 			cardEditorInitialExportTariff: tariffInputValue(next.exportTariff),
+			cardEditorInitialEnergyPriceEntityId: next.energyPriceEntityId ?? '',
+			cardEditorInitialEmsBatteryTargetEntityId: next.emsBatteryTargetEntityId ?? '',
+			cardEditorInitialEmsEvTargetEntityId: next.emsEvTargetEntityId ?? '',
+			cardEditorInitialEmsOptimStatusEntityId: next.emsOptimStatusEntityId ?? '',
+			cardEditorInitialEmsPlanAvailableEntityId: next.emsPlanAvailableEntityId ?? '',
+			cardEditorInitialEmsModeEntityId: next.emsModeEntityId ?? '',
 			cardEditorInitialSelfSufficiencyEntityId: next.selfSufficiencyEntityId ?? '',
 			cardEditorInitialCarChargingEntityId: next.carChargingEntityId ?? '',
 			cardEditorInitialCarCableEntityId: next.carCableEntityId ?? '',
@@ -483,8 +531,14 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			exportTodayEntityId: state.cardEditorExportTodayEntityId,
 			solarTodayEntityId: state.cardEditorSolarTodayEntityId,
 			homeTodayEntityId: state.cardEditorHomeTodayEntityId,
+			costCurrentEntityId: state.cardEditorCostCurrentEntityId,
+			compensationCurrentEntityId: state.cardEditorCompensationCurrentEntityId,
 			costTodayEntityId: state.cardEditorCostTodayEntityId,
 			compensationTodayEntityId: state.cardEditorCompensationTodayEntityId,
+			costMonthEntityId: state.cardEditorCostMonthEntityId,
+			compensationMonthEntityId: state.cardEditorCompensationMonthEntityId,
+			costYearEntityId: state.cardEditorCostYearEntityId,
+			compensationYearEntityId: state.cardEditorCompensationYearEntityId,
 			energyCostMode: state.cardEditorEnergyCostMode,
 			importPeakTodayEntityId: state.cardEditorImportPeakTodayEntityId,
 			importOffPeakTodayEntityId: state.cardEditorImportOffPeakTodayEntityId,
@@ -497,6 +551,12 @@ export function createPageEditorUiRuntime(params: CreatePageEditorUiRuntimeParam
 			exportPeakTariff: state.cardEditorExportPeakTariff,
 			exportOffPeakTariff: state.cardEditorExportOffPeakTariff,
 			exportTariff: state.cardEditorExportTariff,
+			energyPriceEntityId: state.cardEditorEnergyPriceEntityId,
+			emsBatteryTargetEntityId: state.cardEditorEmsBatteryTargetEntityId,
+			emsEvTargetEntityId: state.cardEditorEmsEvTargetEntityId,
+			emsOptimStatusEntityId: state.cardEditorEmsOptimStatusEntityId,
+			emsPlanAvailableEntityId: state.cardEditorEmsPlanAvailableEntityId,
+			emsModeEntityId: state.cardEditorEmsModeEntityId,
 			selfSufficiencyEntityId: state.cardEditorSelfSufficiencyEntityId,
 			carChargingEntityId: state.cardEditorCarChargingEntityId,
 			carCableEntityId: state.cardEditorCarCableEntityId,

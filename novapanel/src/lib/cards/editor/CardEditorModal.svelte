@@ -179,8 +179,14 @@
 		cardEditorExportTodayEntityId?: string;
 		cardEditorSolarTodayEntityId?: string;
 		cardEditorHomeTodayEntityId?: string;
+		cardEditorCostCurrentEntityId?: string;
+		cardEditorCompensationCurrentEntityId?: string;
 		cardEditorCostTodayEntityId?: string;
 		cardEditorCompensationTodayEntityId?: string;
+		cardEditorCostMonthEntityId?: string;
+		cardEditorCompensationMonthEntityId?: string;
+		cardEditorCostYearEntityId?: string;
+		cardEditorCompensationYearEntityId?: string;
 		currencyCode?: string;
 		cardEditorEnergyCostMode?: EnergyCostMode;
 		cardEditorImportPeakTodayEntityId?: string;
@@ -194,6 +200,12 @@
 		cardEditorExportPeakTariff?: string;
 		cardEditorExportOffPeakTariff?: string;
 		cardEditorExportTariff?: string;
+		cardEditorEnergyPriceEntityId?: string;
+		cardEditorEmsBatteryTargetEntityId?: string;
+		cardEditorEmsEvTargetEntityId?: string;
+		cardEditorEmsOptimStatusEntityId?: string;
+		cardEditorEmsPlanAvailableEntityId?: string;
+		cardEditorEmsModeEntityId?: string;
 		cardEditorSelfSufficiencyEntityId?: string;
 		cardEditorCarChargingEntityId?: string;
 		cardEditorCarCableEntityId?: string;
@@ -219,8 +231,14 @@
 		onExportTodayEntityIdChange: (value: string) => void;
 		onSolarTodayEntityIdChange: (value: string) => void;
 		onHomeTodayEntityIdChange: (value: string) => void;
+		onCostCurrentEntityIdChange: (value: string) => void;
+		onCompensationCurrentEntityIdChange: (value: string) => void;
 		onCostTodayEntityIdChange: (value: string) => void;
 		onCompensationTodayEntityIdChange: (value: string) => void;
+		onCostMonthEntityIdChange: (value: string) => void;
+		onCompensationMonthEntityIdChange: (value: string) => void;
+		onCostYearEntityIdChange: (value: string) => void;
+		onCompensationYearEntityIdChange: (value: string) => void;
 		onEnergyCostModeChange: (value: EnergyCostMode) => void;
 		onImportPeakTodayEntityIdChange: (value: string) => void;
 		onImportOffPeakTodayEntityIdChange: (value: string) => void;
@@ -233,6 +251,12 @@
 		onExportPeakTariffChange: (value: string) => void;
 		onExportOffPeakTariffChange: (value: string) => void;
 		onExportTariffChange: (value: string) => void;
+		onEnergyPriceEntityIdChange: (value: string) => void;
+		onEmsBatteryTargetEntityIdChange: (value: string) => void;
+		onEmsEvTargetEntityIdChange: (value: string) => void;
+		onEmsOptimStatusEntityIdChange: (value: string) => void;
+		onEmsPlanAvailableEntityIdChange: (value: string) => void;
+		onEmsModeEntityIdChange: (value: string) => void;
 		onSelfSufficiencyEntityIdChange: (value: string) => void;
 		onCarChargingEntityIdChange: (value: string) => void;
 		onCarCableEntityIdChange: (value: string) => void;
@@ -312,8 +336,14 @@
 		cardEditorExportTodayEntityId = '',
 		cardEditorSolarTodayEntityId = '',
 		cardEditorHomeTodayEntityId = '',
+		cardEditorCostCurrentEntityId = '',
+		cardEditorCompensationCurrentEntityId = '',
 		cardEditorCostTodayEntityId = '',
 		cardEditorCompensationTodayEntityId = '',
+		cardEditorCostMonthEntityId = '',
+		cardEditorCompensationMonthEntityId = '',
+		cardEditorCostYearEntityId = '',
+		cardEditorCompensationYearEntityId = '',
 		currencyCode = 'EUR',
 		cardEditorEnergyCostMode = 'peak_offpeak',
 		cardEditorImportPeakTodayEntityId = '',
@@ -327,6 +357,12 @@
 		cardEditorExportPeakTariff = '',
 		cardEditorExportOffPeakTariff = '',
 		cardEditorExportTariff = '',
+		cardEditorEnergyPriceEntityId = '',
+		cardEditorEmsBatteryTargetEntityId = '',
+		cardEditorEmsEvTargetEntityId = '',
+		cardEditorEmsOptimStatusEntityId = '',
+		cardEditorEmsPlanAvailableEntityId = '',
+		cardEditorEmsModeEntityId = '',
 		cardEditorSelfSufficiencyEntityId = '',
 		cardEditorCarChargingEntityId = '',
 		cardEditorCarCableEntityId = '',
@@ -352,8 +388,14 @@
 		onExportTodayEntityIdChange,
 		onSolarTodayEntityIdChange,
 		onHomeTodayEntityIdChange,
+		onCostCurrentEntityIdChange,
+		onCompensationCurrentEntityIdChange,
 		onCostTodayEntityIdChange,
 		onCompensationTodayEntityIdChange,
+		onCostMonthEntityIdChange,
+		onCompensationMonthEntityIdChange,
+		onCostYearEntityIdChange,
+		onCompensationYearEntityIdChange,
 		onEnergyCostModeChange,
 		onImportPeakTodayEntityIdChange,
 		onImportOffPeakTodayEntityIdChange,
@@ -366,6 +408,12 @@
 		onExportPeakTariffChange,
 		onExportOffPeakTariffChange,
 		onExportTariffChange,
+		onEnergyPriceEntityIdChange,
+		onEmsBatteryTargetEntityIdChange,
+		onEmsEvTargetEntityIdChange,
+		onEmsOptimStatusEntityIdChange,
+		onEmsPlanAvailableEntityIdChange,
+		onEmsModeEntityIdChange,
 		onSelfSufficiencyEntityIdChange,
 		onCarChargingEntityIdChange,
 		onCarCableEntityIdChange,
@@ -847,8 +895,14 @@
 				exportTodayEntityId={cardEditorExportTodayEntityId}
 				solarTodayEntityId={cardEditorSolarTodayEntityId}
 				homeTodayEntityId={cardEditorHomeTodayEntityId}
+				costCurrentEntityId={cardEditorCostCurrentEntityId}
+				compensationCurrentEntityId={cardEditorCompensationCurrentEntityId}
 				costTodayEntityId={cardEditorCostTodayEntityId}
 				compensationTodayEntityId={cardEditorCompensationTodayEntityId}
+				costMonthEntityId={cardEditorCostMonthEntityId}
+				compensationMonthEntityId={cardEditorCompensationMonthEntityId}
+				costYearEntityId={cardEditorCostYearEntityId}
+				compensationYearEntityId={cardEditorCompensationYearEntityId}
 				{currencyCode}
 				energyCostMode={cardEditorEnergyCostMode}
 				importPeakTodayEntityId={cardEditorImportPeakTodayEntityId}
@@ -862,6 +916,12 @@
 				exportPeakTariff={cardEditorExportPeakTariff}
 				exportOffPeakTariff={cardEditorExportOffPeakTariff}
 				exportTariff={cardEditorExportTariff}
+				energyPriceEntityId={cardEditorEnergyPriceEntityId}
+				emsBatteryTargetEntityId={cardEditorEmsBatteryTargetEntityId}
+				emsEvTargetEntityId={cardEditorEmsEvTargetEntityId}
+				emsOptimStatusEntityId={cardEditorEmsOptimStatusEntityId}
+				emsPlanAvailableEntityId={cardEditorEmsPlanAvailableEntityId}
+				emsModeEntityId={cardEditorEmsModeEntityId}
 				selfSufficiencyEntityId={cardEditorSelfSufficiencyEntityId}
 				carChargingEntityId={cardEditorCarChargingEntityId}
 				carCableEntityId={cardEditorCarCableEntityId}
@@ -886,8 +946,14 @@
 				{onExportTodayEntityIdChange}
 				{onSolarTodayEntityIdChange}
 				{onHomeTodayEntityIdChange}
+				{onCostCurrentEntityIdChange}
+				{onCompensationCurrentEntityIdChange}
 				{onCostTodayEntityIdChange}
 				{onCompensationTodayEntityIdChange}
+				{onCostMonthEntityIdChange}
+				{onCompensationMonthEntityIdChange}
+				{onCostYearEntityIdChange}
+				{onCompensationYearEntityIdChange}
 				{onEnergyCostModeChange}
 				{onImportPeakTodayEntityIdChange}
 				{onImportOffPeakTodayEntityIdChange}
@@ -900,6 +966,12 @@
 				{onExportPeakTariffChange}
 				{onExportOffPeakTariffChange}
 				{onExportTariffChange}
+				{onEnergyPriceEntityIdChange}
+				{onEmsBatteryTargetEntityIdChange}
+				{onEmsEvTargetEntityIdChange}
+				{onEmsOptimStatusEntityIdChange}
+				{onEmsPlanAvailableEntityIdChange}
+				{onEmsModeEntityIdChange}
 				{onSelfSufficiencyEntityIdChange}
 				{onCarChargingEntityIdChange}
 				{onCarCableEntityIdChange}

@@ -2,8 +2,14 @@ import type { EnergyCostMode } from '$lib/persistence/panel-state-types';
 
 export type EnergyCostModeConfig = {
 	energyCostMode?: EnergyCostMode;
+	costCurrentEntityId?: string;
+	compensationCurrentEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	costMonthEntityId?: string;
+	compensationMonthEntityId?: string;
+	costYearEntityId?: string;
+	compensationYearEntityId?: string;
 	importPeakTodayEntityId?: string;
 	importOffPeakTodayEntityId?: string;
 	exportPeakTodayEntityId?: string;
@@ -44,6 +50,13 @@ export type EnergyCostResult = {
 	isEstimate: boolean;
 };
 
+export type LiveEnergyCostResult = {
+	importCostPerHour: number | null;
+	exportCompensationPerHour: number | null;
+	netCostPerHour: number | null;
+	isEstimate: boolean;
+};
+
 function hasText(value: unknown): boolean {
 	return typeof value === 'string' && value.trim().length > 0;
 }
@@ -58,7 +71,18 @@ export function isEnergyCostMode(value: unknown): value is EnergyCostMode {
 
 export function deriveEnergyCostMode(config: EnergyCostModeConfig): EnergyCostMode {
 	if (isEnergyCostMode(config.energyCostMode)) return config.energyCostMode;
-	if (hasText(config.costTodayEntityId) || hasText(config.compensationTodayEntityId)) return 'sensor';
+	if (
+		hasText(config.costCurrentEntityId) ||
+		hasText(config.compensationCurrentEntityId) ||
+		hasText(config.costTodayEntityId) ||
+		hasText(config.compensationTodayEntityId) ||
+		hasText(config.costMonthEntityId) ||
+		hasText(config.compensationMonthEntityId) ||
+		hasText(config.costYearEntityId) ||
+		hasText(config.compensationYearEntityId)
+	) {
+		return 'sensor';
+	}
 	if (
 		hasText(config.importPeakTodayEntityId) ||
 		hasText(config.importOffPeakTodayEntityId) ||
@@ -145,5 +169,68 @@ export function calculateEnergyCosts(values: EnergyCostValues): EnergyCostResult
 				? null
 				: (importCost ?? 0) - (exportCompensation ?? 0),
 		isEstimate
+	};
+}
+
+export function calculateLiveEnergyCost(input: {
+	netPowerW: number | null;
+	importTariff: number | null;
+	exportTariff: number | null;
+	costCurrent?: number | null;
+	compensationCurrent?: number | null;
+}): LiveEnergyCostResult {
+	const exactImport = input.costCurrent ?? null;
+	const exactExport = input.compensationCurrent ?? null;
+	if (exactImport !== null || exactExport !== null) {
+		return {
+			importCostPerHour: exactImport,
+			exportCompensationPerHour: exactExport,
+			netCostPerHour: (exactImport ?? 0) - (exactExport ?? 0),
+			isEstimate: false
+		};
+	}
+
+	if (input.netPowerW === null) {
+		return {
+			importCostPerHour: null,
+			exportCompensationPerHour: null,
+			netCostPerHour: null,
+			isEstimate: false
+		};
+	}
+
+	const kw = Math.abs(input.netPowerW) / 1000;
+	if (input.netPowerW >= 0) {
+		if (input.importTariff === null) {
+			return {
+				importCostPerHour: null,
+				exportCompensationPerHour: null,
+				netCostPerHour: null,
+				isEstimate: false
+			};
+		}
+		const importCostPerHour = kw * input.importTariff;
+		return {
+			importCostPerHour,
+			exportCompensationPerHour: null,
+			netCostPerHour: importCostPerHour,
+			isEstimate: true
+		};
+	}
+
+	if (input.exportTariff === null) {
+		return {
+			importCostPerHour: null,
+			exportCompensationPerHour: null,
+			netCostPerHour: null,
+			isEstimate: false
+		};
+	}
+	const exportCompensationPerHour = kw * input.exportTariff;
+	return {
+		importCostPerHour: null,
+		exportCompensationPerHour,
+		netCostPerHour: -exportCompensationPerHour,
+		isEstimate: true
 	};
 }

@@ -59,8 +59,14 @@ export type CardDraft = {
 	exportTodayEntityId?: string;
 	solarTodayEntityId?: string;
 	homeTodayEntityId?: string;
+	costCurrentEntityId?: string;
+	compensationCurrentEntityId?: string;
 	costTodayEntityId?: string;
 	compensationTodayEntityId?: string;
+	costMonthEntityId?: string;
+	compensationMonthEntityId?: string;
+	costYearEntityId?: string;
+	compensationYearEntityId?: string;
 	/** Energy: expliciete kostenmodus om vaste piek/dal, exacte sensoren en dynamische schatting niet te mixen */
 	energyCostMode?: EnergyCostMode;
 	/** Energy: kWh-vandaag teller voor piek/hoog tarief */
@@ -85,6 +91,18 @@ export type CardDraft = {
 	exportOffPeakTariff?: number;
 	/** Energy: legacy handmatig enkel teruglevertarief in euro per kWh */
 	exportTariff?: number;
+	/** Energy/EMS: actuele stroomprijs, bijvoorbeeld Nord Pool, Tibber of Frank */
+	energyPriceEntityId?: string;
+	/** Energy/EMS: EMHASS batterij target in W */
+	emsBatteryTargetEntityId?: string;
+	/** Energy/EMS: EMHASS EV/laadpaal target in W */
+	emsEvTargetEntityId?: string;
+	/** Energy/EMS: EMHASS optimalisatiestatus */
+	emsOptimStatusEntityId?: string;
+	/** Energy/EMS: EMHASS plan beschikbaar */
+	emsPlanAvailableEntityId?: string;
+	/** Energy/EMS: omvormer EMS-modus */
+	emsModeEntityId?: string;
 	selfSufficiencyEntityId?: string;
 	carChargingEntityId?: string;
 	carCableEntityId?: string;
